@@ -4,7 +4,7 @@ let connection
 
 async function db() {
   if (!connection) connection = new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 5)
+    const request = indexedDB.open(DB_NAME, 6)
     request.onupgradeneeded = () => {
       if (!request.result.objectStoreNames.contains('books')) request.result.createObjectStore('books', { keyPath: 'id' })
       if (!request.result.objectStoreNames.contains('folders')) request.result.createObjectStore('folders', { keyPath: 'id' })
@@ -14,6 +14,7 @@ async function db() {
       if (!request.result.objectStoreNames.contains('dictionaryPacks')) request.result.createObjectStore('dictionaryPacks', {keyPath:'id'})
       if (!request.result.objectStoreNames.contains('dictionaryChunks')){const chunks=request.result.createObjectStore('dictionaryChunks',{keyPath:'id'});chunks.createIndex('packId','packId')}
       if (!request.result.objectStoreNames.contains('vocabulary')) request.result.createObjectStore('vocabulary',{keyPath:'id'})
+      if (!request.result.objectStoreNames.contains('translations')) request.result.createObjectStore('translations',{keyPath:'id'})
     }
     request.onsuccess = () => {
       request.result.onversionchange = () => { request.result.close(); connection = undefined }
@@ -38,7 +39,10 @@ async function transact(mode, action, storeName = 'books') {
 
 export const getBook = id => transact('readonly', store => store.get(id))
 export const saveBook = book => transact('readwrite', store => store.put(book))
-export const removeBook = id => transact('readwrite', store => store.delete(id))
+export const removeBook = async id => {await transact('readwrite', store => store.delete(id));await removeTranslation(id)}
+export const getTranslation = id => transact('readonly',store=>store.get(id),'translations')
+export const saveTranslation = value => transact('readwrite',store=>store.put(value),'translations')
+export const removeTranslation = id => transact('readwrite',store=>store.delete(id),'translations')
 export const allBooks = async () => (await transact('readonly', store => store.getAll()))
   .sort((a, b) => b.updatedAt - a.updatedAt)
 export const allFolders = () => transact('readonly', store => store.getAll(), 'folders')

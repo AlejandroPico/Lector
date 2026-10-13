@@ -1,5 +1,14 @@
 # Historial de versiones
 
+## 1.1.0
+
+- Apartado Idiomas y contexto dentro de los ajustes y su buscador, con interfaz en los diez idiomas.
+- Lectura bilingüe con traducción aportada por el usuario, capítulos emparejables, desplazamiento y vinculaciones de párrafos; archivo y alineación guardados opcionalmente en el navegador.
+- Narración del original, resaltado en la vista paralela y retorno mediante las ubicaciones del ebook. Conservación de saltos de línea y texto de listas/citas.
+- Consulta contextual y traducción de fragmentos con vista previa y envío explícito; adaptadores Ollama y Chat Completions, desactivados inicialmente, claves de sesión y cancelación.
+- Definición de diccionario separada de las respuestas generadas, con atribución y licencia.
+- Actualización del almacenamiento a versión 6 conservando libros, notas y diccionarios anteriores.
+
 ## 1.0.0
 
 - Evitar recalcular páginas mientras el documento de un capítulo todavía está cargándose; comprobado con navegación y reanudación repetidas.

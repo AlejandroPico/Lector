@@ -1,6 +1,6 @@
 # Ampliaciones acordadas y versiones propuestas
 
-Base actual: versión 1.0.0. Esta hoja recoge la selección del autor del 13 de octubre de 2026. La selección aprueba el objetivo de las funciones, pero cada versión necesita autorización antes de comenzar. Documentar este plan no cambia la aplicación ni autoriza ejecutar todos los bloques.
+Base actual: versión 1.1.0. Esta hoja recoge la selección del autor del 13 de octubre de 2026. La selección aprueba el objetivo de las funciones, pero cada versión necesita autorización antes de comenzar. Documentar este plan no cambia la aplicación ni autoriza ejecutar todos los bloques.
 
 ## Reglas comunes
 
@@ -72,4 +72,4 @@ Si un bloque excede una entrega razonable, se subdividirá antes de comenzar y s
 - 0.9 completada: subrayados, edición, cuaderno, citas y exportación deliberada.
 - 0.10 completada: diez paquetes de diccionarios, instalación local, importación de recursos y vocabulario personal. Catalán e hindi contienen definiciones en inglés; cobertura y licencias documentadas.
 - 1.0 completada: rediseño, 35 comprobaciones unitarias y 64 de navegador, compilación y revisión visual en ordenador y móvil.
-- 1.1 autorizada a continuación: contexto y lectura bilingüe. Las posteriores siguen pendientes.
+- 1.1 completada: lectura bilingüe con alineación manual, traducciones opcionales por libro, contexto con envío explícito y adaptadores de servicios; 46 comprobaciones unitarias y 74 de navegador. Las versiones posteriores siguen pendientes de autorización.

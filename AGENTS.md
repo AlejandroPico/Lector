@@ -15,3 +15,4 @@
 - Los datos derivados de Wiktionary en diccionarios mantienen CC BY-SA 4.0, atribución, URLs, idioma de definiciones y cobertura medible. No añadir recursos sin verificar licencia ni presentar cobertura universal o monolingüe cuando no lo sea. La instalación de bloques requiere acción explícita.
 
 - El autor autorizó 1.0 (rediseño de menús) y 1.1 (antes 0.11), en orden y con subidas separadas. La numeración futura es 1.2–1.9, antes 0.12–0.19.
+- El contexto generado requiere petición explícita sobre el fragmento mostrado. Distinguirlo de las definiciones locales; no enviar libros completos ni conservar claves. La vista bilingüe empieza con una traducción aportada, con alineación por posición corregible, sin atribuirle precisión semántica automática.

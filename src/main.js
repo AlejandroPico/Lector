@@ -28,6 +28,8 @@ import { normalizeTerm } from './dictionary-core.js'
 import { allDictionaryPacks,allVocabulary,saveVocabulary,removeVocabulary } from './storage.js'
 import { organizeMenus } from './menu-layout.js'
 import { recentReadingOrder } from './library.js'
+import {addLanguageMenus} from './language-menus.js'
+import {createLanguageTools} from './language-tools.js'
 
 const $ = selector => document.querySelector(selector)
 let userFonts = await allFonts().catch(()=>[])
@@ -55,6 +57,7 @@ let coverQueuePaused=false
 let editingNote,notebookBooks=[],notebookShown=[],notebookLimit=100,exportEntries=[]
 let dictionaryInstall,dictionaryResult,dictionaryQuerySequence=0,vocabularyLimit=100
 let projectDictionaries=[],personalProjectDictionaries=[],dictionaryResourcesPromise
+let languageTools
 
 const rangeControl = (key, label, min, max, step, unit = '') => `<label class="field range-field"><span>${label}<output for="${key}" data-output="${key}">${settings[key]}${unit}</output></span><input id="${key}" type="range" data-setting="${key}" min="${min}" max="${max}" step="${step}" value="${settings[key]}" data-unit="${unit}"></label>`
 const check = (key, label) => `<label class="check-field"><input type="checkbox" data-setting="${key}" ${settings[key] ? 'checked' : ''}>${label}</label>`
@@ -236,7 +239,7 @@ $('#app').innerHTML = `
           <div><dt>Autor</dt><dd>Alejandro Pico</dd></div>
           <div><dt>Carácter</dt><dd>Proyecto personal</dd></div>
           <div><dt>Propósito</dt><dd>Lectura y escucha</dd></div>
-          <div><dt>Edición</dt><dd>Versión 1.0</dd></div>
+          <div><dt>Edición</dt><dd>Versión 1.1</dd></div>
         </dl>
       </aside>
       <div class="about-body">
@@ -263,6 +266,7 @@ $('#app').innerHTML = `
   <div id="toast" class="toast" role="status" hidden></div>
 `
 const menuLayout = organizeMenus()
+addLanguageMenus()
 initializeI18n($('#app'), settings.uiLanguage)
 $('#speech-language').value = settings.speechLanguage
 
@@ -290,10 +294,12 @@ const speech = new SpeechController({
     $('#audio-toggle').setAttribute('aria-label', label); $('#audio-toggle').title = label
     $('#audio-toggle').setAttribute('aria-busy', state === 'loading')
     updateReadingInformation()
+    languageTools?.audioState(state)
   },
   onError: message => { toast(message, 8000); if (settings.provider === 'openai' && !apiKey) togglePanel('voice') },
   onHighlight(range) {
     narratedRange = range
+    languageTools?.follow(range)
     if(range && record){record.anchorCFI=anchorCFI(range);if(speech.state==='playing')record.lastReadAt=Date.now();updateReadingInformation();if(performance.now()-lastSpeechSave>3000){lastSpeechSave=performance.now();saveRecord()}}
     for (const { doc } of view.renderer?.getContents() ?? []) doc.defaultView.CSS?.highlights?.delete('spoken')
     if (!range || !settings.highlight) return
@@ -697,7 +703,7 @@ function renderLibrary() {
       remove.onclick = attempt(async () => {
         if (item.notes?.length && !confirm(`${t('Quitar de la biblioteca')}: «${item.title}» (${item.notes.length})?`)) return
         if (record?.id === item.id) { clearTimeout(saveTimer); speech.stop();clearOpeningCover(); view.close(); book?.destroy?.(); book = null; record = null; $('#audio-toggle').disabled = true; $('.reading-footer').hidden = true }
-        await removeBook(item.id);await removeCatalog(item.id); await updateLibrary()
+        await languageTools?.forget(item.id);await removeBook(item.id);await removeCatalog(item.id); await updateLibrary()
       }); actions.append(remove)
     }
     row.append(actions)
@@ -1086,6 +1092,7 @@ function renderNotesExport(){const format=$('#notes-export-format').value;$('#no
 function dictionaryLanguage(){const language=settings.dictionaryLanguage==='auto'?languageCode(book?.metadata?.language)||currentLanguage():settings.dictionaryLanguage;return Object.hasOwn(languages,language)?language:currentLanguage()}
 async function lookupDictionary(word=$('#dictionary-query').value){
   const language=dictionaryLanguage(),key=normalizeTerm(word,language),sequence=++dictionaryQuerySequence
+  $('#dictionary-context').disabled=!selection||normalizeTerm(selection.quote,language)!==key
   dictionaryResult=undefined;$('#dictionary-save-word').disabled=true;$('#dictionary-word').textContent=key||t('Buscar palabra');$('#dictionary-query').value=key;$('#dictionary-language').value=settings.dictionaryLanguage
   $('#dictionary-definition').textContent=key?t('Buscando…'):'';$('#dictionary-source').textContent='';$('#dictionary-license').hidden=true
   const result=key?await lookupOffline(key,language):null
@@ -1208,7 +1215,7 @@ function onKey(event) {
   if(event.key==='MediaPlayPause'){event.preventDefault();$('#audio-toggle').click();return}
   if(settings.tvMode&&event.key==='Enter'&&(target===view||target.ownerDocument!==document)){event.preventDefault();$('#audio-toggle').click();return}
   if(event.altKey&&['ArrowLeft','ArrowRight'].includes(event.key)){event.preventDefault();attempt(()=>navigateHistory(event.key==='ArrowLeft'?-1:1))();return}
-  if(settings.tvMode && ['Backspace','BrowserBack'].includes(event.key)&&!target.closest?.('input,textarea')){event.preventDefault();if(document.querySelector('.panel:not([hidden])'))closePanels();else attempt(()=>navigateHistory(-1))();return}
+  if(settings.tvMode && ['Backspace','BrowserBack'].includes(event.key)&&!target.closest?.('input,textarea')){event.preventDefault();const dialog=target.closest?.('dialog[open]')??document.querySelector('dialog:modal');if(dialog)dialog.close();else if(document.querySelector('.panel:not([hidden])'))closePanels();else attempt(()=>navigateHistory(-1))();return}
   if (event.key === 'Escape') {
     closePanels(); $('#selection-menu').hidden = true
     if (document.body.classList.contains('zen')) setZen(false)
@@ -1216,7 +1223,7 @@ function onKey(event) {
     return
   }
   if (target.closest?.('input,textarea,select,[contenteditable="true"]')) return
-  if(settings.tvMode&&event.key.startsWith('Arrow')&&target.closest?.('button,a,summary')){event.preventDefault();moveFocus(event.key,document.querySelector('dialog[open]')??document);return}
+  if(settings.tvMode&&event.key.startsWith('Arrow')&&target.closest?.('button,a,summary')){event.preventDefault();moveFocus(event.key,target.closest?.('dialog[open]')??document.querySelector('dialog:modal')??document);return}
   if (document.querySelector('dialog[open]')) return
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'o') { event.preventDefault(); $('#file-input').click(); return }
   if (event.ctrlKey || event.altKey || event.metaKey) return
@@ -1268,6 +1275,7 @@ document.querySelectorAll('[data-setting]').forEach(input => {
     if (input.dataset.setting === 'uiLanguage') {
       setUILanguage(settings.uiLanguage)
       renderLibraryFilters();renderLibrary(); syncVoices()
+      languageTools?.refresh()
     }
     if (input.dataset.setting === 'libraryView') renderLibrary()
     if(['preloadCovers','preloadEmbeddedCovers'].includes(input.dataset.setting)){coverQueuePaused=false;coverQueue.cancel();coverQueue.retry()}
@@ -1495,6 +1503,9 @@ window.addEventListener('pagehide', () => { saveRecord(); speech.stop();gamepad.
 window.addEventListener('resize', attempt(()=>preserveLayout(()=>{ $('#selection-menu').hidden = true; applySettings() })))
 globalThis.speechSynthesis?.addEventListener('voiceschanged', syncVoices)
 setInterval(() => { if (settings.theme === 'auto') applySettings() }, 60000)
+languageTools=createLanguageTools({getBook:()=>book,getRecord:()=>record,getSelection:()=>selection,view,
+  prepareReading:async()=>{speech.stop();await finishOpeningCover()},navigateTo,
+  toggleAudio:()=>speech.toggle(),showSettings:()=>{if($('#preferences-panel').hidden)togglePanel('preferences')},closePanels,getSettings:()=>settings,onError:handleError})
 applySettings(); syncVoices(); translateUI()
 updateLibrary().catch(() => toast('El almacenamiento local no está disponible. Puedes abrir un libro, pero no se guardará al cerrar.'))
 $('#file-dialog').showModal()

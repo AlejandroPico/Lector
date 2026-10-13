@@ -1,13 +1,15 @@
 import {test,expect} from '@playwright/test'
 import {coverEPUB,epub} from './fixtures.js'
 async function select(page,word='sosiego'){
-  await expect.poll(()=>page.evaluate(word=>document.querySelector('#reader').renderer.getContents()[0]?.doc.body.textContent.includes(word)??false,word)).toBe(true)
-  await page.evaluate(word=>{
-    const doc=document.querySelector('#reader').renderer.getContents()[0].doc,walker=doc.createTreeWalker(doc.body,NodeFilter.SHOW_TEXT);let node
+  await expect.poll(()=>page.evaluate(word=>{
+    const doc=document.querySelector('#reader').renderer.getContents()[0]?.doc;if(!doc?.body)return false
+    const walker=doc.createTreeWalker(doc.body,NodeFilter.SHOW_TEXT);let node
     while(node=walker.nextNode())if(node.textContent.includes(word))break
+    if(!node)return false
     const range=doc.createRange(),start=node.textContent.indexOf(word);range.setStart(node,start);range.setEnd(node,start+word.length)
     const selection=doc.defaultView.getSelection();selection.removeAllRanges();selection.addRange(range);doc.dispatchEvent(new PointerEvent('pointerup',{bubbles:true}))
-  },word);await expect(page.locator('#selection-menu')).toBeVisible()
+    return true
+  },word)).toBe(true);await expect(page.locator('#selection-menu')).toBeVisible()
 }
 async function open(page){await page.goto('/');await page.locator('#file-input').setInputFiles({name:'test.epub',mimeType:'application/epub+zip',buffer:await epub()});await expect(page.locator('#audio-toggle')).toBeEnabled()}
 async function notes(page){return page.evaluate(async()=>{const {allBooks}=await import('/src/storage.js');return (await allBooks()).flatMap(book=>book.notes.map(note=>({title:book.title,...note})))})}
@@ -29,7 +31,7 @@ test('colored marks retain their anchor, edit without duplicating and can be hid
 test('notebook combines books, edits another book and copies a quote with attribution',async({page})=>{
   await page.addInitScript(()=>{Object.defineProperty(navigator,'clipboard',{value:{writeText:async text=>window.__copied=text},configurable:true})})
   await open(page);await select(page);await page.locator('#annotate-selection').click();await page.locator('#note-text').fill('Nota del primero');await page.locator('#save-note').click()
-  await page.locator('#file-input').setInputFiles({name:'second.epub',mimeType:'application/epub+zip',buffer:await coverEPUB('Segundo libro')});await expect(page.locator('#opening-cover')).toBeVisible();await page.locator('#start-reading').click()
+  await page.locator('#file-input').setInputFiles({name:'second.epub',mimeType:'application/epub+zip',buffer:await coverEPUB('Segundo libro')});await expect(page.locator('#opening-cover')).toBeVisible();await page.locator('#start-reading').click();await expect(page.locator('#audio-toggle')).toBeFocused()
   await select(page);await page.locator('#annotate-selection').click();await page.locator('#note-text').fill('Nota del segundo');await page.locator('#save-note').click()
   await page.locator('#index-toggle').click();await page.getByRole('tab',{name:'Notas',exact:true}).click();await page.locator('#open-notebook').click();await expect(page.locator('.notebook-row')).toHaveCount(2)
   await page.locator('#notebook-search').fill('primero');await expect(page.locator('.notebook-row')).toHaveCount(1)

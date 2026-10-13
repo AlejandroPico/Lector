@@ -2,7 +2,22 @@
 
 Un lector de libros a toda pantalla, sin cabeceras decorativas ni tarjetas alrededor del texto. Dos columnas por defecto, controles discretos en la esquina superior derecha y un índice lateral que se puede ocultar.
 
-## Versión 1.0
+## Versión 1.1
+
+En **Ajustes → Idiomas y contexto → Lectura bilingüe**, abre una traducción del mismo libro en EPUB, MOBI, AZW3, DOCX, PDF con texto o TXT. Original y traducción se muestran juntos, con la tipografía elegida. La correspondencia inicial se basa en la posición: «Ajustar correspondencia» permite elegir capítulos, desplazar párrafos, vincular un párrafo concreto o dejarlo sin traducción. Los párrafos sin correspondencia siguen disponibles. «Continuar aquí» vuelve al pasaje en el lector; la voz narra el original y puede seguir y resaltar su texto en la vista paralela.
+
+La traducción y sus vinculaciones se guardan en IndexedDB, separadas del libro original, sus notas y sus posiciones. Puedes desactivar el guardado del archivo (seguirá disponible durante la sesión) o quitar únicamente la traducción. No se exportan ni descargan archivos automáticamente. Se aprovecha el texto que ya contiene cada documento: el OCR para PDF escaneados sigue previsto para 1.2.
+
+Al seleccionar texto, **«En contexto»** muestra la palabra y la frase que la rodea. Puedes corregir el fragmento, elegir idioma de respuesta y solicitar una explicación contextual o una traducción del fragmento. La definición local de diccionario se identifica aparte, con su procedencia y licencia; la explicación generada aparece solamente tras una petición al motor configurado. Seleccionar una palabra o abrir ajustes no envía el contenido a un servicio.
+
+El motor viene desactivado. En el mismo apartado de ajustes hay dos adaptadores:
+
+- **Ollama local**: dirección completa `http://127.0.0.1:11434/api/chat` y nombre de un modelo que tengas instalado. Lector no instala motores ni descarga modelos. Configura Ollama sin funciones de nube si necesitas funcionamiento exclusivamente local; permite el origen de Lector en `OLLAMA_ORIGINS` y los permisos de conexión local que solicite el navegador. Consulta la [API de Ollama](https://docs.ollama.com/api/chat) y su [configuración de conexión y nube](https://docs.ollama.com/faq).
+- **API compatible con Chat Completions**: dirección HTTPS completa, modelo y clave de sesión cuando el servicio la requiera. Por ejemplo, el formato documentado en [OpenAI Docs](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create). El servicio debe admitir conexiones desde el navegador; si necesita una pasarela, utiliza una propia con permisos de origen configurados. Una URL de otro protocolo requiere su adaptador.
+
+«Enviar fragmento» confirma cada consulta. Solo se envían la palabra/expresión, el fragmento visible y sus idiomas, junto con la instrucción de la tarea; no el libro entero ni sus notas. La clave no se guarda ni se incluye en las exportaciones y se borra al cambiar de dirección o cerrar la sesión. Se rechazan redirecciones y direcciones con credenciales o parámetros. Cada fragmento admite 3.000 caracteres y la generación se limita a 700 tokens. Cancelar interrumpe la espera del navegador; el proveedor puede haber iniciado su procesamiento. Los servicios externos pueden cobrar por uso. La calidad y disponibilidad dependen del motor y modelo configurados; las comprobaciones automáticas de los adaptadores utilizan respuestas simuladas, sin activar una cuenta de pago.
+
+## Notas de la versión 1.0
 
 El lateral Libros muestra «Abrir biblioteca completa» y la lista ordenada por última lectura; los libros sin abrir van después, por título. La biblioteca ampliada reserva el espacio a los libros: búsqueda, orden y botones de filtros, carpetas/catálogo y colecciones en una barra compacta. El embudo indica filtros activos y los abre en una ventana independiente. El selector de títulos/portadas del lateral conserva su propia vista y no aplica los filtros de la ventana.
 
@@ -67,7 +82,7 @@ En Ajustes → Lectura se puede alternar entre páginas y desplazamiento vertica
 
 El retorno de índice, búsquedas, enlaces y notas mantiene un historial por libro, con botones discretos y Alt+←/→. Las anclas guardadas identifican texto estable, también al cambiar tipografía, tamaño de pantalla o flujo. En PDF se muestra la página original; en EPUB solo si incluye una lista de páginas. El resto utiliza una referencia de sección, bloque y carácter, distinta de una página editorial.
 
-Los tiempos restantes de capítulo y libro y la referencia visible están apagados por defecto. Se estiman con palabras conocidas, tamaño de capítulos aún no abiertos y ritmo configurable de lectura o voz. No se abren todos los capítulos para calcularlos. El modo televisión amplía texto y controles y admite teclas de mando y gamepads expuestos por el navegador. Las pruebas verifican teclado y el mapeo de entradas; la compatibilidad de un mando físico depende del dispositivo y su navegador. La emisión a otros dispositivos queda para la versión 0.19.
+Los tiempos restantes de capítulo y libro y la referencia visible están apagados por defecto. Se estiman con palabras conocidas, tamaño de capítulos aún no abiertos y ritmo configurable de lectura o voz. No se abren todos los capítulos para calcularlos. El modo televisión amplía texto y controles y admite teclas de mando y gamepads expuestos por el navegador. Las pruebas verifican teclado y el mapeo de entradas; la compatibilidad de un mando físico depende del dispositivo y su navegador. La emisión a otros dispositivos queda para la versión 1.9.
 
 La biblioteca tiene un interruptor discreto para alternar títulos y portadas y una ventana ampliada accesible desde el panel lateral o los ajustes. La ventana comienza por portadas y recuerda su vista de forma independiente del lateral; ambas comparten colección y búsqueda. Los libros abiertos guardan su cubierta para el catálogo. Para carpetas de Calibre se prefiere su cubierta externa al abrir el libro elegido, y las portadas de otros libros solo se leen al pulsarlas. Si no hay cubierta externa, se obtiene del ebook seleccionado.
 

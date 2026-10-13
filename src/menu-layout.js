@@ -84,7 +84,7 @@ export function organizeMenus() {
   }
   $('#settings-search').addEventListener('input', event=>{
     const query = normalize(event.target.value)
-    for (const section of sections) {
+    for (const section of [...gear.children].filter(node=>node.matches('details'))) {
       section.hidden = !!query && !normalize(section.textContent).includes(query)
       if (query && !section.hidden) {
         section.open = true
@@ -92,5 +92,5 @@ export function organizeMenus() {
       }
     }
   })
-  return {moveSettings, clearSearch(){ $('#settings-search').value=''; for(const section of sections)section.hidden=false }}
+  return {moveSettings, clearSearch(){ $('#settings-search').value=''; for(const section of [...gear.children].filter(node=>node.matches('details')))section.hidden=false }}
 }

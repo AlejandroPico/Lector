@@ -403,6 +403,25 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 84%, transparent)
 .settings-search { margin: 10px 0; }
 #preferences-panel { width: min(420px,calc(100vw - 24px)); }
 .shared-settings .settings-section { margin-top: 12px; }
+.bilingual-dialog[open] { width: min(1500px,calc(100vw - 40px)); height: min(1000px,92dvh); padding: 18px 24px; display: flex; flex-direction: column; overflow: hidden; }
+.bilingual-dialog .panel-heading { flex: none; border-bottom: 1px solid var(--line); padding-bottom: 12px; margin-bottom: 12px; }
+.bilingual-actions { display: flex; gap: 5px; }
+.bilingual-chapters { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 28px; }
+.bilingual-chapters .field { margin: 0 0 12px; }
+.bilingual-text { min-height: 0; flex: 1; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+.bilingual-row { position: relative; display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 28px; padding: 12px 4px; }
+.bilingual-row p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.bilingual-translation { border-left: 1px solid var(--line); padding-left: 24px; }
+.bilingual-row.current { background: var(--hover); }
+.bilingual-jump { position: absolute; top: 0; left: calc(50% - 40px); opacity: 0; }
+.bilingual-row:hover .bilingual-jump,.bilingual-jump:focus-visible,.tv-mode .bilingual-jump { opacity: 1; }
+::highlight(parallel-spoken) { background: var(--highlight); color: var(--ink); }
+#bilingual-alignment { flex: none; max-height: 38dvh; overflow-y: auto; border-bottom: 1px solid var(--line); padding-bottom: 10px; margin-bottom: 10px; }
+#bilingual-alignment .field { margin: 0 0 8px; }
+#context-definition-link,#context-definition-license { display: inline-block; font-size: 11px; margin: 0 8px 8px 0; color: var(--muted); }
+#context-result { white-space: pre-wrap; overflow-wrap: anywhere; }
+#context-destination { overflow-wrap: anywhere; }
+.bilingual-dialog .error { flex: none; }
 @media (max-width: 700px) {
   .library-dialog[open] { width: 100dvw; height: 100dvh; max-width: none; max-height: none; margin: 0; padding: 12px; }
   .library-dialog .library-toolbar { grid-template-columns: minmax(80px,1fr) repeat(4,auto); gap: 4px; }
@@ -410,4 +429,11 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 84%, transparent)
   .library-toolbar .icon-button { width: 32px; height: 34px; }
   .library-toolbar .library-view-switch button { width: 26px; }
   #preferences-panel { width: calc(100vw - 24px); }
+  .bilingual-dialog[open] { width: 100dvw; height: 100dvh; max-width: none; max-height: none; margin: 0; padding: 12px; }
+  .bilingual-actions { gap: 0; }
+  .bilingual-actions .icon-button { width: 30px; height: 34px; }
+  .bilingual-dialog .panel-heading { gap: 4px; }
+  .bilingual-chapters,.bilingual-row { gap: 12px; }
+  .bilingual-translation { padding-left: 12px; }
+  .bilingual-jump { left: calc(50% - 32px); }
 }
