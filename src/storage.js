@@ -65,6 +65,8 @@ export const defaults = Object.freeze({
   appearance: 'minimal', libraryView: 'list', fullWidth: false,
   followSpeech: true, clickToRead: true, highlightMode: 'word',
   marginOuter: 10, marginInner: 28, hyphenate: false, customThemes: [],
+  showOpeningCover: true,
+  libraryDialogView: 'covers',
   voice: '', rate: 1, pitch: 1, language: 'es-ES', speechLanguage: 'auto',
   endpoint: 'https://api.openai.com/v1/audio/speech',
   model: 'gpt-4o-mini-tts', apiVoice: 'coral',
@@ -93,6 +95,7 @@ export function safeSettings(input = {}) {
   if (!['auto','es','ca','en','fr','de','pt','it','zh','ja','hi'].includes(value.uiLanguage)) value.uiLanguage = 'auto'
   if (!['auto','es','ca','en','fr','de','pt','it','zh','ja','hi'].includes(value.speechLanguage)) value.speechLanguage = 'auto'
   if (!['list','covers'].includes(value.libraryView)) value.libraryView = 'list'
+  if (!['list','covers'].includes(value.libraryDialogView)) value.libraryDialogView = 'covers'
   if (!['browser', 'openai'].includes(value.provider)) value.provider = 'browser'
   if (!['word','sentence'].includes(value.highlightMode)) value.highlightMode = 'word'
   return value

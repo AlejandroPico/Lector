@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { epub } from './fixtures.js'
+import { epub, coverEPUB } from './fixtures.js'
 import { readFile } from 'node:fs/promises'
 
 async function open(page, text) {
@@ -118,4 +118,75 @@ test('personal font loads into ebook, survives restart and can be removed',async
   await page.getByText('Fuentes personales',{exact:true}).click();await page.getByRole('button',{name:'Eliminar fuente',exact:true}).click()
   await expect(page.locator('[data-setting="font"]')).toHaveValue('Georgia')
   await expect(page.locator('[data-setting="font"] option')).toHaveCount(20)
+})
+
+test('opening cover fills the reader, zooms and continues to text without repeating cover',async ({page})=>{
+  await page.goto('/')
+  await page.locator('#file-input').setInputFiles({name:'cubierta.epub',mimeType:'application/epub+zip',buffer:await coverEPUB()})
+  await expect(page.locator('#file-dialog')).toBeHidden()
+  await expect(page.locator('#opening-cover')).toBeVisible()
+  const area=await page.locator('#reading-area').boundingBox(),image=await page.locator('#opening-cover-image').boundingBox()
+  expect(image.height).toBeGreaterThan(area.height*.8)
+  expect(Math.abs(image.x+image.width/2-area.x-area.width/2)).toBeLessThan(2)
+  await page.screenshot({path:'test-results/05-cover.png'})
+  await page.locator('#opening-cover-zoom').click();await expect(page.locator('#image-dialog')).toBeVisible()
+  await page.locator('#image-dialog .dialog-close').click()
+  await page.locator('#start-reading').click();await expect(page.locator('#opening-cover')).toBeHidden()
+  await expect.poll(()=>page.evaluate(()=>document.querySelector('#reader').renderer.getContents()[0].doc.body.textContent)).toContain('El sosiego')
+  await page.reload();await page.locator('.resume-button').first().click()
+  await expect(page.locator('#audio-toggle')).toBeEnabled();await expect(page.locator('#opening-cover')).toBeHidden()
+})
+test('expanded library shares search and cover view with sidebar without losing collection',async ({page})=>{
+  await page.goto('/')
+  for(const title of ['El jardín en silencio','El jardín de invierno']) {
+    await page.locator('#file-input').setInputFiles({name:`${title}.epub`,mimeType:'application/epub+zip',buffer:await coverEPUB(title)})
+    await expect(page.locator('#opening-cover')).toBeVisible();await page.locator('#start-reading').click()
+  }
+  await page.locator('#index-toggle').click();await page.getByRole('tab',{name:'Libros',exact:true}).click()
+  await expect(page.locator('.library-book')).toHaveCount(2)
+  await page.locator('#library-view-covers').click();await expect(page.locator('.catalog-cover img')).toHaveCount(2)
+  await page.locator('#library-expand').click();await expect(page.locator('#library-dialog')).toBeVisible()
+  await expect(page.locator('#library-dialog .catalog-cover img')).toHaveCount(2)
+  await page.screenshot({path:'test-results/05-library.png'})
+  await page.locator('#library-search').fill('invierno');await expect(page.locator('.library-book')).toHaveCount(1)
+  await page.locator('#library-dialog-close').click();await expect(page.locator('#library-dialog')).toBeHidden()
+  await expect(page.locator('#library-tab #library-search')).toHaveValue('invierno')
+  await page.locator('#library-search').fill('');await page.locator('#library-view-list').click()
+  await expect(page.locator('.catalog-cover')).toHaveCount(0);await expect(page.locator('.library-book')).toHaveCount(2)
+  await page.locator('#library-expand').click()
+  await expect(page.locator('#library-dialog .catalog-cover img')).toHaveCount(2)
+  await page.locator('#library-dialog .catalog-cover').first().click()
+  await expect(page.locator('#library-dialog')).toBeHidden()
+  await expect(page.locator('#book-title')).toHaveText('El jardín de invierno')
+})
+test('opening cover is optional and can be skipped when starting audio',async ({page})=>{
+  await mockSpeech(page);await page.goto('/')
+  const buffer=await coverEPUB()
+  await page.locator('#file-input').setInputFiles({name:'audio.epub',mimeType:'application/epub+zip',buffer})
+  await expect(page.locator('#opening-cover')).toBeVisible();await page.locator('#audio-toggle').click()
+  await expect(page.locator('#opening-cover')).toBeHidden()
+  await expect.poll(()=>page.evaluate(()=>window.__spoken.length)).toBe(1)
+  expect(await page.evaluate(()=>window.__spoken[0])).not.toContain('Cubierta')
+  await page.locator('#audio-toggle').click();await page.locator('#preferences-toggle').click()
+  await page.locator('#preferences-panel summary').filter({hasText:'Apariencia'}).click()
+  await page.locator('[data-setting="showOpeningCover"]').uncheck()
+  await page.locator('#file-input').setInputFiles({name:'otro.epub',mimeType:'application/epub+zip',buffer:await coverEPUB('Otra novela')})
+  await expect(page.locator('#audio-toggle')).toBeEnabled();await expect(page.locator('#opening-cover')).toBeHidden()
+  await expect.poll(()=>page.evaluate(()=>document.querySelector('#reader').renderer.getContents()[0].doc.body.textContent)).toContain('El sosiego')
+})
+
+test('mobile cover and expanded library fit the screen and use the chosen language',async ({browser})=>{
+  const context=await browser.newContext({locale:'fr-FR',viewport:{width:390,height:844},baseURL:'http://127.0.0.1:5177'})
+  const page=await context.newPage();await page.goto('/')
+  await page.locator('#file-input').setInputFiles({name:'mobile.epub',mimeType:'application/epub+zip',buffer:await coverEPUB()})
+  await expect(page.locator('#opening-cover')).toBeVisible()
+  await expect(page.locator('#start-reading')).toContainText('Commencer à lire')
+  await page.locator('#preferences-toggle').click();await page.locator('#preferences-panel summary').filter({hasText:'Bibliothèque'}).click()
+  await page.locator('[data-settings-tab="library"]').click();await expect(page.locator('#library-dialog')).toBeVisible()
+  await expect(page.locator('#library-dialog .catalog-cover img')).toHaveCount(1)
+  const box=await page.locator('#library-dialog').boundingBox()
+  expect(box.x).toBeGreaterThanOrEqual(0);expect(box.x+box.width).toBeLessThanOrEqual(390)
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(390)
+  await page.screenshot({path:'test-results/05-mobile-library.png'})
+  await context.close()
 })

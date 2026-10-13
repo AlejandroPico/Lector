@@ -2,7 +2,11 @@
 
 Un lector de libros a toda pantalla, sin cabeceras decorativas ni tarjetas alrededor del texto. Dos columnas por defecto, controles discretos en la esquina superior derecha y un índice lateral que se puede ocultar.
 
-## Versión 0.4
+## Versión 0.5
+
+La biblioteca tiene un interruptor discreto para alternar títulos y portadas y una ventana ampliada accesible desde el panel lateral o los ajustes. La ventana comienza por portadas y recuerda su vista de forma independiente del lateral; ambas comparten colección y búsqueda. Los libros abiertos guardan su cubierta para el catálogo. Para carpetas de Calibre se prefiere su cubierta externa al abrir el libro elegido, y las portadas de otros libros solo se leen al pulsarlas. Si no hay cubierta externa, se obtiene del ebook seleccionado.
+
+La primera apertura de un libro con cubierta la presenta grande y centrada, independiente de las columnas y sin alterar las posiciones del ebook. «Empezar a leer», siguiente página o Play llevan al texto. La cubierta se puede ampliar, desactivar desde Ajustes → Apariencia, y los libros ya leídos reanudan su posición.
 
 La rueda dentada organiza las opciones por categorías. Hay 20 opciones de tema y un editor de paletas personales con vista previa, guardado, copia e importación mediante JSON. Se pueden ajustar los márgenes exteriores y los espacios superiores e inferiores de página, activar el guionado por idioma (apagado inicialmente) y añadir fuentes personales guardadas en el navegador. Los archivos de la carpeta `fuentes` también se detectan durante desarrollo/compilación; consulta su README.
 

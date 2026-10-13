@@ -16,6 +16,19 @@ export async function epub() {
   return zip.generateAsync({ type: 'nodebuffer' })
 }
 
+export async function coverEPUB(title='El jardín en silencio') {
+  const zip=await JSZip.loadAsync(await epub())
+  let opf=await zip.file('OPS/book.opf').async('string')
+  opf=opf.replace('<dc:title>El jardín en silencio</dc:title>',`<dc:title>${title}</dc:title>`)
+    .replace('href="cover.png" media-type="image/png"','href="cover.svg" media-type="image/svg+xml"')
+    .replace('<manifest>','<manifest><item id="cover-page" href="cover.xhtml" media-type="application/xhtml+xml"/>')
+    .replace('<spine>','<spine><itemref idref="cover-page"/>')
+  zip.file('OPS/book.opf',opf)
+  zip.file('OPS/cover.xhtml','<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Cubierta</title></head><body><img src="cover.svg" width="80" height="120" alt="Cubierta"/></body></html>')
+  zip.file('OPS/cover.svg',`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900"><rect width="600" height="900" fill="#324f46"/><rect x="32" y="32" width="536" height="836" fill="none" stroke="#bdbb91"/><path d="M300 690V520M300 600C230 570 230 510 300 545M300 640C370 610 370 540 300 590" fill="none" stroke="#a4b396" stroke-width="5"/><text x="300" y="255" text-anchor="middle" fill="#f3ebd4" font-family="Georgia" font-size="36">${title}</text><text x="300" y="780" text-anchor="middle" fill="#bdbb91" font-family="Georgia" font-size="22">Libro de prueba</text></svg>`)
+  return zip.generateAsync({type:'nodebuffer'})
+}
+
 export async function docx() {
   const zip = new JSZip()
   zip.file('[Content_Types].xml', '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>')

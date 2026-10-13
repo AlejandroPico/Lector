@@ -10,3 +10,11 @@ it('resumes at a clicked word inside a sentence and keeps word ranges aligned', 
   expect(segments[0].range.toString()).toBe('estaba en calma.')
   expect(segments[0].wordRange(7,2).toString()).toBe('en')
 })
+
+it('does not count hidden DOM text when continuing at a clicked word',()=>{
+  const doc=new DOMParser().parseFromString('<p>El jardín <span hidden>contenido que no se narra</span><em>estaba</em> en calma.</p>','text/html')
+  const node=doc.querySelector('em').firstChild,point=doc.createRange();point.setStart(node,0);point.setEnd(node,6)
+  const segment=speechFrom(documentSpeech(doc),point,true)[0]
+  expect(segment.text).toBe('estaba en calma.')
+  expect(segment.wordRange(10,5).toString()).toBe('calma')
+})

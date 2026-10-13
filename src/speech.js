@@ -59,9 +59,15 @@ export function speechFrom(segments, point, exact = false) {
   if (first < 0) return []
   const rest = segments.slice(first), segment = rest[0]
   if (!exact || segment.range.compareBoundaryPoints(Range.START_TO_START, point) >= 0) return rest
-  const prefix = segment.range.cloneRange()
-  prefix.setEnd(point.startContainer, point.startOffset)
-  const offset = prefix.toString().length
+  // DOM text may contain hidden spans or omit the synthetic separators used
+  // for narration. Find the offset through our mapped ranges instead.
+  let low=0,high=segment.text.length
+  while(low<high) {
+    const middle=Math.floor((low+high)/2),range=segment.wordRange(middle,1)
+    if(range.compareBoundaryPoints(Range.START_TO_START,point)<0) low=middle+1
+    else high=middle
+  }
+  const offset=low
   const start = offset + segment.text.slice(offset).length - segment.text.slice(offset).trimStart().length
   rest[0] = { ...segment, text: segment.text.slice(start), range: segment.wordRange(start, segment.text.length-start),
     wordRange: (index,length) => segment.wordRange(start+index,length) }

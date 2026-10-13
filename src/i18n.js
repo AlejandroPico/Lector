@@ -207,7 +207,7 @@ export function t(source, language = active) { return catalog.get(source)?.[orde
 const originals = new WeakMap()
 const attributes = new WeakMap()
 let observer, root
-const excluded = '[data-user-content],script,style,textarea,#reading-area,#toc,#chapter-name,#note-quote,#footnote-content,#dictionary-word,#dictionary-definition,.library-book,.note-link,.resume-button'
+const excluded = '[data-user-content],script,style,textarea,#reader,#toc,#chapter-name,#note-quote,#footnote-content,#dictionary-word,#dictionary-definition,.library-book,.note-link,.resume-button'
 function translateNode(node) {
   if (node.nodeType !== 3 || node.parentElement?.closest(excluded)) return
   const stored = originals.get(node)

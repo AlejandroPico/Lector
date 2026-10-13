@@ -32,6 +32,7 @@ let book, record, selection, apiKey = '', busy = false, saveTimer, loadSequence 
 let storageWarning = false, focusBeforePanel
 let folderSources = [], localBooks = [], libraryLimit = 60, folderScan, libraryCoverURLs = []
 let zenHintTimer, narratedRange, themeDraft
+let openingCoverURL
 
 const rangeControl = (key, label, min, max, step, unit = '') => `<label class="field range-field"><span>${label}<output for="${key}" data-output="${key}">${settings[key]}${unit}</output></span><input id="${key}" type="range" data-setting="${key}" min="${min}" max="${max}" step="${step}" value="${settings[key]}" data-unit="${unit}"></label>`
 const check = (key, label) => `<label class="check-field"><input type="checkbox" data-setting="${key}" ${settings[key] ? 'checked' : ''}>${label}</label>`
@@ -70,17 +71,20 @@ $('#app').innerHTML = `
     </section>
     <section id="notes-tab" role="tabpanel" aria-label="Notas" hidden><div class="notes-actions"><button id="add-bookmark" class="text-button">${icon('bookmark')}Marcar página</button><button id="export-notes" class="icon-button" aria-label="Exportar notas" title="Exportar notas">${icon('download')}</button></div><div id="notes-list"></div></section>
     <section id="library-tab" role="tabpanel" aria-label="Biblioteca" hidden>
+      <div class="library-heading"><span>Biblioteca</span>${iconButton('library-expand','expand','Abrir biblioteca ampliada')}</div>
+      <div id="library-content">
       <div class="library-actions"><button id="add-folder" class="text-button">${icon('open')}Añadir carpeta</button>${iconButton('refresh-folders','auto','Actualizar carpetas')}</div>
       <div id="folder-list"></div>
       <p class="small muted folder-explanation">Los títulos se obtienen de los nombres de carpeta. EPUB, metadatos y portadas se leen solo cuando los eliges.</p>
       <div id="folder-progress" role="status" hidden><span id="folder-progress-text"></span><button id="cancel-scan" class="text-button">Cancelar escaneo</button></div>
       <label class="field"><span class="sr-only">Buscar título o autor</span><input id="library-search" type="search" placeholder="Buscar título o autor"></label>
-      <div class="library-controls"><label>Ordenar por<select id="library-sort"><option value="title">Título</option><option value="author">Autor</option><option value="recent">Recientes</option></select></label><label><span class="sr-only">Apariencia</span><select data-setting="libraryView"><option value="list">Título</option><option value="covers">Portadas</option></select></label></div>
+      <div class="library-controls"><label>Ordenar por<select id="library-sort"><option value="title">Título</option><option value="author">Autor</option><option value="recent">Recientes</option></select></label><div class="library-view-switch" role="group" aria-label="Vista de biblioteca"><button id="library-view-list" data-library-view="list" aria-label="Mostrar títulos" title="Mostrar títulos">${icon('list')}</button><button id="library-view-covers" data-library-view="covers" aria-label="Mostrar portadas" title="Mostrar portadas">${icon('grid')}</button></div></div>
       <div id="library-count" class="small muted"></div><div id="library-list"></div>
       <button id="library-more" class="text-button" hidden>Mostrar más</button>
+      </div>
     </section>
   </aside>
-  <main id="reading-area" aria-label="Libro"><foliate-view id="reader"></foliate-view></main>
+  <main id="reading-area" aria-label="Libro"><foliate-view id="reader"></foliate-view><section id="opening-cover" class="opening-cover" aria-label="Cubierta" hidden><button id="opening-cover-zoom" class="opening-cover-image" aria-label="Ampliar cubierta"><img id="opening-cover-image" alt=""></button><button id="start-reading" class="text-button">Empezar a leer ${icon('right')}</button></section></main>
   <footer class="reading-footer" hidden>
     ${iconButton('previous-page', 'left', 'Página anterior (←)')}
     <button id="position-button" class="position-button" title="Ir a una posición del libro"><span id="chapter-name"></span><span class="position-divider">·</span><span id="progress-text">0 %</span></button>
@@ -98,7 +102,7 @@ $('#app').innerHTML = `
     <p class="small muted">Las próximas apariencias se elegirán aquí.</p>
     </details>
     <details class="settings-section"><summary>Lectura</summary><button class="settings-link" data-settings-panel="appearance">Tipografía y página ${icon('right')}</button></details>
-    <details class="settings-section"><summary>Apariencia</summary><button class="settings-link" data-settings-panel="theme">Temas y colores ${icon('right')}</button></details>
+    <details class="settings-section"><summary>Apariencia</summary><button class="settings-link" data-settings-panel="theme">Temas y colores ${icon('right')}</button>${check('showOpeningCover','Mostrar cubierta al abrir un libro')}</details>
     <details class="settings-section"><summary>Voz</summary><button class="settings-link" data-settings-panel="voice">Lectura en voz alta ${icon('right')}</button></details>
     <details class="settings-section"><summary>Biblioteca</summary><button class="settings-link" data-settings-tab="library">Abrir biblioteca ${icon('right')}</button></details>
     <details class="settings-section"><summary>Notas y vocabulario</summary><button class="settings-link" data-settings-tab="notes">Ver notas ${icon('right')}</button></details>
@@ -168,6 +172,7 @@ $('#app').innerHTML = `
   <dialog id="note-dialog" class="small-dialog" aria-labelledby="note-title"><div class="panel-heading"><h2 id="note-title">Nota de lectura</h2><button class="icon-button dialog-close" aria-label="Cerrar">${icon('close')}</button></div><blockquote id="note-quote"></blockquote><label class="field">Tu nota<textarea id="note-text" rows="5" placeholder="Escribe una nota…"></textarea></label><button id="save-note" class="primary-button">Guardar nota</button></dialog>
   <dialog id="dictionary-dialog" class="small-dialog" aria-labelledby="dictionary-word"><div class="panel-heading"><h2 id="dictionary-word"></h2><button class="icon-button dialog-close" aria-label="Cerrar">${icon('close')}</button></div><p id="dictionary-definition"></p><a id="dictionary-external" class="text-link" target="_blank" rel="noopener noreferrer">Consultar en Wikcionario ↗</a><label class="text-button dictionary-import">Importar diccionario propio<input id="dictionary-file" type="file" accept=".json" hidden></label><p class="small muted">Glosario local básico y diccionarios JSON propios. Formato: {"palabra": "definición"}.</p></dialog>
   <dialog id="image-dialog" class="image-dialog" aria-label="Imagen ampliada"><div class="image-toolbar">${iconButton('zoom-out', 'minus', 'Reducir imagen')}<output id="zoom-level">100 %</output>${iconButton('zoom-in', 'plus', 'Ampliar imagen')}${iconButton('zoom-fit', 'expand', 'Ajustar imagen')}<button class="icon-button dialog-close" aria-label="Cerrar imagen">${icon('close')}</button></div><div class="image-stage"><img id="zoom-image" alt=""></div></dialog>
+  <dialog id="library-dialog" class="library-dialog" aria-labelledby="library-dialog-title"><div class="panel-heading"><h2 id="library-dialog-title">Biblioteca</h2><button id="library-dialog-close" class="icon-button" aria-label="Cerrar biblioteca">${icon('close')}</button></div><div id="library-dialog-content"></div></dialog>
   <dialog id="footnote-dialog" class="small-dialog" aria-labelledby="footnote-title"><div class="panel-heading"><h2 id="footnote-title">Nota del libro</h2><button class="icon-button dialog-close" aria-label="Cerrar">${icon('close')}</button></div><div id="footnote-content"></div></dialog>
   <dialog id="about-dialog" class="about-dialog" aria-labelledby="about-title">
     <header class="about-header">
@@ -182,7 +187,7 @@ $('#app').innerHTML = `
           <div><dt>Autor</dt><dd>Alejandro Pico</dd></div>
           <div><dt>Carácter</dt><dd>Proyecto personal</dd></div>
           <div><dt>Propósito</dt><dd>Lectura y escucha</dd></div>
-          <div><dt>Edición</dt><dd>Versión 0.4</dd></div>
+          <div><dt>Edición</dt><dd>Versión 0.5</dd></div>
         </dl>
       </aside>
       <div class="about-body">
@@ -300,6 +305,7 @@ function applySettings() {
   $('#api-voice-settings').hidden = settings.provider !== 'openai'
   $('#browser-voice-settings').hidden = settings.provider !== 'browser'
   speech.onHighlight(narratedRange)
+  if(!settings.showOpeningCover && !$('#opening-cover').hidden) attempt(()=>finishOpeningCover())()
   writeJSON('lector-settings', settings)
 }
 
@@ -402,10 +408,12 @@ function renderFolders() {
 }
 
 function renderLibrary() {
+  const display=$('#library-dialog').open?settings.libraryDialogView:settings.libraryView
   for (const url of libraryCoverURLs) URL.revokeObjectURL(url)
   libraryCoverURLs = []
   const query = $('#library-search').value.trim().toLocaleLowerCase(currentLanguage())
-  const linked = folderSources.flatMap(folder => folder.entries.map(entry => ({ ...entry, folder, kind: 'folder', id: `${folder.id}:${entry.key}` })))
+  const cachedCovers=new Map(localBooks.filter(item=>item.folderId).map(item=>[`${item.folderId}:${item.entryKey}`,item.coverBlob]))
+  const linked = folderSources.flatMap(folder => folder.entries.map(entry => ({ ...entry, coverBlob:entry.coverBlob??cachedCovers.get(`${folder.id}:${entry.key}`), folder, kind: 'folder', id: `${folder.id}:${entry.key}` })))
   const entries = [...localBooks.filter(item => !item.folderId || !folderSources.some(folder => folder.id === item.folderId)).map(item => ({ ...item, kind: 'local' })), ...linked]
   const filtered = entries.filter(item => `${item.title} ${item.author ?? ''}`.toLocaleLowerCase(currentLanguage()).includes(query))
   const sort = $('#library-sort').value
@@ -413,41 +421,33 @@ function renderLibrary() {
   filtered.sort((a,b) => sort === 'recent' ? (b.updatedAt ?? 0) - (a.updatedAt ?? 0) || collator.compare(a.title,b.title)
     : collator.compare(sort === 'author' ? a.author ?? '' : a.title, sort === 'author' ? b.author ?? '' : b.title))
   $('#library-count').textContent = `${filtered.length.toLocaleString(currentLanguage())} ${t('libros')}`
-  const list = $('#library-list'); list.replaceChildren(); list.classList.toggle('cover-grid', settings.libraryView === 'covers')
+  const list = $('#library-list'); list.replaceChildren(); list.classList.toggle('cover-grid', display === 'covers')
+  document.querySelectorAll('[data-library-view]').forEach(button=>button.setAttribute('aria-pressed',button.dataset.libraryView===display))
   if (!filtered.length) { const empty = document.createElement('p'); empty.className = 'small muted'; empty.textContent = t(query ? 'No hay resultados.' : 'Los libros que abras aparecerán aquí.'); list.append(empty) }
   for (const item of filtered.slice(0,libraryLimit)) {
     const row = document.createElement('div'); row.className = 'library-row'
-    if (settings.libraryView === 'covers') {
-      const cover = document.createElement('button'); cover.className = 'catalog-cover'; cover.title = t('Cargar portada'); cover.setAttribute('aria-label',t('Cargar portada'))
+    if (display === 'covers') {
+      const cover = document.createElement('button'); cover.className = 'catalog-cover'; cover.title = t(item.coverBlob?'Abrir libro':'Cargar portada'); cover.setAttribute('aria-label',`${cover.title}: ${item.title}`)
       if (item.coverBlob) {
         const image = document.createElement('img'); const url = URL.createObjectURL(item.coverBlob); libraryCoverURLs.push(url)
         image.src = url; image.alt = item.title; cover.append(image)
       } else cover.innerHTML = icon('book')
       cover.onclick = attempt(async () => {
-        if (item.coverBlob) { const url = URL.createObjectURL(item.coverBlob); showImage(url,item.title); $('#image-dialog').addEventListener('close',()=>URL.revokeObjectURL(url),{once:true}); return }
-        if (item.kind !== 'folder') { await openStored(item.id); $('#show-cover').click(); return }
-        if (!item.cover) { await openFolderEntry(item.folder,item); $('#show-cover').click(); return }
-        await ensureFolderPermission(item.folder.handle)
-        const file = await item.cover.getFile()
-        if (file.size > 12 * 1024 * 1024) throw new Error('La portada supera el límite de 12 MB.')
-        const original = item.folder.entries.find(entry=>entry.key===item.key); original.coverBlob = file
-        await saveFolder(item.folder); renderLibrary()
+        if (item.coverBlob) {await openLibraryItem(item);return}
+        cover.disabled=true;cover.setAttribute('aria-busy','true')
+        try {await loadLibraryCover(item);await updateLibrary()}finally{cover.disabled=false;cover.removeAttribute('aria-busy')}
       })
       row.append(cover)
     }
     const content = document.createElement('div'); content.className = 'library-entry'
     const button = document.createElement('button'); button.className = 'library-book'; button.dataset.userContent = ''; button.textContent = item.title
-    button.onclick = attempt(async () => {
-      if (item.kind === 'folder') await openFolderEntry(item.folder,item)
-      else if (item.file || item.fileHandle) await openStored(item.id)
-      else { toast('Vuelve a elegir el archivo para recuperar sus notas y su posición.'); $('#file-input').click() }
-    })
+    button.onclick = attempt(()=>openLibraryItem(item))
     content.append(button)
     if (item.author) { const author = document.createElement('span'); author.className = 'small muted'; author.dataset.userContent=''; author.textContent = item.author; content.append(author) }
     if (item.kind === 'folder') {
       const formats = document.createElement('div'); formats.className = 'catalog-formats'
       for (const format of item.formats) {
-        const formatButton = document.createElement('button'); formatButton.textContent = format.extension.toUpperCase(); formatButton.onclick = attempt(()=>openFolderEntry(item.folder,item,format)); formats.append(formatButton)
+        const formatButton = document.createElement('button'); formatButton.textContent = format.extension.toUpperCase(); formatButton.onclick = attempt(()=>{closeLibraryDialog();return openFolderEntry(item.folder,item,format)}); formats.append(formatButton)
       }
       content.append(formats)
       if (item.metadata) {
@@ -465,13 +465,58 @@ function renderLibrary() {
       const remove = document.createElement('button'); remove.className = 'icon-button'; remove.innerHTML = icon('trash'); remove.title = t('Quitar de la biblioteca'); remove.setAttribute('aria-label',t('Quitar de la biblioteca'))
       remove.onclick = attempt(async () => {
         if (item.notes?.length && !confirm(`${t('Quitar de la biblioteca')}: «${item.title}» (${item.notes.length})?`)) return
-        if (record?.id === item.id) { clearTimeout(saveTimer); speech.stop(); view.close(); book?.destroy?.(); book = null; record = null; $('#audio-toggle').disabled = true; $('.reading-footer').hidden = true }
+        if (record?.id === item.id) { clearTimeout(saveTimer); speech.stop();clearOpeningCover(); view.close(); book?.destroy?.(); book = null; record = null; $('#audio-toggle').disabled = true; $('.reading-footer').hidden = true }
         await removeBook(item.id); await updateLibrary()
       }); row.append(remove)
     }
     list.append(row)
   }
   $('#library-more').hidden = filtered.length <= libraryLimit
+}
+
+function openLibraryDialog() {
+  closePanels();$('#file-dialog').close()
+  $('#library-dialog-content').append($('#library-content'))
+  $('#library-dialog').showModal();renderLibrary()
+}
+function closeLibraryDialog() { $('#library-dialog').close() }
+$('#library-dialog').addEventListener('close',()=>{if(!$('#library-dialog').open) {$('#library-tab').append($('#library-content'));renderLibrary()}})
+$('#library-dialog-close').onclick=closeLibraryDialog
+$('#library-expand').onclick=openLibraryDialog
+document.querySelectorAll('[data-library-view]').forEach(button=>button.onclick=()=>{
+  settings[$('#library-dialog').open?'libraryDialogView':'libraryView']=button.dataset.libraryView;writeJSON('lector-settings',settings);renderLibrary()
+})
+async function openLibraryItem(item) {
+  closeLibraryDialog()
+  if(item.kind==='folder') await openFolderEntry(item.folder,item)
+  else if(item.file || item.fileHandle) await openStored(item.id)
+  else {toast('Vuelve a elegir el archivo para recuperar sus notas y su posición.');$('#file-input').click()}
+}
+async function coverDimensions(blob) {
+  if(!(blob instanceof Blob) || !blob.size) throw new Error(t('Este libro no incluye una portada identificada.'))
+  if(blob.size>12*1024*1024) throw new Error(t('La portada supera el límite de 12 MB.'))
+  const url=URL.createObjectURL(blob),image=new Image();image.src=url
+  try {await image.decode();return {width:image.naturalWidth,height:image.naturalHeight}}
+  finally{URL.revokeObjectURL(url)}
+}
+async function loadLibraryCover(item) {
+  let cover,imported
+  try {
+    if(item.kind==='folder') {
+      await ensureFolderPermission(item.folder.handle)
+      if(item.cover) cover=await item.cover.getFile()
+      else {const file=await item.formats[0].handle.getFile();if(file.size>100*1024*1024) throw new Error(t('El límite de esta versión es de 100 MB por archivo.'));imported=await importBook(file,()=>{});cover=await imported.getCover?.()}
+    } else if(record?.id===item.id) cover=record.coverBlob??await book?.getCover?.()
+    else if(item.file || item.fileHandle) {
+      if(item.fileHandle) await ensureFolderPermission(item.fileHandle)
+      const file=item.fileHandle?await item.fileHandle.getFile():new File([item.file],item.filename,{type:item.file.type})
+      imported=await importBook(file,()=>{});cover=await imported.getCover?.()
+    } else throw new Error(t('Vuelve a elegir el archivo para recuperar sus notas y su posición.'))
+    await coverDimensions(cover)
+    if(item.kind==='folder') {
+      item.folder.entries.find(entry=>entry.key===item.key).coverBlob=cover;await saveFolder(item.folder)
+    } else {await saveBook({...item,kind:undefined,coverBlob:cover});if(record?.id===item.id) record.coverBlob=cover}
+  } finally{imported?.destroy?.()}
 }
 
 async function openFolderEntry(folder, entry, format = entry.formats[0]) {
@@ -481,10 +526,14 @@ async function openFolderEntry(folder, entry, format = entry.formats[0]) {
   if (file.size > 100 * 1024 * 1024) throw new Error('El límite de esta versión es de 100 MB por archivo.')
   const id = await fileId(file)
   const previous = await getBook(id)
-  await openFile(file, { ...previous, id, folderId: folder.id, entryKey: entry.key, fileHandle: format.handle, author: entry.author, catalogTitle: entry.opfLoaded ? entry.title : undefined })
+  let coverBlob=entry.coverBlob??previous?.coverBlob
+  if(!coverBlob && entry.cover) {
+    try {coverBlob=await entry.cover.getFile();await coverDimensions(coverBlob)}catch{coverBlob=undefined;toast('No se pudo mostrar la cubierta.')}
+  }
+  await openFile(file, { ...previous, id, folderId: folder.id, entryKey: entry.key, fileHandle: format.handle, author: entry.author, coverBlob, catalogTitle: entry.opfLoaded ? entry.title : undefined })
   if (record?.id === id) {
     const original = folder.entries.find(item=>item.key===entry.key)
-    original.updatedAt = Date.now(); await saveFolder(folder); await updateLibrary()
+    original.updatedAt = Date.now();original.coverBlob=record.coverBlob; await saveFolder(folder); await updateLibrary()
   }
   if (innerWidth < 900) sidebar(false)
 }
@@ -528,7 +577,7 @@ async function openStored(id) {
 async function openFile(file, saved) {
   if (busy) return
   busy = true; const sequence = ++loadSequence
-  $('#file-error').hidden = true; closePanels(); speech.stop()
+  $('#file-error').hidden = true; closePanels(); speech.stop();clearOpeningCover()
   $('#loading').hidden = false; $('#loading-text').textContent = 'Abriendo libro…'
   let imported
   try {
@@ -540,7 +589,7 @@ async function openFile(file, saved) {
     const title = saved?.catalogTitle || metadataText(imported.metadata?.title) || file.name
     const nextRecord = { id, title, filename: file.name, file: saved?.fileHandle ? undefined : $('#remember-file').checked ? file : undefined,
       fileHandle: saved?.fileHandle, folderId: saved?.folderId, entryKey: saved?.entryKey, catalogTitle: saved?.catalogTitle, author: saved?.author ?? metadataText(imported.metadata?.author), coverBlob: saved?.coverBlob,
-      notes: saved?.notes ?? [], cfi: saved?.cfi, fraction: Number.isFinite(saved?.fraction) ? saved.fraction : 0, updatedAt: Date.now() }
+      notes: saved?.notes ?? [], cfi: saved?.cfi, coverSeen:saved?.coverSeen??Boolean(saved?.cfi), fraction: Number.isFinite(saved?.fraction) ? saved.fraction : 0, updatedAt: Date.now() }
     clearTimeout(saveTimer)
     view.close(); book?.destroy?.(); book = null; record = null
     await view.open(imported)
@@ -556,7 +605,15 @@ async function openFile(file, saved) {
     $('#book-title').dataset.userContent = ''; $('#book-title').textContent = title
     $('#toc').replaceChildren()
     renderTOC(book.toc?.length ? book.toc : book.sections.map((section, index) => ({ label: `Sección ${index + 1}`, href: index })), $('#toc'))
-    $('#show-cover').hidden = !book.getCover
+    let cover=record.coverBlob
+    try {
+      cover??=await book.getCover?.()
+      const size=cover?await coverDimensions(cover):null
+      record.coverBlob=cover
+      if(size && size.width>4 && size.height>4 && settings.showOpeningCover && !record.coverSeen) showOpeningCover(cover,title)
+      else {record.coverSeen=true;if(!saved?.cfi) await skipNativeCoverPage()}
+    } catch {cover=undefined;record.coverBlob=undefined;toast('No se pudo mostrar la cubierta.')}
+    $('#show-cover').hidden = !cover
     $('#audio-toggle').disabled = false; $('.reading-footer').hidden = false
     $('#search-results').hidden = true; $('#search-query').value = ''
     $('#file-dialog').close(); renderNotes(); saveRecord()
@@ -572,6 +629,7 @@ async function openFile(file, saved) {
 
 view.addEventListener('relocate', ({ detail }) => {
   if (!record) return
+  if(!$('#opening-cover').hidden && detail.reason==='navigation') attempt(()=>finishOpeningCover(false))()
   record.cfi = detail.cfi; record.fraction = Number.isFinite(detail.fraction) ? detail.fraction : record.fraction
   $('#chapter-name').textContent = detail.tocItem?.label ?? ''
   $('#progress-text').textContent = `${Math.round(record.fraction * 100)} %`
@@ -694,8 +752,33 @@ function fitImage() {
   imageViewer.fit()
 }
 
+function clearOpeningCover() {
+  $('#opening-cover').hidden=true;view.inert=false;$('#reading-area').classList.remove('cover-open')
+  $('#opening-cover-image').removeAttribute('src')
+  if(openingCoverURL) URL.revokeObjectURL(openingCoverURL)
+  openingCoverURL=undefined
+}
+function showOpeningCover(cover,title) {
+  clearOpeningCover();openingCoverURL=URL.createObjectURL(cover)
+  $('#opening-cover-image').src=openingCoverURL;$('#opening-cover-image').alt=title
+  $('#opening-cover').hidden=false;view.inert=true;$('#reading-area').classList.add('cover-open')
+}
+async function skipNativeCoverPage() {
+  const current=view.renderer?.getContents()[0]
+  if(current?.doc.body.classList.contains('reader-cover') && current.index+1<book.sections.length) await view.goTo(current.index+1)
+}
+async function finishOpeningCover(skip=true) {
+  if($('#opening-cover').hidden) return
+  clearOpeningCover();if(record) record.coverSeen=true
+  if(skip) await skipNativeCoverPage()
+  saveRecord()
+}
+$('#start-reading').onclick=attempt(async()=>{await finishOpeningCover();$('#audio-toggle').focus({preventScroll:true})})
+$('#opening-cover-zoom').onclick=()=>{if(openingCoverURL) showImage(openingCoverURL,record?.title??'')}
+
 async function changePage(direction) {
   if (!book || busy || document.querySelector('dialog[open]')) return
+  if(!$('#opening-cover').hidden) {if(direction>0) await finishOpeningCover();return}
   speech.stop(); $('#selection-menu').hidden = true
   await (direction > 0 ? view.next() : view.prev())
 }
@@ -716,7 +799,7 @@ function onKey(event) {
   else if (event.key === 'ArrowLeft' || event.key === 'PageUp') { event.preventDefault(); attempt(() => changePage(-1))() }
   else if (event.key.toLowerCase() === 'z') setZen(!document.body.classList.contains('zen'))
   else if (event.key.toLowerCase() === 'f') attempt(toggleFullscreen)()
-  else if (event.code === 'Space' && book && !target.closest?.('button,a')) { event.preventDefault(); attempt(() => speech.toggle())() }
+  else if (event.code === 'Space' && book && !target.closest?.('button,a')) { event.preventDefault(); $('#audio-toggle').click() }
 }
 async function toggleFullscreen() {
   if (document.fullscreenElement) await document.exitFullscreen()
@@ -730,7 +813,7 @@ $('#open-file').onclick = () => { updateLibrary().catch(() => {}); $('#file-dial
 $('#choose-file').onclick = () => $('#file-input').click()
 $('#dismiss-file').onclick = () => $('#file-dialog').close()
 $('#file-input').onchange = () => { if ($('#file-input').files[0]) openFile($('#file-input').files[0]) }
-$('#audio-toggle').onclick = attempt(() => speech.toggle())
+$('#audio-toggle').onclick = attempt(async()=>{await finishOpeningCover();await speech.toggle()})
 $('#audio-stop').onclick = () => speech.stop()
 $('#zen-toggle').onclick = () => setZen(!document.body.classList.contains('zen'))
 $('#zen-exit').onclick = () => setZen(false)
@@ -764,6 +847,7 @@ document.querySelectorAll('[data-setting]').forEach(input => {
 $('#api-key').oninput = event => { speech.stop(); apiKey = event.target.value.trim() }
 document.querySelectorAll('[data-settings-panel]').forEach(button=>button.onclick=()=>togglePanel(button.dataset.settingsPanel))
 document.querySelectorAll('[data-settings-tab]').forEach(button=>button.onclick=()=>{
+  if(button.dataset.settingsTab==='library') {openLibraryDialog();return}
   closePanels(); sidebar(true); document.querySelector(`[data-tab="${button.dataset.settingsTab}"]`).click()
 })
 $('#settings-fullscreen').onclick=()=>$('#fullscreen-toggle').click()
@@ -861,7 +945,7 @@ $('#voice-preview').onclick = attempt(async () => {
   }
 })
 $('#show-cover').onclick = attempt(async () => {
-  const cover = await book?.getCover?.()
+  const cover = record?.coverBlob ?? await book?.getCover?.()
   if (!cover) { toast('Este libro no incluye una portada identificada.'); return }
   if (record) { record.coverBlob = cover; saveRecord(); await updateLibrary() }
   const url = URL.createObjectURL(cover)
