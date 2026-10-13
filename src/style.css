@@ -49,6 +49,16 @@ svg { flex: 0 0 auto; }
 .toolbar { position: fixed; inset: 0 0 auto; height: 64px; z-index: 10; display: flex; align-items: center; justify-content: space-between; padding: 0 28px; background: var(--paper); }
 .toolbar-left, .toolbar-right { display: flex; align-items: center; gap: 6px; }
 .toolbar-right { margin-left: auto; }
+.toolbar { display: grid; grid-template-columns: 1fr auto 1fr; }
+.toolbar-reading { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.toolbar-right { justify-self: end; }
+#audio-toggle { width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--accent); color: var(--accent); }
+#audio-toggle.active { background: var(--accent); color: var(--paper); }
+@media (max-width: 700px) {
+  .toolbar { grid-template-columns: auto minmax(100px,1fr) auto; }
+  .toolbar-reading { gap: 1px; }
+  #audio-toggle { width: 36px; height: 36px; }
+}
 .icon-button { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 8px; color: var(--muted); transition: background-color .15s, color .15s; }
 .icon-button:hover:not(:disabled), .icon-button.active, .icon-button[aria-expanded="true"], .icon-button[aria-pressed="true"] { background: var(--hover); color: var(--accent); }
 .toolbar-separator { height: 16px; width: 1px; background: var(--line); margin: 0 7px; }

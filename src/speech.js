@@ -52,6 +52,60 @@ export function documentSpeech(doc, language = 'es') {
   })).filter(segment => segment.range)
 }
 
+// Slice the text and DOM range together when resuming inside a sentence.
+export function speechFrom(segments, point, exact = false) {
+  if (!point) return segments
+  const first = segments.findIndex(segment => segment.range.compareBoundaryPoints(Range.START_TO_END, point) > 0)
+  if (first < 0) return []
+  const rest = segments.slice(first), segment = rest[0]
+  if (!exact || segment.range.compareBoundaryPoints(Range.START_TO_START, point) >= 0) return rest
+  const prefix = segment.range.cloneRange()
+  prefix.setEnd(point.startContainer, point.startOffset)
+  const offset = prefix.toString().length
+  const start = offset + segment.text.slice(offset).length - segment.text.slice(offset).trimStart().length
+  rest[0] = { ...segment, text: segment.text.slice(start), range: segment.wordRange(start, segment.text.length-start),
+    wordRange: (index,length) => segment.wordRange(start+index,length) }
+  return rest.filter(item => item.text && item.range)
+}
+
+export function wordAtPoint(doc, x, y, language) {
+  const caret = doc.caretPositionFromPoint?.(x,y)
+  const range = caret ? null : doc.caretRangeFromPoint?.(x,y)
+  const node = caret?.offsetNode ?? range?.startContainer, offset = caret?.offset ?? range?.startOffset
+  if (!node || node.nodeType !== Node.TEXT_NODE) return null
+  for (const word of new Intl.Segmenter(language,{granularity:'word'}).segment(node.textContent)) {
+    if (!word.isWordLike || offset < word.index || offset > word.index+word.segment.length) continue
+    const selected = doc.createRange()
+    selected.setStart(node,word.index); selected.setEnd(node,word.index+word.segment.length)
+    return selected
+  }
+  return null
+}
+
+// Page-sized fragments keep voices without boundary events on visible text.
+export function speechPages(segments, renderer, language) {
+  if (renderer.scrolled || !renderer.size) return segments
+  return segments.flatMap(segment => {
+    const doc = segment.range.startContainer.ownerDocument
+    const vertical = doc.defaultView.getComputedStyle(doc.body).writingMode.startsWith('vertical')
+    const cuts = [0]
+    let page
+    for (const word of new Intl.Segmenter(language,{granularity:'word'}).segment(segment.text)) {
+      if (!word.isWordLike) continue
+      const rect = [...segment.wordRange(word.index,word.segment.length).getClientRects()].find(rect => rect.width>0 && rect.height>0)
+      if (!rect) continue
+      const next = Math.floor((vertical ? rect.top : rect.left)/renderer.size)
+      if (page !== undefined && next !== page) cuts.push(word.index)
+      page = next
+    }
+    cuts.push(segment.text.length)
+    return cuts.slice(0,-1).map((offset,index) => {
+      const text = segment.text.slice(offset,cuts[index+1]).trimEnd()
+      return { ...segment,text,range:segment.wordRange(offset,text.length),wordRange:(start,length)=>segment.wordRange(offset+start,length) }
+    }).filter(item=>item.text && item.range)
+  })
+}
+
 export function validateEndpoint(value) {
   const url = new URL(value)
   if (url.username || url.password || url.hash || url.search) throw new Error('Usa una dirección sin credenciales, parámetros ni fragmentos.')
@@ -75,7 +129,8 @@ export class SpeechController {
     this.pending.clear()
     this.onHighlight(null); this.setState('stopped')
   }
-  async toggle(startRange) {
+  async restart(range) { this.stop(); return this.toggle(range,true) }
+  async toggle(startRange, exact = false) {
     if (this.state === 'playing') {
       if (this.audio) this.audio.pause()
       else globalThis.speechSynthesis?.pause()
@@ -98,24 +153,28 @@ export class SpeechController {
     const run = this.run
     const visible = startRange ?? this.view.lastLocation?.range
     this.setState('playing')
-    await this.readSection(run, visible)
+    await this.readSection(run, visible, exact)
   }
-  async readSection(run, visible) {
+  follow(range, run = this.run) {
+    if (!range || run !== this.run || !this.settings().followSpeech) return
+    const visible = this.view.lastLocation?.range
+    if (visible && visible.startContainer.ownerDocument === range.startContainer.ownerDocument
+      && range.compareBoundaryPoints(Range.START_TO_START,visible)>=0
+      && range.compareBoundaryPoints(Range.END_TO_END,visible)<=0) return
+    this.view.renderer.scrollToAnchor(range,true).catch(error=>{ if (run===this.run) this.onError(error.message) })
+  }
+  async readSection(run, visible, exact = false) {
     if (run !== this.run) return
     try {
       const { doc, index } = this.view.renderer.getContents()[0]
-      const segments = documentSpeech(doc, this.settings().language)
-      let from = 0
-      if (visible) {
-        // START_TO_END compares this range's end with the source range's start.
-        const found = segments.findIndex(segment => segment.range.compareBoundaryPoints(Range.START_TO_END, visible) > 0)
-        if (found >= 0) from = found
-      }
+      const settings = this.settings()
+      let segments = speechFrom(documentSpeech(doc,settings.language),visible,exact)
+      if (settings.followSpeech) segments = speechPages(segments,this.view.renderer,settings.language)
       if (!segments.length) { this.stop(); this.onError('Esta sección no contiene texto para narrar.'); return }
-      for (let i = from; i < segments.length; i++) {
+      for (let i = 0; i < segments.length; i++) {
         if (run !== this.run) return
         const segment = segments[i]
-        await this.view.renderer.scrollToAnchor(segment.range, true)
+        if (this.settings().followSpeech) await this.view.renderer.scrollToAnchor(segment.range,true)
         if (run !== this.run) return
         this.onHighlight(segment.range)
         if (this.settings().provider === 'openai') await this.speakAPI(segment, run)
@@ -143,7 +202,9 @@ export class SpeechController {
         if (run !== this.run || event.name !== 'word') return
         const tail = segment.text.slice(event.charIndex)
         const length = event.charLength || tail.match(/^\S+/)?.[0].length || 1
-        this.onHighlight(segment.wordRange?.(event.charIndex, length) ?? segment.range)
+        const word = segment.wordRange?.(event.charIndex,length) ?? segment.range
+        this.follow(word,run)
+        this.onHighlight(this.settings().highlightMode==='sentence' ? segment.range : word)
       }
       const finish = () => { this.pending.delete(finish); resolve() }
       this.pending.add(finish)

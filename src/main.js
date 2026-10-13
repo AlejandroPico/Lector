@@ -8,7 +8,7 @@ import 'foliate-js/view.js'
 import { Overlayer } from 'foliate-js/overlayer.js'
 import { importBook, escapeHTML, metadataText, pdfPageImage } from './books.js'
 import { allBooks, allFolders, saveFolder, removeFolder, fileId, getBook, saveBook, removeBook, defaults, readJSON, writeJSON, effectiveTheme, safeSettings } from './storage.js'
-import { SpeechController, validateEndpoint } from './speech.js'
+import { SpeechController, validateEndpoint, wordAtPoint } from './speech.js'
 import { lookup, normalizeWord, importDictionary } from './dictionary.js'
 import { icon, iconButton } from './icons.js'
 import { fonts, themes, themeById } from './presentation.js'
@@ -25,7 +25,7 @@ setUILanguage(settings.uiLanguage)
 let book, record, selection, apiKey = '', busy = false, saveTimer, loadSequence = 0, searchSequence = 0
 let storageWarning = false, focusBeforePanel
 let folderSources = [], localBooks = [], libraryLimit = 60, folderScan, libraryCoverURLs = []
-let zenHintTimer
+let zenHintTimer, narratedRange
 
 const rangeControl = (key, label, min, max, step, unit = '') => `<label class="field range-field"><span>${label}<output for="${key}" data-output="${key}">${settings[key]}${unit}</output></span><input id="${key}" type="range" data-setting="${key}" min="${min}" max="${max}" step="${step}" value="${settings[key]}" data-unit="${unit}"></label>`
 const check = (key, label) => `<label class="check-field"><input type="checkbox" data-setting="${key}" ${settings[key] ? 'checked' : ''}>${label}</label>`
@@ -34,11 +34,12 @@ const themePicker = `<div class="theme-options" role="group" aria-label="Tema">$
 $('#app').innerHTML = `
   <header class="toolbar" aria-label="Controles del lector">
     <div class="toolbar-left">${iconButton('index-toggle', 'index', 'Índice y biblioteca', 'aria-expanded="false" aria-controls="sidebar"')}</div>
-    <div class="toolbar-right">
+    <div class="toolbar-reading">
       ${iconButton('open-file', 'open', 'Abrir documento (Ctrl+O)')}
       ${iconButton('audio-toggle', 'play', 'Leer en voz alta', 'disabled')}
       ${iconButton('voice-toggle', 'volume', 'Ajustes de voz', 'aria-expanded="false" aria-controls="voice-panel"')}
-      <span class="toolbar-separator"></span>
+    </div>
+    <div class="toolbar-right">
       ${iconButton('appearance-toggle', 'type', 'Tipografía y página', 'aria-expanded="false" aria-controls="appearance-panel"')}
       ${iconButton('theme-toggle', 'sun', 'Tema', 'aria-expanded="false" aria-controls="theme-panel"')}
       ${iconButton('zen-toggle', 'zen', 'Modo zen (Z)', 'aria-pressed="false"')}
@@ -122,6 +123,9 @@ $('#app').innerHTML = `
       <p class="small muted">Esta versión usa una voz por lectura. El reparto automático de personajes queda para una versión posterior. El resaltado de API sigue la frase, sin sincronización palabra a palabra.</p>
     </div>
     ${rangeControl('rate', 'Velocidad', 0.5, 2, 0.05, ' ×')}${check('highlight', 'Resaltar el texto narrado')}
+    <label class="field">Resaltado<select data-setting="highlightMode"><option value="word">Palabra</option><option value="sentence">Frase</option></select></label>
+    ${check('followSpeech', 'Seguir la lectura automáticamente')}${check('clickToRead', 'Continuar desde la palabra pulsada')}
+    <p class="small muted">El seguimiento por palabra depende de la voz. Si no informa de las palabras, se sigue por fragmentos de página.</p>
     <div class="voice-actions"><button id="voice-preview" class="text-button">${icon('play')}Probar voz</button><button id="audio-stop" class="text-button">${icon('stop')}Detener</button></div>
   </aside>
   <div id="selection-menu" class="selection-menu" role="toolbar" aria-label="Texto seleccionado" hidden><button id="define-selection">Consultar</button><button id="annotate-selection">Anotar</button><button id="speak-selection">Leer desde aquí</button></div>
@@ -151,7 +155,7 @@ $('#app').innerHTML = `
           <div><dt>Autor</dt><dd>Alejandro Pico</dd></div>
           <div><dt>Carácter</dt><dd>Proyecto personal</dd></div>
           <div><dt>Propósito</dt><dd>Lectura y escucha</dd></div>
-          <div><dt>Edición</dt><dd>Versión 0.2</dd></div>
+          <div><dt>Edición</dt><dd>Versión 0.3</dd></div>
         </dl>
       </aside>
       <div class="about-body">
@@ -201,6 +205,7 @@ const speech = new SpeechController({
   },
   onError: message => { toast(message, 8000); if (settings.provider === 'openai' && !apiKey) togglePanel('voice') },
   onHighlight(range) {
+    narratedRange = range
     for (const { doc } of view.renderer?.getContents() ?? []) doc.defaultView.CSS?.highlights?.delete('spoken')
     if (!range || !settings.highlight) return
     const win = range.startContainer.ownerDocument.defaultView
@@ -265,6 +270,7 @@ function applySettings() {
   document.querySelectorAll('button[data-theme]').forEach(button => button.setAttribute('aria-pressed', button.dataset.theme === settings.theme))
   $('#api-voice-settings').hidden = settings.provider !== 'openai'
   $('#browser-voice-settings').hidden = settings.provider !== 'browser'
+  speech.onHighlight(narratedRange)
   writeJSON('lector-settings', settings)
 }
 
@@ -553,7 +559,8 @@ view.addEventListener('load', ({ detail: { doc, index } }) => {
   doc.querySelectorAll('[data-no-speech]').forEach(el => { if (!el.querySelector('button')) el.textContent = t(el.textContent.trim()) })
   doc.querySelectorAll('.pdf-original').forEach(button => button.textContent = t('Ver página original'))
   doc.addEventListener('keydown', onKey)
-  doc.addEventListener('pointerdown', () => { closePanels(); $('#selection-menu').hidden = true })
+  let press
+  doc.addEventListener('pointerdown', event => { press={x:event.clientX,y:event.clientY}; closePanels(); $('#selection-menu').hidden = true })
   doc.addEventListener('pointerup', () => {
     setTimeout(() => {
       const selected = doc.defaultView.getSelection()
@@ -577,7 +584,12 @@ view.addEventListener('load', ({ detail: { doc, index } }) => {
     const pdfButton = event.target.closest('[data-pdf-page]')
     if (pdfButton && book?.pdf) {
       showImage(await pdfPageImage(book.pdf, Number(pdfButton.dataset.pdfPage)), `Página ${pdfButton.dataset.pdfPage}`)
+      return
     }
+    if (!settings.clickToRead || !['playing','paused'].includes(speech.state) || event.target.closest('a,button,input')
+      || doc.defaultView.getSelection()?.toString().trim() || !press || Math.hypot(event.clientX-press.x,event.clientY-press.y)>6) return
+    const word = wordAtPoint(doc,event.clientX,event.clientY,settings.language)
+    if (word) { event.preventDefault(); await speech.restart(word) }
   }))
 })
 
@@ -771,7 +783,7 @@ $('#save-note').onclick = attempt(async () => {
   saveRecord(); renderNotes(); $('#note-dialog').close(); toast('Nota guardada')
 })
 $('#speak-selection').onclick = attempt(async () => {
-  speech.stop(); await view.select(selection.cfi); $('#selection-menu').hidden = true; await speech.toggle(selection.range)
+  speech.stop(); await view.select(selection.cfi); $('#selection-menu').hidden = true; await speech.restart(selection.range)
 })
 $('#add-bookmark').onclick = () => {
   if (!record || !view.lastLocation) return

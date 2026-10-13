@@ -2,7 +2,9 @@
 
 Un lector de libros a toda pantalla, sin cabeceras decorativas ni tarjetas alrededor del texto. Dos columnas por defecto, controles discretos en la esquina superior derecha y un índice lateral que se puede ocultar.
 
-## Versión 0.2
+## Versión 0.3
+
+Los controles de abrir y narrar están centrados arriba, con Play circular. La lectura sigue las palabras cuando la voz emite posiciones y divide las frases por páginas para las voces que no lo hacen. Pulsar una palabra durante la narración permite continuar desde ella. Resaltado, seguimiento y lectura al pulsar tienen controles independientes en voz. El resaltado exacto por palabra requiere eventos del motor; el audio externo se sigue por fragmentos.
 
 - EPUB 2/3, MOBI, AZW3, Word `.docx`, PDF con texto seleccionable y TXT.
 - Índice jerárquico, búsqueda, portada e imágenes ampliables. Notas originales del EPUB en ventana flotante.

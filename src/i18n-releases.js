@@ -1,0 +1,8 @@
+export const releaseRows = `
+Resaltado|Ressaltat|Highlighting|Surlignage|Hervorhebung|Realce|Evidenziazione|高亮|強調表示|हाइलाइट
+Palabra|Paraula|Word|Mot|Wort|Palavra|Parola|词语|単語|शब्द
+Frase|Frase|Sentence|Phrase|Satz|Frase|Frase|句子|文|वाक्य
+Seguir la lectura automáticamente|Seguir la lectura automàticament|Follow reading automatically|Suivre automatiquement la lecture|Lesung automatisch verfolgen|Seguir a leitura automaticamente|Segui automaticamente la lettura|自动跟随朗读|読み上げに自動追従|पठन का स्वतः अनुसरण करें
+Continuar desde la palabra pulsada|Continuar des de la paraula premuda|Continue from the clicked word|Continuer à partir du mot sélectionné|Ab angeklicktem Wort weiterlesen|Continuar a partir da palavra clicada|Continua dalla parola cliccata|从点击的词语继续|クリックした単語から続ける|क्लिक किए गए शब्द से जारी रखें
+El seguimiento por palabra depende de la voz. Si no informa de las palabras, se sigue por fragmentos de página.|El seguiment per paraula depèn de la veu. Si no informa de les paraules, es segueix per fragments de pàgina.|Word tracking depends on the voice. Without word events, tracking follows page fragments.|Le suivi par mot dépend de la voix. Sans indication des mots, le suivi se fait par fragments de page.|Die Wortverfolgung hängt von der Stimme ab. Ohne Wortereignisse werden Seitenabschnitte verfolgt.|O acompanhamento por palavra depende da voz. Sem indicação das palavras, segue por fragmentos de página.|Il tracciamento delle parole dipende dalla voce. Senza eventi delle parole, segue i frammenti di pagina.|逐词跟随取决于语音。没有词语事件时按页面片段跟随。|単語追従は音声によります。単語情報がない場合はページ内の断片に追従します。|शब्द का अनुसरण आवाज़ पर निर्भर है। शब्द की जानकारी न मिलने पर पृष्ठ के अंशों का अनुसरण होता है।
+`
