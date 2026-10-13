@@ -1,3 +1,4 @@
+import { selectBrowserVoice } from './presentation.js'
 export function splitSentences(text, limit = 1600, language = 'es') {
   const segmenter = new Intl.Segmenter(language, { granularity: 'sentence' })
   const segments = []
@@ -136,9 +137,7 @@ export class SpeechController {
       const settings = this.settings()
       const utterance = new SpeechSynthesisUtterance(segment.text)
       const voices = speechSynthesis.getVoices()
-      utterance.voice = voices.find(voice => voice.voiceURI === settings.voice)
-        ?? voices.find(voice => voice.lang === settings.language)
-        ?? voices.find(voice => voice.lang.startsWith('es')) ?? null
+      utterance.voice = selectBrowserVoice(voices, settings.voice, settings.language)
       utterance.lang = settings.language; utterance.rate = settings.rate; utterance.pitch = settings.pitch
       utterance.onboundary = event => {
         if (run !== this.run || event.name !== 'word') return

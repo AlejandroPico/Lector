@@ -1,21 +1,35 @@
 import './style.css'
+import '@fontsource/atkinson-hyperlegible/400.css'
+import '@fontsource/atkinson-hyperlegible/700.css'
+import '@fontsource/lexend/400.css'
+import '@fontsource/lexend/600.css'
 import faviconURL from '../favicon.svg?url'
 import 'foliate-js/view.js'
 import { Overlayer } from 'foliate-js/overlayer.js'
 import { importBook, escapeHTML, metadataText, pdfPageImage } from './books.js'
-import { allBooks, fileId, getBook, saveBook, removeBook, defaults, readJSON, writeJSON, effectiveTheme, safeSettings } from './storage.js'
+import { allBooks, allFolders, saveFolder, removeFolder, fileId, getBook, saveBook, removeBook, defaults, readJSON, writeJSON, effectiveTheme, safeSettings } from './storage.js'
 import { SpeechController, validateEndpoint } from './speech.js'
 import { lookup, normalizeWord, importDictionary } from './dictionary.js'
 import { icon, iconButton } from './icons.js'
+import { fonts, themes, themeById } from './presentation.js'
+import { languages, initializeI18n, setUILanguage, currentLanguage, t, translateUI } from './i18n.js'
+import { scanDirectory, ensureFolderPermission, readMetadata } from './folders.js'
+import { attachImageGestures } from './image-viewer.js'
 
 const $ = selector => document.querySelector(selector)
-const settings = safeSettings(readJSON('lector-settings', {}))
+const storedSettings = readJSON('lector-settings', {})
+if (!storedSettings.presentationVersion) storedSettings.animated = true
+const settings = safeSettings(storedSettings)
+settings.presentationVersion = 2
+setUILanguage(settings.uiLanguage)
 let book, record, selection, apiKey = '', busy = false, saveTimer, loadSequence = 0, searchSequence = 0
-let storageWarning = false, focusBeforePanel, imageScale = 1, imageWidth = 0
+let storageWarning = false, focusBeforePanel
+let folderSources = [], localBooks = [], libraryLimit = 60, folderScan, libraryCoverURLs = []
+let zenHintTimer
 
 const rangeControl = (key, label, min, max, step, unit = '') => `<label class="field range-field"><span>${label}<output for="${key}" data-output="${key}">${settings[key]}${unit}</output></span><input id="${key}" type="range" data-setting="${key}" min="${min}" max="${max}" step="${step}" value="${settings[key]}" data-unit="${unit}"></label>`
 const check = (key, label) => `<label class="check-field"><input type="checkbox" data-setting="${key}" ${settings[key] ? 'checked' : ''}>${label}</label>`
-const themePicker = `<div class="theme-options" role="group" aria-label="Tema">${[['auto', 'Automático'], ['morning', 'Mañana'], ['afternoon', 'Tarde'], ['night', 'Noche'], ['comfort', 'Confort']].map(([value, label]) => `<button class="theme-option" data-theme="${value}" aria-pressed="${settings.theme === value}"><span class="theme-sample ${value}"></span>${label}</button>`).join('')}</div>`
+const themePicker = `<div class="theme-options" role="group" aria-label="Tema">${themes.map(theme => `<button class="theme-option" data-theme="${theme.id}" aria-pressed="${settings.theme === theme.id}"><span class="theme-sample" style="--sample-bg:${theme.colors?.[0] ?? '#edf0e5'};--sample-ink:${theme.colors?.[2] ?? '#637557'}">${icon(theme.icon)}</span>${theme.label}</button>`).join('')}</div>`
 
 $('#app').innerHTML = `
   <header class="toolbar" aria-label="Controles del lector">
@@ -29,6 +43,7 @@ $('#app').innerHTML = `
       ${iconButton('theme-toggle', 'sun', 'Tema', 'aria-expanded="false" aria-controls="theme-panel"')}
       ${iconButton('zen-toggle', 'zen', 'Modo zen (Z)', 'aria-pressed="false"')}
       ${iconButton('fullscreen-toggle', 'expand', 'Pantalla completa (F)')}
+      ${iconButton('preferences-toggle', 'gear', 'Ajustes', 'aria-expanded="false" aria-controls="preferences-panel"')}
       ${iconButton('about-toggle', 'info', 'Acerca de Lector')}
     </div>
   </header>
@@ -45,7 +60,16 @@ $('#app').innerHTML = `
       <div id="search-results" hidden></div><nav id="toc" aria-label="Capítulos"><p class="muted small">Abre un libro para ver su índice.</p></nav>
     </section>
     <section id="notes-tab" role="tabpanel" aria-label="Notas" hidden><div class="notes-actions"><button id="add-bookmark" class="text-button">${icon('bookmark')}Marcar página</button><button id="export-notes" class="icon-button" aria-label="Exportar notas" title="Exportar notas">${icon('download')}</button></div><div id="notes-list"></div></section>
-    <section id="library-tab" role="tabpanel" aria-label="Biblioteca" hidden><div id="library-list"></div></section>
+    <section id="library-tab" role="tabpanel" aria-label="Biblioteca" hidden>
+      <div class="library-actions"><button id="add-folder" class="text-button">${icon('open')}Añadir carpeta</button>${iconButton('refresh-folders','auto','Actualizar carpetas')}</div>
+      <div id="folder-list"></div>
+      <p class="small muted folder-explanation">Los títulos se obtienen de los nombres de carpeta. EPUB, metadatos y portadas se leen solo cuando los eliges.</p>
+      <div id="folder-progress" role="status" hidden><span id="folder-progress-text"></span><button id="cancel-scan" class="text-button">Cancelar escaneo</button></div>
+      <label class="field"><span class="sr-only">Buscar título o autor</span><input id="library-search" type="search" placeholder="Buscar título o autor"></label>
+      <div class="library-controls"><label>Ordenar por<select id="library-sort"><option value="title">Título</option><option value="author">Autor</option><option value="recent">Recientes</option></select></label><label><span class="sr-only">Apariencia</span><select data-setting="libraryView"><option value="list">Título</option><option value="covers">Portadas</option></select></label></div>
+      <div id="library-count" class="small muted"></div><div id="library-list"></div>
+      <button id="library-more" class="text-button" hidden>Mostrar más</button>
+    </section>
   </aside>
   <main id="reading-area" aria-label="Libro"><foliate-view id="reader"></foliate-view></main>
   <footer class="reading-footer" hidden>
@@ -55,15 +79,25 @@ $('#app').innerHTML = `
     <div id="progress-line" aria-hidden="true"></div>
   </footer>
   <div class="zen-exit"><button id="zen-exit" class="icon-button" title="Salir del modo zen" aria-label="Salir del modo zen">${icon('zen')}</button></div>
+  <div id="zen-hint" class="zen-hint" role="status" hidden><p>Aquí puedes volver a la apariencia anterior. También puedes pulsar Esc.</p><button id="dismiss-zen-hint" class="text-button">Entendido</button></div>
+  <aside id="preferences-panel" class="panel" role="dialog" aria-labelledby="preferences-title" hidden>
+    <div class="panel-heading"><h2 id="preferences-title">Ajustes</h2><button class="icon-button panel-close" aria-label="Cerrar">${icon('close')}</button></div>
+    <label class="field">Idioma de la interfaz<select data-setting="uiLanguage"><option value="auto">Detectar idioma del sistema</option>${Object.entries(languages).map(([code,label])=>`<option value="${code}">${label}</option>`).join('')}</select></label>
+    <p class="small muted">El idioma cambia los menús, no el texto del libro.</p>
+    <label class="field">Apariencia<select data-setting="appearance"><option value="minimal">Lectura minimalista</option></select></label>
+    <p class="small muted">Las próximas apariencias se elegirán aquí.</p>
+  </aside>
   <aside id="appearance-panel" class="panel" role="dialog" aria-labelledby="appearance-title" hidden>
     <div class="panel-heading"><h2 id="appearance-title">Tipografía y página</h2><button class="icon-button panel-close" aria-label="Cerrar">${icon('close')}</button></div>
-    <label class="field">Tipografía<select data-setting="font"><option value="Georgia">Georgia</option><option value="Palatino">Palatino</option><option value="Literata">Serif del sistema</option><option value="system">Sistema</option><option value="Verdana">Verdana</option></select></label>
+    <label class="field">Tipografía<select data-setting="font">${fonts.map(([name]) => `<option value="${name}">${name === 'system' ? 'Sans del sistema' : name}</option>`).join('')}</select></label>
+    <p class="small muted">Las fuentes no instaladas usan una alternativa similar. Atkinson y Lexend están incluidas.</p>
     ${rangeControl('fontSize', 'Tamaño', 14, 36, 1, ' px')}
     ${rangeControl('lineHeight', 'Interlineado', 1.2, 2.4, 0.05)}
     ${rangeControl('paragraphGap', 'Espacio entre párrafos', 0, 2, 0.1, ' em')}
     <label class="field">Columnas<select data-setting="columns"><option value="1">Una</option><option value="2">Dos</option><option value="3">Tres</option></select></label>
-    ${rangeControl('width', 'Anchura de lectura', 640, 1800, 20, ' px')}
-    ${rangeControl('gutter', 'Separación de columnas', 3, 12, 0.5, ' %')}
+    ${rangeControl('width', 'Anchura de lectura', 640, 3840, 20, ' px')}
+    ${check('fullWidth', 'Usar toda la anchura disponible')}
+    ${rangeControl('gutter', 'Separación de columnas', 1, 12, 0.5, ' %')}
     ${check('justify', 'Justificar el texto')}${check('animated', 'Transición suave de página')}
     <button id="reset-appearance" class="text-button reset-button">Restablecer presentación</button>
   </aside>
@@ -74,7 +108,8 @@ $('#app').innerHTML = `
   <aside id="voice-panel" class="panel" role="dialog" aria-labelledby="voice-title" hidden>
     <div class="panel-heading"><h2 id="voice-title">Lectura en voz alta</h2><button class="icon-button panel-close" aria-label="Cerrar">${icon('close')}</button></div>
     <label class="field">Servicio<select data-setting="provider"><option value="browser">Voces del navegador</option><option value="openai">OpenAI / API compatible</option></select></label>
-    <div id="browser-voice-settings"><label class="field">Voz<select id="browser-voices" data-setting="voice"><option value="">Automática · español</option></select></label><p id="voice-availability" class="small muted"></p>${rangeControl('pitch', 'Tono', 0.5, 1.5, 0.1)}</div>
+    <label class="field">Idioma del libro<select id="speech-language"><option value="auto">Detectar del libro</option>${Object.entries(languages).map(([code,label])=>`<option value="${code}">${label}</option>`).join('')}</select></label>
+    <div id="browser-voice-settings"><label class="field">Voz<select id="browser-voices" data-setting="voice"><option value="">Automática · idioma del libro</option></select></label><p id="voice-availability" class="small muted"></p>${rangeControl('pitch', 'Tono', 0.5, 1.5, 0.1)}</div>
     <div id="api-voice-settings" hidden>
       <p class="notice small">Este servicio tiene coste por uso, aparte de tu suscripción a ChatGPT. Recibirá el texto que se narre. La voz es generada por IA.</p>
       <label class="field">Dirección del servicio<input type="url" data-setting="endpoint" placeholder="https://api.openai.com/v1/audio/speech"></label>
@@ -94,6 +129,7 @@ $('#app').innerHTML = `
     <form method="dialog" class="dialog-dismiss">${iconButton('dismiss-file', 'close', 'Cerrar selector')}</form>
     <button id="choose-file" class="choose-file">${icon('open')}<span>Abrir un libro</span></button>
     <span class="file-types">EPUB · MOBI · Word · PDF · TXT</span>
+    <button id="choose-folder" class="text-button">${icon('open')}Añadir carpeta</button>
     <div id="resume-list" class="resume-list"></div>
     <label class="check-field local-save"><input id="remember-file" type="checkbox" checked>Guardar el archivo en este navegador</label>
     <p id="file-error" class="error small" role="alert" hidden></p>
@@ -115,7 +151,7 @@ $('#app').innerHTML = `
           <div><dt>Autor</dt><dd>Alejandro Pico</dd></div>
           <div><dt>Carácter</dt><dd>Proyecto personal</dd></div>
           <div><dt>Propósito</dt><dd>Lectura y escucha</dd></div>
-          <div><dt>Edición</dt><dd>Versión 0.1</dd></div>
+          <div><dt>Edición</dt><dd>Versión 0.2</dd></div>
         </dl>
       </aside>
       <div class="about-body">
@@ -141,11 +177,14 @@ $('#app').innerHTML = `
   <div id="loading" class="loading" role="status" hidden><span class="loading-line"></span><span id="loading-text">Abriendo libro…</span></div>
   <div id="toast" class="toast" role="status" hidden></div>
 `
+initializeI18n($('#app'), settings.uiLanguage)
+$('#speech-language').value = settings.speechLanguage
 
 const view = $('#reader')
+const imageViewer = attachImageGestures($('.image-stage'), $('#zoom-image'), { onChange: scale => $('#zoom-level').textContent = `${Math.round(scale * 100)} %` })
 let toastTimer
 function toast(message, duration = 6000) {
-  $('#toast').textContent = message; $('#toast').hidden = false
+  $('#toast').textContent = t(message); $('#toast').hidden = false
   clearTimeout(toastTimer); toastTimer = setTimeout(() => $('#toast').hidden = true, duration)
 }
 const handleError = error => { console.error(error); toast(error.message || 'No se pudo completar la operación.') }
@@ -176,12 +215,16 @@ function themeColors() {
 
 function bookStyles() {
   const colors = themeColors()
-  const font = ({ Georgia: 'Georgia, "Times New Roman", serif', Palatino: '"Palatino Linotype", "Book Antiqua", serif',
-    Literata: 'ui-serif, Georgia, serif', system: 'system-ui, sans-serif', Verdana: 'Verdana, sans-serif' })[settings.font]
-  return `html { color: ${colors.ink} !important; background: ${colors.bg} !important; color-scheme: ${effectiveTheme(settings.theme) === 'night' ? 'dark' : 'light'}; }
+  const font = fonts.find(([name]) => name === settings.font)?.[1] ?? fonts[0][1]
+  const bundledFonts = settings.font === 'Atkinson Hyperlegible' || settings.font === 'Lexend'
+    ? [...document.styleSheets].flatMap(sheet => { try { return [...sheet.cssRules].filter(rule => rule.type === CSSRule.FONT_FACE_RULE && rule.style.fontFamily.replace(/["']/g,'') === settings.font).map(rule => rule.cssText.replace(/url\(["']?([^"')]+)["']?\)/g, (_,url) => `url("${new URL(url, sheet.href || document.baseURI).href}")`)) } catch { return [] } }).join('\n') : ''
+  return `${bundledFonts}\nhtml { --theme-bg-color: ${colors.bg}; color: ${colors.ink} !important; background: ${colors.bg} !important; color-scheme: ${themeById(effectiveTheme(settings.theme)).dark ? 'dark' : 'light'}; border: 0 !important; outline: 0 !important; box-shadow: none !important; }
     body { font-family: ${font} !important; font-size: ${settings.fontSize}px !important; line-height: ${settings.lineHeight} !important; color: ${colors.ink} !important; background: transparent !important; text-align: ${settings.justify ? 'justify' : 'left'} !important; overflow-wrap: break-word; }
     p, div, li, blockquote { font-family: inherit !important; font-size: inherit !important; line-height: inherit !important; color: inherit !important; }
     p { margin-block: 0 ${settings.paragraphGap}em !important; }
+    body, main, article, section, div { border: 0 !important; outline: 0 !important; box-shadow: none !important; }
+    body.reader-cover { display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; min-height: 75vh !important; text-align: center !important; }
+    body.reader-cover img, body.reader-cover svg { display: block; margin: auto !important; max-height: 72vh !important; max-width: 100% !important; width: min(100%, 55vh) !important; height: auto !important; }
     h1,h2,h3,h4,h5,h6 { font-family: inherit !important; color: inherit !important; font-weight: 500; line-height: 1.35 !important; }
     h1 { font-size: 1.5em; } h2 { font-size: 1.3em; } h3 { font-size: 1.15em; }
     img,svg,image { max-width: 100% !important; max-height: 80vh !important; object-fit: contain; cursor: zoom-in; }
@@ -193,12 +236,18 @@ function bookStyles() {
 }
 
 function applySettings() {
-  document.documentElement.dataset.theme = effectiveTheme(settings.theme)
-  $('#reading-area').style.maxWidth = `${settings.width}px`
+  const theme = themeById(effectiveTheme(settings.theme))
+  document.documentElement.dataset.theme = theme.id
+  const properties = ['paper','surface','ink','muted','line','accent','highlight','hover']
+  theme.colors.forEach((value,index) => document.documentElement.style.setProperty(`--${properties[index]}`,value))
+  document.documentElement.style.colorScheme = theme.dark ? 'dark' : 'light'
+  $('#theme-toggle').innerHTML = icon(theme.icon)
+  $('#reading-area').style.maxWidth = settings.fullWidth ? 'none' : `${settings.width}px`
+  $('#width').disabled = settings.fullWidth
   if (view.renderer) {
     const count = window.innerWidth < 700 ? 1 : settings.columns
     view.renderer.setAttribute('max-column-count', count)
-    view.renderer.setAttribute('max-inline-size', `${Math.max(280, (Math.min(settings.width, $('#reading-area').clientWidth) - 32) / count)}px`)
+    view.renderer.setAttribute('max-inline-size', `${Math.max(220, ($('#reading-area').clientWidth - 16) / count)}px`)
     view.renderer.setAttribute('gap', `${settings.gutter}%`)
     view.renderer.setAttribute('margin', window.innerWidth < 700 ? '16px' : '28px')
     view.renderer.toggleAttribute('animated', settings.animated && !matchMedia('(prefers-reduced-motion: reduce)').matches)
@@ -243,15 +292,25 @@ function sidebar(open = $('#sidebar').hidden) {
 function setZen(active) {
   document.body.classList.toggle('zen', active)
   $('#zen-toggle').setAttribute('aria-pressed', active)
-  if (active) { closePanels(); sidebar(false) }
+  clearTimeout(zenHintTimer)
+  if (active) {
+    closePanels(); sidebar(false)
+    if (!readJSON('lector-zen-help-seen', false)) {
+      $('#zen-hint').hidden = false; document.body.classList.add('zen-help')
+      writeJSON('lector-zen-help-seen', true)
+      zenHintTimer = setTimeout(dismissZenHint, 15000)
+    }
+  } else dismissZenHint()
 }
+function dismissZenHint() { $('#zen-hint').hidden = true; document.body.classList.remove('zen-help'); clearTimeout(zenHintTimer) }
 
 function syncVoices() {
   const voices = globalThis.speechSynthesis?.getVoices() ?? []
-  voices.sort((a, b) => (b.lang.startsWith('es') - a.lang.startsWith('es')) || a.name.localeCompare(b.name))
-  $('#browser-voices').innerHTML = '<option value="">Automática · español</option>' + voices.map(voice => `<option value="${escapeHTML(voice.voiceURI)}">${escapeHTML(voice.name)} · ${escapeHTML(voice.lang)}</option>`).join('')
+  const language = settings.language.split('-')[0]
+  voices.sort((a, b) => (b.lang.startsWith(language) - a.lang.startsWith(language)) || a.name.localeCompare(b.name))
+  $('#browser-voices').innerHTML = `<option value="">${t('Automática · idioma del libro')}</option>` + voices.map(voice => `<option value="${escapeHTML(voice.voiceURI)}">${escapeHTML(voice.name)} · ${escapeHTML(voice.lang)}</option>`).join('')
   $('#browser-voices').value = settings.voice
-  $('#voice-availability').textContent = voices.length ? `${voices.length} voces disponibles. Las voces de red pueden necesitar conexión.` : 'El navegador todavía no ha cargado sus voces. Si no aparecen, prueba otro navegador o revisa las voces instaladas en el sistema.'
+  $('#voice-availability').textContent = voices.length ? `${voices.length} ${t('voces disponibles')}. ${t('Las voces de red pueden necesitar conexión.')}` : t('El navegador todavía no ha cargado sus voces. Si no aparecen, prueba otro navegador o revisa las voces instaladas en el sistema.')
 }
 
 function saveRecord() {
@@ -280,8 +339,10 @@ function renderTOC(items, target) {
 }
 
 async function updateLibrary() {
-  const books = await allBooks()
-  const available = books.filter(item => item.file)
+  localBooks = await allBooks()
+  folderSources = await allFolders()
+  const books = localBooks
+  const available = books.filter(item => item.file || item.fileHandle)
   $('#resume-list').replaceChildren()
   available.slice(0, 3).forEach(item => {
     const button = document.createElement('button'); button.className = 'resume-button'
@@ -290,30 +351,141 @@ async function updateLibrary() {
     button.append(label, percent); button.addEventListener('click', attempt(() => openStored(item.id)))
     $('#resume-list').append(button)
   })
-  $('#library-list').replaceChildren()
-  if (!books.length) $('#library-list').innerHTML = '<p class="small muted">Los libros que abras aparecerán aquí.</p>'
-  books.forEach(item => {
+  renderFolders(); renderLibrary()
+}
+
+function renderFolders() {
+  $('#folder-list').replaceChildren()
+  for (const folder of folderSources) {
+    const row = document.createElement('div'); row.className = 'folder-row'
+    const label = document.createElement('span'); label.dataset.userContent = ''; label.textContent = `${folder.name} · ${folder.entries.length}`
+    const remove = document.createElement('button'); remove.className = 'icon-button'; remove.innerHTML = icon('close'); remove.title = t('Desvincular carpeta'); remove.setAttribute('aria-label',t('Desvincular carpeta'))
+    remove.onclick = attempt(async () => { await removeFolder(folder.id); await updateLibrary() })
+    row.append(label,remove); $('#folder-list').append(row)
+  }
+}
+
+function renderLibrary() {
+  for (const url of libraryCoverURLs) URL.revokeObjectURL(url)
+  libraryCoverURLs = []
+  const query = $('#library-search').value.trim().toLocaleLowerCase(currentLanguage())
+  const linked = folderSources.flatMap(folder => folder.entries.map(entry => ({ ...entry, folder, kind: 'folder', id: `${folder.id}:${entry.key}` })))
+  const entries = [...localBooks.filter(item => !item.folderId || !folderSources.some(folder => folder.id === item.folderId)).map(item => ({ ...item, kind: 'local' })), ...linked]
+  const filtered = entries.filter(item => `${item.title} ${item.author ?? ''}`.toLocaleLowerCase(currentLanguage()).includes(query))
+  const sort = $('#library-sort').value
+  const collator = new Intl.Collator(currentLanguage(), { numeric: true, sensitivity: 'base' })
+  filtered.sort((a,b) => sort === 'recent' ? (b.updatedAt ?? 0) - (a.updatedAt ?? 0) || collator.compare(a.title,b.title)
+    : collator.compare(sort === 'author' ? a.author ?? '' : a.title, sort === 'author' ? b.author ?? '' : b.title))
+  $('#library-count').textContent = `${filtered.length.toLocaleString(currentLanguage())} ${t('libros')}`
+  const list = $('#library-list'); list.replaceChildren(); list.classList.toggle('cover-grid', settings.libraryView === 'covers')
+  if (!filtered.length) { const empty = document.createElement('p'); empty.className = 'small muted'; empty.textContent = t(query ? 'No hay resultados.' : 'Los libros que abras aparecerán aquí.'); list.append(empty) }
+  for (const item of filtered.slice(0,libraryLimit)) {
     const row = document.createElement('div'); row.className = 'library-row'
-    const button = document.createElement('button'); button.className = 'library-book'; button.textContent = item.title
-    button.addEventListener('click', attempt(async () => {
-      if (item.file) await openStored(item.id)
+    if (settings.libraryView === 'covers') {
+      const cover = document.createElement('button'); cover.className = 'catalog-cover'; cover.title = t('Cargar portada'); cover.setAttribute('aria-label',t('Cargar portada'))
+      if (item.coverBlob) {
+        const image = document.createElement('img'); const url = URL.createObjectURL(item.coverBlob); libraryCoverURLs.push(url)
+        image.src = url; image.alt = item.title; cover.append(image)
+      } else cover.innerHTML = icon('book')
+      cover.onclick = attempt(async () => {
+        if (item.coverBlob) { const url = URL.createObjectURL(item.coverBlob); showImage(url,item.title); $('#image-dialog').addEventListener('close',()=>URL.revokeObjectURL(url),{once:true}); return }
+        if (item.kind !== 'folder') { await openStored(item.id); $('#show-cover').click(); return }
+        if (!item.cover) { await openFolderEntry(item.folder,item); $('#show-cover').click(); return }
+        await ensureFolderPermission(item.folder.handle)
+        const file = await item.cover.getFile()
+        if (file.size > 12 * 1024 * 1024) throw new Error('La portada supera el límite de 12 MB.')
+        const original = item.folder.entries.find(entry=>entry.key===item.key); original.coverBlob = file
+        await saveFolder(item.folder); renderLibrary()
+      })
+      row.append(cover)
+    }
+    const content = document.createElement('div'); content.className = 'library-entry'
+    const button = document.createElement('button'); button.className = 'library-book'; button.dataset.userContent = ''; button.textContent = item.title
+    button.onclick = attempt(async () => {
+      if (item.kind === 'folder') await openFolderEntry(item.folder,item)
+      else if (item.file || item.fileHandle) await openStored(item.id)
       else { toast('Vuelve a elegir el archivo para recuperar sus notas y su posición.'); $('#file-input').click() }
-    }))
-    const remove = document.createElement('button'); remove.className = 'icon-button'; remove.innerHTML = icon('trash'); remove.title = 'Quitar de la biblioteca'; remove.setAttribute('aria-label', `Quitar ${item.title} de la biblioteca`)
-    remove.addEventListener('click', attempt(async () => {
-      // Removing a book with notes deserves an explicit, concrete local confirmation.
-      if (item.notes?.length && !confirm(`¿Quitar «${item.title}» y sus ${item.notes.length} notas de este navegador?`)) return
-      if (record?.id === item.id) { clearTimeout(saveTimer); speech.stop(); view.close(); book?.destroy?.(); book = null; record = null; $('#audio-toggle').disabled = true; $('.reading-footer').hidden = true }
-      await removeBook(item.id); await updateLibrary()
-    }))
-    row.append(button, remove); $('#library-list').append(row)
-  })
+    })
+    content.append(button)
+    if (item.author) { const author = document.createElement('span'); author.className = 'small muted'; author.dataset.userContent=''; author.textContent = item.author; content.append(author) }
+    if (item.kind === 'folder') {
+      const formats = document.createElement('div'); formats.className = 'catalog-formats'
+      for (const format of item.formats) {
+        const formatButton = document.createElement('button'); formatButton.textContent = format.extension.toUpperCase(); formatButton.onclick = attempt(()=>openFolderEntry(item.folder,item,format)); formats.append(formatButton)
+      }
+      content.append(formats)
+      if (item.metadata) {
+        const metadata = document.createElement('button'); metadata.className = 'text-button metadata-button'; metadata.textContent = t('Leer metadatos')
+        metadata.onclick = attempt(async () => {
+          await ensureFolderPermission(item.folder.handle)
+          const data = await readMetadata(item)
+          Object.assign(item.folder.entries.find(entry=>entry.key===item.key),data,{opfLoaded:true})
+          await saveFolder(item.folder); renderLibrary(); toast('Metadatos cargados')
+        }); content.append(metadata)
+      }
+    }
+    row.append(content)
+    if (item.kind === 'local') {
+      const remove = document.createElement('button'); remove.className = 'icon-button'; remove.innerHTML = icon('trash'); remove.title = t('Quitar de la biblioteca'); remove.setAttribute('aria-label',t('Quitar de la biblioteca'))
+      remove.onclick = attempt(async () => {
+        if (item.notes?.length && !confirm(`${t('Quitar de la biblioteca')}: «${item.title}» (${item.notes.length})?`)) return
+        if (record?.id === item.id) { clearTimeout(saveTimer); speech.stop(); view.close(); book?.destroy?.(); book = null; record = null; $('#audio-toggle').disabled = true; $('.reading-footer').hidden = true }
+        await removeBook(item.id); await updateLibrary()
+      }); row.append(remove)
+    }
+    list.append(row)
+  }
+  $('#library-more').hidden = filtered.length <= libraryLimit
+}
+
+async function openFolderEntry(folder, entry, format = entry.formats[0]) {
+  if (busy) return
+  await ensureFolderPermission(folder.handle)
+  const file = await format.handle.getFile()
+  if (file.size > 100 * 1024 * 1024) throw new Error('El límite de esta versión es de 100 MB por archivo.')
+  const id = await fileId(file)
+  const previous = await getBook(id)
+  await openFile(file, { ...previous, id, folderId: folder.id, entryKey: entry.key, fileHandle: format.handle, author: entry.author, catalogTitle: entry.opfLoaded ? entry.title : undefined })
+  if (record?.id === id) {
+    const original = folder.entries.find(item=>item.key===entry.key)
+    original.updatedAt = Date.now(); await saveFolder(folder); await updateLibrary()
+  }
+  if (innerWidth < 900) sidebar(false)
+}
+
+async function indexFolder(folder) {
+  if (folderScan) return
+  folderScan = new AbortController(); $('#folder-progress').hidden = false
+  try {
+    await ensureFolderPermission(folder.handle)
+    const prior = new Map(folder.entries?.map(entry=>[entry.key,entry]) ?? [])
+    const entries = await scanDirectory(folder.handle, { signal: folderScan.signal, onProgress: progress => {
+      $('#folder-progress-text').textContent = `${t('Indexando carpetas…')} ${progress.books.toLocaleString(currentLanguage())} ${t('libros')}`
+    } })
+    folder.entries = entries.map(entry => ({ ...entry, ...(prior.has(entry.key) ? { coverBlob: prior.get(entry.key).coverBlob, title: prior.get(entry.key).title, author: prior.get(entry.key).author, language: prior.get(entry.key).language, opfLoaded: prior.get(entry.key).opfLoaded, updatedAt: prior.get(entry.key).updatedAt } : {}) }))
+    folder.updatedAt = Date.now(); await saveFolder(folder); await updateLibrary()
+  } finally { folderScan = null; $('#folder-progress').hidden = true }
+}
+
+async function connectFolder() {
+  if (folderScan) return
+  if (!window.showDirectoryPicker) { toast('Para abrir carpetas sin leer todos sus archivos utiliza Chrome o Edge en HTTPS o localhost.', 12000); return }
+  try {
+    const handle = await window.showDirectoryPicker({ id: 'lector-library', mode: 'read' })
+    const sources = await allFolders()
+    let folder
+    for (const source of sources) if (await handle.isSameEntry(source.handle)) { folder = source; break }
+    folder ??= { id: crypto.randomUUID(), handle, name: handle.name, entries: [] }
+    $('#file-dialog').close(); sidebar(true); $('[data-tab="library"]').click()
+    await indexFolder(folder)
+  } catch (error) { if (error.name !== 'AbortError') handleError(error) }
 }
 
 async function openStored(id) {
   const saved = await getBook(id)
-  if (!saved?.file) throw new Error('No se encuentra el archivo guardado. Vuelve a abrirlo.')
-  const file = new File([saved.file], saved.filename, { type: saved.file.type })
+  if (!saved?.file && !saved?.fileHandle) throw new Error('No se encuentra el archivo guardado. Vuelve a abrirlo.')
+  if (saved.fileHandle) await ensureFolderPermission(saved.fileHandle)
+  const file = saved.fileHandle ? await saved.fileHandle.getFile() : new File([saved.file], saved.filename, { type: saved.file.type })
   await openFile(file, saved)
 }
 
@@ -324,22 +496,28 @@ async function openFile(file, saved) {
   $('#loading').hidden = false; $('#loading-text').textContent = 'Abriendo libro…'
   let imported
   try {
+    if (file.size > 100 * 1024 * 1024) throw new Error('El límite de esta versión es de 100 MB por archivo.')
     const id = saved?.id ?? await fileId(file)
     ++searchSequence
     imported = await importBook(file, text => $('#loading-text').textContent = text)
     saved ??= await getBook(id).catch(() => null)
-    const title = metadataText(imported.metadata?.title) || file.name
-    const nextRecord = { id, title, filename: file.name, file: $('#remember-file').checked ? file : undefined,
+    const title = saved?.catalogTitle || metadataText(imported.metadata?.title) || file.name
+    const nextRecord = { id, title, filename: file.name, file: saved?.fileHandle ? undefined : $('#remember-file').checked ? file : undefined,
+      fileHandle: saved?.fileHandle, folderId: saved?.folderId, entryKey: saved?.entryKey, catalogTitle: saved?.catalogTitle, author: saved?.author ?? metadataText(imported.metadata?.author), coverBlob: saved?.coverBlob,
       notes: saved?.notes ?? [], cfi: saved?.cfi, fraction: Number.isFinite(saved?.fraction) ? saved.fraction : 0, updatedAt: Date.now() }
     clearTimeout(saveTimer)
     view.close(); book?.destroy?.(); book = null; record = null
     await view.open(imported)
     book = imported; record = nextRecord
+    if ($('#speech-language').value === 'auto') {
+      settings.language = metadataText(book.metadata?.language) || currentLanguage()
+      syncVoices()
+    }
     applySettings()
     await view.init({ lastLocation: nextRecord.cfi, showTextStart: !nextRecord.cfi })
     if (!view.renderer.getContents().length) throw new Error('No se pudo mostrar el primer capítulo del documento.')
     if (sequence !== loadSequence) return
-    $('#book-title').textContent = title
+    $('#book-title').dataset.userContent = ''; $('#book-title').textContent = title
     $('#toc').replaceChildren()
     renderTOC(book.toc?.length ? book.toc : book.sections.map((section, index) => ({ label: `Sección ${index + 1}`, href: index })), $('#toc'))
     $('#show-cover').hidden = !book.getCover
@@ -371,6 +549,9 @@ view.addEventListener('relocate', ({ detail }) => {
 })
 
 view.addEventListener('load', ({ detail: { doc, index } }) => {
+  if (doc.querySelector('img,svg') && (/cover|portada|cubierta/i.test(String(book?.sections[index]?.id ?? '')) || doc.body.textContent.trim().length < 60)) doc.body.classList.add('reader-cover')
+  doc.querySelectorAll('[data-no-speech]').forEach(el => { if (!el.querySelector('button')) el.textContent = t(el.textContent.trim()) })
+  doc.querySelectorAll('.pdf-original').forEach(button => button.textContent = t('Ver página original'))
   doc.addEventListener('keydown', onKey)
   doc.addEventListener('pointerdown', () => { closePanels(); $('#selection-menu').hidden = true })
   doc.addEventListener('pointerup', () => {
@@ -467,11 +648,8 @@ function showImage(src, alt) {
   if (image.complete && image.naturalWidth) fitImage()
 }
 function fitImage() {
-  const image = $('#zoom-image'), stage = $('.image-stage')
-  imageWidth = Math.min(image.naturalWidth, stage.clientWidth - 48, (stage.clientHeight - 48) * image.naturalWidth / image.naturalHeight)
-  imageScale = 1; zoomImage()
+  imageViewer.fit()
 }
-function zoomImage() { $('#zoom-image').style.width = `${imageWidth * imageScale}px`; $('#zoom-level').textContent = `${Math.round(imageScale * 100)} %` }
 
 async function changePage(direction) {
   if (!book || busy || document.querySelector('dialog[open]')) return
@@ -517,7 +695,7 @@ $('#fullscreen-toggle').onclick = attempt(toggleFullscreen)
 $('#about-toggle').onclick = () => { closePanels(); $('#about-dialog').showModal() }
 $('#previous-page').onclick = attempt(() => changePage(-1))
 $('#next-page').onclick = attempt(() => changePage(1))
-for (const name of ['appearance', 'theme', 'voice']) $(`#${name}-toggle`).onclick = () => togglePanel(name)
+for (const name of ['appearance', 'theme', 'voice', 'preferences']) $(`#${name}-toggle`).onclick = () => togglePanel(name)
 document.querySelectorAll('.panel-close').forEach(button => button.onclick = closePanels)
 document.querySelectorAll('.dialog-close').forEach(button => button.onclick = () => button.closest('dialog').close())
 document.querySelectorAll('dialog').forEach(dialog => {
@@ -532,12 +710,17 @@ document.querySelectorAll('[data-setting]').forEach(input => {
   input.addEventListener(['range', 'checkbox'].includes(input.type) || input.tagName === 'SELECT' ? 'input' : 'change', () => {
     if (['provider', 'voice', 'rate', 'pitch', 'endpoint', 'model', 'apiVoice', 'instructions'].includes(input.dataset.setting)) speech.stop()
     settings[input.dataset.setting] = input.type === 'checkbox' ? input.checked : input.type === 'range' || input.dataset.setting === 'columns' ? Number(input.value) : input.value
+    if (input.dataset.setting === 'uiLanguage') {
+      setUILanguage(settings.uiLanguage)
+      renderLibrary(); syncVoices()
+    }
+    if (input.dataset.setting === 'libraryView') renderLibrary()
     Object.assign(settings, safeSettings(settings)); applySettings()
   })
 })
 $('#api-key').oninput = event => { speech.stop(); apiKey = event.target.value.trim() }
 document.querySelectorAll('button[data-theme]').forEach(button => button.onclick = () => { settings.theme = button.dataset.theme; applySettings() })
-$('#reset-appearance').onclick = () => { for (const key of ['font', 'fontSize', 'lineHeight', 'paragraphGap', 'columns', 'width', 'gutter', 'justify', 'animated']) settings[key] = defaults[key]; applySettings() }
+$('#reset-appearance').onclick = () => { for (const key of ['font', 'fontSize', 'lineHeight', 'paragraphGap', 'columns', 'width', 'gutter', 'fullWidth', 'justify', 'animated']) settings[key] = defaults[key]; applySettings() }
 $('#voice-preview').onclick = attempt(async () => {
   speech.stop()
   const sample = { text: 'La tarde caía despacio. Por un momento, todo quedó en silencio.' }
@@ -553,6 +736,7 @@ $('#voice-preview').onclick = attempt(async () => {
 $('#show-cover').onclick = attempt(async () => {
   const cover = await book?.getCover?.()
   if (!cover) { toast('Este libro no incluye una portada identificada.'); return }
+  if (record) { record.coverBlob = cover; saveRecord(); await updateLibrary() }
   const url = URL.createObjectURL(cover)
   showImage(url, `Portada de ${record.title}`)
   $('#image-dialog').addEventListener('close', () => URL.revokeObjectURL(url), { once: true })
@@ -560,8 +744,9 @@ $('#show-cover').onclick = attempt(async () => {
 $('#define-selection').onclick = () => {
   const word = normalizeWord(selection.quote)
   $('#dictionary-word').textContent = word
-  $('#dictionary-definition').textContent = lookup(word) || 'Esta palabra no está en el glosario local. Puedes consultarla en Wikcionario o importar un diccionario propio.'
-  $('#dictionary-external').href = `https://es.wiktionary.org/wiki/${encodeURIComponent(word)}`
+  $('#dictionary-definition').textContent = lookup(word) || t('Esta palabra no está en el glosario local. Puedes consultarla en Wikcionario o importar un diccionario propio.')
+  const dictionaryLanguage = metadataText(book?.metadata?.language).split('-')[0] || currentLanguage()
+  $('#dictionary-external').href = `https://${Object.hasOwn(languages,dictionaryLanguage) ? dictionaryLanguage : 'es'}.wiktionary.org/wiki/${encodeURIComponent(word)}`
   $('#selection-menu').hidden = true; $('#dictionary-dialog').showModal()
 }
 $('#dictionary-file').onchange = attempt(async () => {
@@ -599,10 +784,28 @@ $('#export-notes').onclick = () => {
   const url = URL.createObjectURL(new Blob([JSON.stringify({ book: record.title, file: record.filename, notes: record.notes }, null, 2)], { type: 'application/json' }))
   const anchor = document.createElement('a'); anchor.href = url; anchor.download = `${record.title.replace(/[\\/:*?"<>|]/g, '-')}-notas.json`; anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
-$('#zoom-in').onclick = () => { imageScale = Math.min(5, imageScale + 0.25); zoomImage() }
-$('#zoom-out').onclick = () => { imageScale = Math.max(0.25, imageScale - 0.25); zoomImage() }
+$('#zoom-in').onclick = () => imageViewer.step(.25)
+$('#zoom-out').onclick = () => imageViewer.step(-.25)
 $('#zoom-fit').onclick = fitImage
 $('#image-dialog').addEventListener('close', () => { $('#zoom-image').removeAttribute('src') })
+$('#dismiss-zen-hint').onclick = dismissZenHint
+$('#choose-folder').onclick = connectFolder
+$('#add-folder').onclick = connectFolder
+$('#cancel-scan').onclick = () => folderScan?.abort()
+$('#refresh-folders').onclick = attempt(async () => {
+  for (const folder of folderSources) {
+    try { await indexFolder(folder) } catch (error) { if (error.name === 'AbortError') break; throw error }
+  }
+})
+$('#library-search').oninput = () => { libraryLimit = 60; renderLibrary() }
+$('#library-sort').onchange = () => { libraryLimit = 60; renderLibrary() }
+$('#library-more').onclick = () => { libraryLimit += 60; renderLibrary() }
+$('#speech-language').onchange = () => {
+  speech.stop()
+  settings.speechLanguage = $('#speech-language').value
+  settings.language = $('#speech-language').value === 'auto' ? metadataText(book?.metadata?.language) || currentLanguage() : $('#speech-language').value
+  syncVoices(); applySettings()
+}
 $('#position-button').onclick = () => { $('#position-input').value = Math.round((record?.fraction ?? 0) * 100); $('#position-dialog').showModal() }
 $('#go-position').onclick = attempt(async () => {
   if (!book || !$('#position-input').reportValidity()) return
@@ -630,7 +833,7 @@ $('#search-form').onsubmit = attempt(async event => {
     }
     if (count >= 100) break
   }
-  status.textContent = count ? `${count}${count >= 100 ? '+' : ''} resultados` : 'No se encontraron coincidencias.'
+  status.textContent = count ? `${count}${count >= 100 ? '+' : ''} ${t('resultados')}` : t('No se encontraron coincidencias.')
 })
 
 document.addEventListener('keydown', onKey)
@@ -645,6 +848,6 @@ window.addEventListener('pagehide', () => { saveRecord(); speech.stop() })
 window.addEventListener('resize', () => { $('#selection-menu').hidden = true; applySettings() })
 globalThis.speechSynthesis?.addEventListener('voiceschanged', syncVoices)
 setInterval(() => { if (settings.theme === 'auto') applySettings() }, 60000)
-applySettings(); syncVoices()
+applySettings(); syncVoices(); translateUI()
 updateLibrary().catch(() => toast('El almacenamiento local no está disponible. Puedes abrir un libro, pero no se guardará al cerrar.'))
 $('#file-dialog').showModal()
