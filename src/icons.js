@@ -1,4 +1,5 @@
 const paths = {
+  filter:'<path d="M3 4h18l-7 8v7l-4 2v-9z"/>',
   undo:'<path d="m8 4-5 5 5 5M3 9h10a7 7 0 0 1 0 14"/>',
   redo:'<path d="m16 4 5 5-5 5M21 9H11a7 7 0 0 0 0 14"/>',
   list:'<path d="M8 6h13M8 12h13M8 18h13M3 6h1M3 12h1M3 18h1"/>',

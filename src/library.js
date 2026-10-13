@@ -14,15 +14,19 @@ export function catalogMetadata(raw={}){
     seriesIndex:Number.isFinite(position)?position:null,identifiers}
 }
 export const catalogKey=book=>book.folderId&&book.entryKey?`${book.folderId}:${book.entryKey}`:book.id
+export function recentReadingOrder(items,locale='es') {
+  const collator=new Intl.Collator(locale,{numeric:true,sensitivity:'base'})
+  return [...items].sort((a,b)=>(b.lastReadAt??0)-(a.lastReadAt??0)||collator.compare(a.title??'',b.title??''))
+}
 export function libraryEntries(books,folders,records){
   const stored=new Map(records.map(record=>[record.id,record])),opened=new Map(books.filter(book=>book.folderId).map(book=>[catalogKey(book),book]))
-  const linked=folders.flatMap(folder=>folder.entries.map(entry=>{const saved=opened.get(`${folder.id}:${entry.key}`);return {...entry,folder,id:`${folder.id}:${entry.key}`,kind:'folder',coverBlob:entry.coverBlob??(!entry.coverInvalidated?saved?.coverBlob:undefined),cfi:saved?.cfi,coverSeen:saved?.coverSeen,fraction:saved?.fraction}}))
+  const linked=folders.flatMap(folder=>folder.entries.map(entry=>{const saved=opened.get(`${folder.id}:${entry.key}`);return {...entry,folder,id:`${folder.id}:${entry.key}`,kind:'folder',coverBlob:entry.coverBlob??(!entry.coverInvalidated?saved?.coverBlob:undefined),lastReadAt:saved?.lastReadAt,cfi:saved?.cfi,coverSeen:saved?.coverSeen,fraction:saved?.fraction}}))
   const linkedIDs=new Set(linked.map(item=>item.id))
   const linkedFolders=new Set(folders.map(folder=>folder.id))
   return [...books.filter(book=>!linkedIDs.has(catalogKey(book))&&(!book.folderId||!linkedFolders.has(book.folderId))).map(book=>({...book,kind:'local'})),...linked].map(base=>{
     const state=stored.get(base.id)??{},metadata=catalogMetadata(state.metadata??base),overrides=state.overrides??{}
     const formats=base.formats?.map(format=>format.extension)??[base.filename?.split('.').pop()?.toLowerCase()].filter(Boolean)
-    return {...base,...Object.fromEntries(Object.entries(metadata).filter(([,value])=>Array.isArray(value)?value.length:value!==''&&value!==null)),...overrides,
+    return {...base,lastReadAt:base.lastReadAt??(base.coverSeen!==false&&base.cfi?1:0),...Object.fromEntries(Object.entries(metadata).filter(([,value])=>Array.isArray(value)?value.length:value!==''&&value!==null)),...overrides,
       authors:labels(overrides.author??metadata.authors),tags:labels(overrides.tags??metadata.tags),genres:labels(overrides.genres??metadata.genres),formatNames:formats,
       language:languageCode(overrides.language??metadata.language),languages:Object.hasOwn(overrides,'language')?[languageCode(overrides.language)].filter(Boolean):metadata.languages,
       status:Object.hasOwn(statuses,state.status)?state.status:base.coverSeen!==false&&base.cfi?'reading':'pending',collections:labels(state.collections),

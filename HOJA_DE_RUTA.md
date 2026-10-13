@@ -1,6 +1,6 @@
 # Ampliaciones acordadas y versiones propuestas
 
-Base actual: versión 0.10.0. Esta hoja recoge la selección del autor del 13 de octubre de 2026. La selección aprueba el objetivo de las funciones, pero cada versión necesita autorización antes de comenzar. Documentar este plan no cambia la aplicación ni autoriza ejecutar todos los bloques.
+Base actual: versión 1.0.0. Esta hoja recoge la selección del autor del 13 de octubre de 2026. La selección aprueba el objetivo de las funciones, pero cada versión necesita autorización antes de comenzar. Documentar este plan no cambia la aplicación ni autoriza ejecutar todos los bloques.
 
 ## Reglas comunes
 
@@ -27,15 +27,16 @@ Base actual: versión 0.10.0. Esta hoja recoge la selección del autor del 13 de
 | 0.8 | Actualización incremental del catálogo y cola opcional de portadas visibles. | Cambios, altas y bajas sin volver a procesar todos los contenidos; cancelar la cola y evitar descargas no solicitadas. |
 | 0.9 | Subrayados de colores, edición de notas, cuaderno de notas/citas, copiar citas con procedencia y exportación deliberada a Markdown/PDF. | Persistencia de anotaciones y posiciones; exportación solo cuando se pide. |
 | 0.10 | Diccionarios sin conexión para los diez idiomas, carpeta diccionarios con detección durante compilación, paquetes por idioma y vocabulario personal. | Licencias y cobertura verificadas por idioma, consultas desconectadas y gestión de paquetes grandes. No presentar el glosario básico actual como diccionario completo. |
-| 0.11 | Explicar palabras en contexto y vista bilingüe paralela. Primera vía: traducción aportada por el usuario; motor local o externo configurable para explicaciones/traducción adicionales. | Alineación de textos y controles de conexión. No confundir definición de diccionario con explicación generada ni traducir automáticamente libros. |
-| 0.12 | OCR de PDF escaneados y mejor orden de lectura en PDF con columnas, encabezados y pies. | Documentos de prueba reales, revisión del texto reconocido, progreso y cancelación; distinguir texto original de reconocido. |
-| 0.13 | Temporizador apagado inicialmente, retroceso de audio, pronunciaciones, estimaciones/límites de coste y exportación deliberada de audio por capítulos. | Sin saltos de contenido, detener costes antes del límite; estimaciones basadas en las tarifas configuradas y exportación solo con motores que generen audio. |
-| 0.14 | Evaluación y primera integración de voz de IA local; adaptadores para otros servicios de voz. | Calidad real, español y demás idiomas disponibles, hardware, licencia y funcionamiento sin nube. Cada proveedor necesita su adaptador, no basta con una URL genérica. |
-| 0.15 | Voces persistentes de personajes, corrección de interlocutores y perfiles de narración. | Consistencia entre capítulos y controles manuales; entonación según las capacidades reales del motor seleccionado. |
-| 0.16 | Aplicación web instalable, funcionamiento sin conexión y copias internas de datos con restauración. | Arranque desconectado tras instalación y recuperación de datos; recursos/modelos/diccionarios opcionales con tamaño visible. Una copia interna no protege contra borrar todo el almacenamiento del navegador. |
-| 0.17 | Sincronización voluntaria de posiciones, notas y preferencias entre dispositivos. | Resolver conflictos y elegir destino/cuenta; no subir libros por defecto. Concretar servicio, autenticación y posibles costes antes de integrarlos. |
-| 0.18 | Primera aplicación de escritorio, inicialmente Windows, integración con carpetas Calibre y proveedores de nube por sus capacidades reales. Preparar entregas para las otras plataformas de forma sucesiva. | Selección de carpetas y almacenamiento local; comprobar estados reales de archivos y acceso. Firma, tiendas y credenciales se concretan por plataforma. |
-| 0.19 | Emisión de contenido con receptor propio, primero Google Cast/Google Home compatible; después evaluar AirPlay y Alexa separadamente. | Televisión con interfaz propia y altavoz con audio real, sin espejo de pestaña. El receptor debe poder acceder al contenido: la voz del navegador no proporciona automáticamente un archivo de audio transmisible. Registro y prueba en dispositivos reales antes de prometer compatibilidad. |
+| 1.0 | Rediseño del lateral y biblioteca ampliada; filtros flotantes; ajustes compartidos, buscador y acceso visible a créditos. | Catálogo de 5.000 libros, filtros independientes del lateral y controles compartidos en móvil y ordenador. |
+| 1.1 | Explicar palabras en contexto y vista bilingüe paralela. Primera vía: traducción aportada por el usuario; motor local o externo configurable para explicaciones/traducción adicionales. | Alineación de textos y controles de conexión. No confundir definición de diccionario con explicación generada ni traducir automáticamente libros. |
+| 1.2 | OCR de PDF escaneados y mejor orden de lectura en PDF con columnas, encabezados y pies. | Documentos de prueba reales, revisión del texto reconocido, progreso y cancelación; distinguir texto original de reconocido. |
+| 1.3 | Temporizador apagado inicialmente, retroceso de audio, pronunciaciones, estimaciones/límites de coste y exportación deliberada de audio por capítulos. | Sin saltos de contenido, detener costes antes del límite; estimaciones basadas en las tarifas configuradas y exportación solo con motores que generen audio. |
+| 1.4 | Evaluación y primera integración de voz de IA local; adaptadores para otros servicios de voz. | Calidad real, español y demás idiomas disponibles, hardware, licencia y funcionamiento sin nube. Cada proveedor necesita su adaptador, no basta con una URL genérica. |
+| 1.5 | Voces persistentes de personajes, corrección de interlocutores y perfiles de narración. | Consistencia entre capítulos y controles manuales; entonación según las capacidades reales del motor seleccionado. |
+| 1.6 | Aplicación web instalable, funcionamiento sin conexión y copias internas de datos con restauración. | Arranque desconectado tras instalación y recuperación de datos; recursos/modelos/diccionarios opcionales con tamaño visible. Una copia interna no protege contra borrar todo el almacenamiento del navegador. |
+| 1.7 | Sincronización voluntaria de posiciones, notas y preferencias entre dispositivos. | Resolver conflictos y elegir destino/cuenta; no subir libros por defecto. Concretar servicio, autenticación y posibles costes antes de integrarlos. |
+| 1.8 | Primera aplicación de escritorio, inicialmente Windows, integración con carpetas Calibre y proveedores de nube por sus capacidades reales. Preparar entregas para las otras plataformas de forma sucesiva. | Selección de carpetas y almacenamiento local; comprobar estados reales de archivos y acceso. Firma, tiendas y credenciales se concretan por plataforma. |
+| 1.9 | Emisión de contenido con receptor propio, primero Google Cast/Google Home compatible; después evaluar AirPlay y Alexa separadamente. | Televisión con interfaz propia y altavoz con audio real, sin espejo de pestaña. El receptor debe poder acceder al contenido: la voz del navegador no proporciona automáticamente un archivo de audio transmisible. Registro y prueba en dispositivos reales antes de prometer compatibilidad. |
 
 Si un bloque excede una entrega razonable, se subdividirá antes de comenzar y se presentará el alcance de su primera parte al autor.
 
@@ -70,4 +71,5 @@ Si un bloque excede una entrega razonable, se subdividirá antes de comenzar y s
 - 0.8 completada: actualización del catálogo y cola opcional de portadas visibles.
 - 0.9 completada: subrayados, edición, cuaderno, citas y exportación deliberada.
 - 0.10 completada: diez paquetes de diccionarios, instalación local, importación de recursos y vocabulario personal. Catalán e hindi contienen definiciones en inglés; cobertura y licencias documentadas.
-- Las versiones posteriores siguen pendientes de autorización.
+- 1.0 completada: rediseño, 35 comprobaciones unitarias y 64 de navegador, compilación y revisión visual en ordenador y móvil.
+- 1.1 autorizada a continuación: contexto y lectura bilingüe. Las posteriores siguen pendientes.

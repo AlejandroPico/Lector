@@ -1,4 +1,11 @@
 import {describe,it,expect} from 'vitest'
+import {recentReadingOrder} from '../src/library.js'
+
+it('orders actual reading before untouched alphabetical titles, ignoring metadata and note updates',()=>{
+  const items=[{title:'Zulu',updatedAt:9999},{title:'Alfa'},{title:'Primero',lastReadAt:2},{title:'Segundo',lastReadAt:1,updatedAt:99999}]
+  expect(recentReadingOrder(items).map(item=>item.title)).toEqual(['Primero','Segundo','Alfa','Zulu'])
+  expect(items[0].title).toBe('Zulu')
+})
 import {catalogMetadata,libraryEntries,filterLibrary,duplicateGroups,languageCode} from '../src/library.js'
 import {readMetadata} from '../src/folders.js'
 import {libraryRows} from '../src/i18n-library.js'

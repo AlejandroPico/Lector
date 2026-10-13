@@ -25,6 +25,8 @@ import { annotationColors,annotationColor,citation,notebookEntries,notesMarkdown
 import { lookupOffline,installDictionary,importOfflineDictionary,uninstallDictionary,clearDictionaryCache } from './offline-dictionaries.js'
 import { normalizeTerm } from './dictionary-core.js'
 import { allDictionaryPacks,allVocabulary,saveVocabulary,removeVocabulary } from './storage.js'
+import { organizeMenus } from './menu-layout.js'
+import { recentReadingOrder } from './library.js'
 
 const $ = selector => document.querySelector(selector)
 let userFonts = await allFonts().catch(()=>[])
@@ -233,7 +235,7 @@ $('#app').innerHTML = `
           <div><dt>Autor</dt><dd>Alejandro Pico</dd></div>
           <div><dt>Carácter</dt><dd>Proyecto personal</dd></div>
           <div><dt>Propósito</dt><dd>Lectura y escucha</dd></div>
-          <div><dt>Edición</dt><dd>Versión 0.10</dd></div>
+          <div><dt>Edición</dt><dd>Versión 1.0</dd></div>
         </dl>
       </aside>
       <div class="about-body">
@@ -259,6 +261,7 @@ $('#app').innerHTML = `
   <div id="loading" class="loading" role="status" hidden><span class="loading-line"></span><span id="loading-text">Abriendo libro…</span></div>
   <div id="toast" class="toast" role="status" hidden></div>
 `
+const menuLayout = organizeMenus()
 initializeI18n($('#app'), settings.uiLanguage)
 $('#speech-language').value = settings.speechLanguage
 
@@ -290,7 +293,7 @@ const speech = new SpeechController({
   onError: message => { toast(message, 8000); if (settings.provider === 'openai' && !apiKey) togglePanel('voice') },
   onHighlight(range) {
     narratedRange = range
-    if(range && record){record.anchorCFI=anchorCFI(range);updateReadingInformation();if(performance.now()-lastSpeechSave>3000){lastSpeechSave=performance.now();saveRecord()}}
+    if(range && record){record.anchorCFI=anchorCFI(range);if(speech.state==='playing')record.lastReadAt=Date.now();updateReadingInformation();if(performance.now()-lastSpeechSave>3000){lastSpeechSave=performance.now();saveRecord()}}
     for (const { doc } of view.renderer?.getContents() ?? []) doc.defaultView.CSS?.highlights?.delete('spoken')
     if (!range || !settings.highlight) return
     const win = range.startContainer.ownerDocument.defaultView
@@ -375,6 +378,8 @@ function applySettings() {
 }
 
 function closePanels() {
+  menuLayout.moveSettings(false)
+  menuLayout.clearSearch()
   if (themeDraft) { themeDraft=undefined; applySettings() }
   document.querySelectorAll('.panel').forEach(panel => panel.hidden = true)
   document.querySelectorAll('[aria-controls$="-panel"]').forEach(button => button.setAttribute('aria-expanded', 'false'))
@@ -385,6 +390,7 @@ function togglePanel(name) {
   const panel = $(`#${name}-panel`), wasOpen = !panel.hidden
   closePanels()
   if (!wasOpen) {
+    menuLayout.moveSettings(name==='preferences')
     focusBeforePanel = $(`#${name}-toggle`); panel.hidden = false
     focusBeforePanel.setAttribute('aria-expanded', 'true')
     panel.querySelector('button').focus()
@@ -611,7 +617,7 @@ function showDuplicates(){
   for(const group of duplicateClusters.slice(0,100)){
     const section=document.createElement('section');section.className='duplicate-group'
     for(const item of group){const row=document.createElement('p');row.dataset.userContent='';row.textContent=[item.title,item.author,item.path??item.filename].filter(Boolean).join(' · ');section.append(row)}
-    const button=document.createElement('button');button.className='text-button';button.textContent=t('Ver grupo en biblioteca');button.onclick=()=>{clearLibraryFilters();duplicateFocus=new Set(group.map(item=>item.id));$('#filter-duplicates').checked=true;$('#duplicates-dialog').close();if(!$('#library-dialog').open)openLibraryDialog();else renderLibrary()};section.append(button);target.append(section)
+    const button=document.createElement('button');button.className='text-button';button.textContent=t('Ver grupo en biblioteca');button.onclick=()=>{clearLibraryFilters();duplicateFocus=new Set(group.map(item=>item.id));$('#filter-duplicates').checked=true;$('#duplicates-dialog').close();$('#library-filter-dialog').close();if(!$('#library-dialog').open)openLibraryDialog();else renderLibrary()};section.append(button);target.append(section)
   }
   if(duplicateClusters.length>100){const more=document.createElement('p');more.textContent=t('Se muestran los primeros 100 grupos.');target.append(more)}
   $('#duplicates-dialog').showModal()
@@ -629,7 +635,7 @@ async function markReading(){
 
 function renderLibrary() {
   const coverTargets=new Map()
-  const display=$('#library-dialog').open?settings.libraryDialogView:settings.libraryView
+  const display=settings.libraryDialogView
   for (const url of libraryCoverURLs) URL.revokeObjectURL(url)
   libraryCoverURLs = []
   const query = $('#library-search').value.trim()
@@ -641,7 +647,11 @@ function renderLibrary() {
   $('#read-visible-metadata').disabled=Boolean(metadataBatch)||!shownLibrary.some(item=>item.kind==='folder'&&item.metadata)
   $('#library-count').textContent = `${filtered.length.toLocaleString(currentLanguage())} ${t('libros')}`
   const list = $('#library-list'); list.replaceChildren(); list.classList.toggle('cover-grid', display === 'covers')
-  document.querySelectorAll('[data-library-view]').forEach(button=>button.setAttribute('aria-pressed',button.dataset.libraryView===display))
+  document.querySelectorAll('[data-library-view]').forEach(button=>button.setAttribute('aria-pressed',button.dataset.libraryView===(button.closest('#library-dialog')?display:settings.libraryView)))
+  const activeFilters=Object.entries(filters).filter(([key,value])=>!['query','sort'].includes(key)&&value).length
+  $('#library-filter-toggle').classList.toggle('active',Boolean(activeFilters))
+  $('#library-filter-toggle').setAttribute('aria-pressed',Boolean(activeFilters))
+  $('#library-filter-toggle').dataset.activeCount=activeFilters||''
   if (!filtered.length) { const empty = document.createElement('p'); empty.className = 'small muted'; empty.textContent = t(query ? 'No hay resultados.' : 'Los libros que abras aparecerán aquí.'); list.append(empty) }
   for (const item of shownLibrary) {
     const row = document.createElement('div'); row.className = 'library-row'
@@ -672,7 +682,7 @@ function renderLibrary() {
       }
       content.append(formats)
       if (item.metadata) {
-        const metadata = document.createElement('button'); metadata.className = 'text-button metadata-button'; metadata.textContent = t('Leer metadatos')
+        const metadata = document.createElement('button'); metadata.className = 'icon-button metadata-button'; metadata.innerHTML = icon('info');metadata.title=t('Leer metadatos');metadata.setAttribute('aria-label',metadata.title)
         metadata.onclick = attempt(async () => {
           await readCatalogMetadata(item);await updateLibrary();toast('Metadatos cargados')
         }); content.append(metadata)
@@ -693,20 +703,40 @@ function renderLibrary() {
     list.append(row)
   }
   $('#library-more').hidden = filtered.length <= libraryLimit
+  renderSidebarLibrary(coverTargets)
   coverQueue.observe(coverTargets,settings.preloadCovers&&!coverQueuePaused&&!folderScan&&!metadataBatch)
+}
+
+let sidebarLibraryLimit=60
+function renderSidebarLibrary(coverTargets) {
+  const list=$('#sidebar-library-list'), items=recentReadingOrder(catalogItems,currentLanguage())
+  list.replaceChildren();list.classList.toggle('cover-grid',settings.libraryView==='covers')
+  for(const item of items.slice(0,sidebarLibraryLimit)) {
+    const row=document.createElement('div');row.className='sidebar-library-row'
+    if(settings.libraryView==='covers') {
+      const cover=document.createElement('button');cover.className='sidebar-catalog-cover catalog-cover';cover.setAttribute('aria-label',`${t(item.coverBlob?'Abrir libro':'Cargar portada')}: ${item.title}`)
+      if(item.coverBlob){const image=document.createElement('img'),url=URL.createObjectURL(item.coverBlob);libraryCoverURLs.push(url);image.src=url;image.alt=item.title;cover.append(image)}else cover.innerHTML=icon('book')
+      cover.onclick=attempt(async()=>{if(item.coverBlob)await openLibraryItem(item);else {await loadLibraryCover(item);await updateLibrary()}})
+      row.append(cover)
+      if(!item.coverBlob&&(item.cover||settings.preloadEmbeddedCovers))coverTargets.set(cover,item)
+    }
+    const title=document.createElement('button');title.className='sidebar-book';title.dataset.userContent='';title.textContent=item.title;title.onclick=attempt(()=>openLibraryItem(item));row.append(title);list.append(row)
+  }
+  $('#sidebar-library-more').hidden=items.length<=sidebarLibraryLimit
 }
 
 function openLibraryDialog() {
   closePanels();$('#file-dialog').close()
-  $('#library-dialog-content').append($('#library-content'))
   $('#library-dialog').showModal();renderLibrary()
 }
-function closeLibraryDialog() { $('#library-dialog').close() }
-$('#library-dialog').addEventListener('close',()=>{if(!$('#library-dialog').open) {$('#library-tab').append($('#library-content'));renderLibrary()}})
+function closeLibraryDialog() { for(const id of ['library-filter-dialog','library-sources-dialog','library-collections-dialog','library-dialog'])$(`#${id}`).close() }
+$('#library-dialog').addEventListener('close',()=>{renderLibrary()})
+for(const name of ['filter','sources','collections'])$(`#library-${name}-toggle`).onclick=()=> $(`#library-${name}-dialog`).showModal()
+$('#sidebar-library-more').onclick=()=>{sidebarLibraryLimit+=60;renderLibrary()}
 $('#library-dialog-close').onclick=closeLibraryDialog
 $('#library-expand').onclick=openLibraryDialog
 document.querySelectorAll('[data-library-view]').forEach(button=>button.onclick=()=>{
-  settings[$('#library-dialog').open?'libraryDialogView':'libraryView']=button.dataset.libraryView;writeJSON('lector-settings',settings);renderLibrary()
+  settings[button.closest('#library-dialog')?'libraryDialogView':'libraryView']=button.dataset.libraryView;writeJSON('lector-settings',settings);renderLibrary()
 })
 async function openLibraryItem(item) {
   closeLibraryDialog()
@@ -792,7 +822,8 @@ async function connectFolder() {
     for (const source of sources) if (await handle.isSameEntry(source.handle)) { folder = source; break }
     folder ??= { id: crypto.randomUUID(), handle, name: handle.name, entries: [] }
     $('#file-dialog').close(); sidebar(true); $('[data-tab="library"]').click()
-    await indexFolder(folder)
+    openLibraryDialog();$('#library-sources-dialog').showModal()
+    try {await indexFolder(folder)} finally {$('#library-sources-dialog').close()}
   } catch (error) { if (error.name !== 'AbortError') handleError(error) }
 }
 
@@ -822,7 +853,7 @@ async function openFile(file, saved) {
     const nextRecord = { id, title, filename: file.name, file: saved?.fileHandle ? undefined : $('#remember-file').checked ? file : undefined,
       fileHandle: saved?.fileHandle, folderId: saved?.folderId, entryKey: saved?.entryKey, catalogTitle: saved?.catalogTitle, author: saved?.author ?? metadataText(imported.metadata?.author), coverBlob: saved?.coverBlob,
       notes: saved?.notes ?? [], cfi: saved?.cfi,anchorCFI:saved?.anchorCFI,readingStats:saved?.readingStats??{},navigationTrail:saved?.navigationTrail,
-      coverSeen:saved?.coverSeen??Boolean(saved?.cfi), fraction: Number.isFinite(saved?.fraction) ? saved.fraction : 0, updatedAt: Date.now() }
+      coverSeen:saved?.coverSeen??Boolean(saved?.cfi), lastReadAt:Date.now(), fraction: Number.isFinite(saved?.fraction) ? saved.fraction : 0, updatedAt: Date.now() }
     clearTimeout(saveTimer)
     view.close(); book?.destroy?.(); book = null; record = null
     await view.open(imported)
@@ -867,6 +898,7 @@ view.addEventListener('relocate', ({ detail }) => {
   if (!record) return
   if(!$('#opening-cover').hidden && detail.reason==='navigation') attempt(()=>finishOpeningCover(false))()
   record.cfi = detail.cfi; record.fraction = Number.isFinite(detail.fraction) ? detail.fraction : record.fraction
+  if(!busy&&!preservingAnchor&&detail.reason==='navigation')record.lastReadAt=Date.now()
   if(!preservingAnchor)record.anchorCFI=anchorCFI(narratedRange??detail.range)
   $('#chapter-name').textContent = detail.tocItem?.label ?? ''
   $('#progress-text').textContent = `${Math.round(record.fraction * 100)} %`

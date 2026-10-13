@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test'
 import {epub} from './fixtures.js'
 async function open(page,text){await page.goto('/');await page.locator('#file-input').setInputFiles(text?{name:'lectura.txt',mimeType:'text/plain',buffer:Buffer.from(text)}:{name:'libro.epub',mimeType:'application/epub+zip',buffer:await epub()});await expect(page.locator('#loading')).toBeHidden();await expect(page.locator('#audio-toggle')).toBeEnabled()}
-async function readingSettings(page){await page.locator('#preferences-toggle').click();const summary=page.locator('#preferences-panel summary').filter({hasText:/^Lectura$/});if(!(await summary.evaluate(element=>element.parentElement.open)))await summary.click()}
+async function readingSettings(page){await page.locator('#preferences-toggle').click();const summary=page.locator('#preferences-panel summary').filter({hasText:/^Lectura$/});if(!(await summary.evaluate(element=>element.parentElement.open)))await summary.click();const progress=page.getByText('Ubicación y tiempo de lectura',{exact:true});if(!(await progress.evaluate(element=>element.parentElement.open)))await progress.click()}
 test('vertical narration follows word events, freezes on pause and resumes',async({page})=>{
   await page.addInitScript(()=>Object.defineProperty(window,'speechSynthesis',{value:{getVoices:()=>[],addEventListener(){},cancel(){},pause(){},resume(){},speak(utterance){window.__utterance=utterance;utterance.onstart?.()}}}))
   await page.setViewportSize({width:900,height:450});await open(page,Array.from({length:900},(_,i)=>`palabra${i}`).join(' ')+'.')

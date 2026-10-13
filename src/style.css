@@ -376,3 +376,38 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 84%, transparent)
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
+
+/* Compact navigation: the catalogue tools never push books down the sidebar. */
+.library-heading { gap: 4px; align-items: center; }
+.library-open-full { flex: 1; text-align: left; min-height: 48px; }
+.library-open-full span { line-height: 1.4; }
+.library-heading .library-view-switch button { width: 25px; height: 30px; padding: 4px; }
+.sidebar-library-row { padding: 6px 0; }
+.sidebar-book { display: block; width: 100%; text-align: left; padding: 9px 0; font: inherit; line-height: 1.5; }
+#sidebar-library-list.cover-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; }
+.library-dialog[open] { display: flex; flex-direction: column; height: min(820px,90dvh); padding: 14px 20px; overflow: hidden; }
+.library-dialog > .panel-heading { flex: none; position: static; margin-bottom: 8px; }
+#library-dialog-content { min-height: 0; flex: 1; display: flex; }
+#library-content { min-height: 0; width: 100%; display: flex; flex-direction: column; }
+.library-dialog .library-toolbar { display: grid; grid-template-columns: minmax(120px,1fr) minmax(100px,160px) repeat(4,auto); align-items: end; gap: 8px; margin: 0; }
+.library-toolbar .field { margin: 0; }
+.library-toolbar label { font-size: 11px; }
+.library-toolbar #library-search { width: 100%; max-width: none; }
+.library-toolbar .icon-button { position: relative; }
+#library-filter-toggle.active::after { content: ''; width: 5px; height: 5px; position: absolute; right: 4px; top: 4px; background: var(--accent); border-radius: 50%; }
+.library-result-count { padding: 5px 0 8px; }
+.library-results { min-height: 0; flex: 1; overflow-y: auto; overscroll-behavior: contain; }
+.library-subdialog { width: min(580px,94vw); }
+.library-subdialog .settings-section { border: 0; margin: 0; padding: 0; }
+.library-subdialog .filter-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.settings-search { margin: 10px 0; }
+#preferences-panel { width: min(420px,calc(100vw - 24px)); }
+.shared-settings .settings-section { margin-top: 12px; }
+@media (max-width: 700px) {
+  .library-dialog[open] { width: 100dvw; height: 100dvh; max-width: none; max-height: none; margin: 0; padding: 12px; }
+  .library-dialog .library-toolbar { grid-template-columns: minmax(80px,1fr) repeat(4,auto); gap: 4px; }
+  .library-toolbar > .field { grid-column: 1/-1; }
+  .library-toolbar .icon-button { width: 32px; height: 34px; }
+  .library-toolbar .library-view-switch button { width: 26px; }
+  #preferences-panel { width: calc(100vw - 24px); }
+}

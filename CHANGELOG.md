@@ -1,5 +1,12 @@
 # Historial de versiones
 
+## 1.0.0
+
+- Lateral con biblioteca completa y libros recientes, sin filtros ni herramientas de catálogo.
+- Biblioteca con barra compacta, filtros en ventana propia y gestión de carpetas y colecciones aparte.
+- Ajustes centrales compartidos con accesos directos, buscador y lectura continua junto a columnas.
+- Numeración estable 1.0; el antiguo bloque 0.11 pasa a 1.1.
+
 ## 0.10.0
 
 - Diez paquetes Wiktionary opcionales, con 6.449.866 entradas normalizadas y licencias/procedencia documentadas.
