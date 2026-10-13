@@ -1,4 +1,5 @@
 import './style.css'
+import faviconURL from '../favicon.svg?url'
 import 'foliate-js/view.js'
 import { Overlayer } from 'foliate-js/overlayer.js'
 import { importBook, escapeHTML, metadataText, pdfPageImage } from './books.js'
@@ -101,7 +102,40 @@ $('#app').innerHTML = `
   <dialog id="dictionary-dialog" class="small-dialog" aria-labelledby="dictionary-word"><div class="panel-heading"><h2 id="dictionary-word"></h2><button class="icon-button dialog-close" aria-label="Cerrar">${icon('close')}</button></div><p id="dictionary-definition"></p><a id="dictionary-external" class="text-link" target="_blank" rel="noopener noreferrer">Consultar en Wikcionario ↗</a><label class="text-button dictionary-import">Importar diccionario propio<input id="dictionary-file" type="file" accept=".json" hidden></label><p class="small muted">Glosario local básico y diccionarios JSON propios. Formato: {"palabra": "definición"}.</p></dialog>
   <dialog id="image-dialog" class="image-dialog" aria-label="Imagen ampliada"><div class="image-toolbar">${iconButton('zoom-out', 'minus', 'Reducir imagen')}<output id="zoom-level">100 %</output>${iconButton('zoom-in', 'plus', 'Ampliar imagen')}${iconButton('zoom-fit', 'expand', 'Ajustar imagen')}<button class="icon-button dialog-close" aria-label="Cerrar imagen">${icon('close')}</button></div><div class="image-stage"><img id="zoom-image" alt=""></div></dialog>
   <dialog id="footnote-dialog" class="small-dialog" aria-labelledby="footnote-title"><div class="panel-heading"><h2 id="footnote-title">Nota del libro</h2><button class="icon-button dialog-close" aria-label="Cerrar">${icon('close')}</button></div><div id="footnote-content"></div></dialog>
-  <dialog id="about-dialog" class="small-dialog" aria-labelledby="about-title"><div class="panel-heading"><h2 id="about-title">Lector</h2><button class="icon-button dialog-close" aria-label="Cerrar">${icon('close')}</button></div><p>Un espacio tranquilo para leer y escuchar tus libros.</p><p class="small muted">Versión 0.1 · EPUB, MOBI, AZW3, DOCX, PDF y TXT. Tus archivos y notas permanecen en este navegador. Las voces disponibles dependen del navegador y del sistema.</p><div class="about-links"><a href="https://github.com/AlejandroPico/Lector" target="_blank" rel="noopener noreferrer">Proyecto ↗</a><a href="https://github.com/AlejandroPico?tab=repositories" target="_blank" rel="noopener noreferrer">Porfolio de proyectos ↗</a></div><p class="small muted">Atajos: ← / → pasar página · Z modo zen · F pantalla completa · Espacio leer o pausar · Ctrl+O abrir · Esc cerrar.</p></dialog>
+  <dialog id="about-dialog" class="about-dialog" aria-labelledby="about-title">
+    <header class="about-header">
+      <div class="about-project-icon" aria-hidden="true"><img src="${faviconURL}" alt=""></div>
+      <div class="about-heading"><p>Lector · biblioteca personal</p><h2 id="about-title">Leer a tu ritmo</h2></div>
+      <button class="icon-button dialog-close" aria-label="Cerrar Acerca de">${icon('close')}</button>
+    </header>
+    <div class="about-layout">
+      <aside class="about-index" aria-label="Ficha del proyecto">
+        <h3>Ficha del proyecto</h3>
+        <dl>
+          <div><dt>Autor</dt><dd>Alejandro Pico</dd></div>
+          <div><dt>Carácter</dt><dd>Proyecto personal</dd></div>
+          <div><dt>Propósito</dt><dd>Lectura y escucha</dd></div>
+          <div><dt>Edición</dt><dd>Versión 0.1</dd></div>
+        </dl>
+      </aside>
+      <div class="about-body">
+        <p class="about-lead">Lector es un proyecto independiente pensado para disfrutar de tus libros con calma: un espacio limpio, una presentación adaptable y la posibilidad de alternar entre leer y escuchar.</p>
+        <section class="about-purpose" aria-labelledby="about-principles">
+          <h3 id="about-principles">Principios del lector</h3>
+          <div><strong>Leer</strong><span>Texto protagonista, columnas y tipografía a tu medida, con temas que acompañan cada momento del día.</span></div>
+          <div><strong>Escuchar</strong><span>Lectura en voz alta con las voces del navegador y conexión opcional con servicios de voz por API.</span></div>
+          <div><strong>Recordar</strong><span>Índice, búsqueda, notas y marcadores para volver a tus ideas y continuar donde lo dejaste.</span></div>
+        </section>
+        <p class="about-note"><strong>Tu biblioteca.</strong> Los archivos y las notas se guardan en este navegador. Si activas una API de voz, el servicio recibirá los fragmentos narrados y podrá cobrar por su uso. Las voces disponibles dependen del navegador y del sistema.</p>
+        <details class="about-shortcuts"><summary>Atajos de lectura</summary><p>← / → pasar página · Z modo zen · F pantalla completa · Espacio leer o pausar · Ctrl+O abrir · Esc cerrar.</p></details>
+      </div>
+    </div>
+    <nav class="about-links" aria-label="Enlaces del proyecto">
+      <a href="https://alejandropico.github.io/Portfolio/" target="_blank" rel="noopener noreferrer"><span>01 · Autor</span><strong>Portfolio de Alejandro Pico</strong><b aria-hidden="true">↗</b></a>
+      <a href="https://github.com/AlejandroPico/Lector" target="_blank" rel="noopener noreferrer"><span>02 · Proyecto</span><strong>Código y documentación</strong><b aria-hidden="true">↗</b></a>
+    </nav>
+    <div class="about-spectrum" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+  </dialog>
   <dialog id="position-dialog" class="small-dialog" aria-labelledby="position-title"><div class="panel-heading"><h2 id="position-title">Posición del libro</h2><button class="icon-button dialog-close" aria-label="Cerrar">${icon('close')}</button></div><label class="field">Porcentaje de lectura<input id="position-input" type="number" min="0" max="100" step="1"></label><button id="go-position" class="primary-button">Ir</button></dialog>
   <input id="file-input" type="file" accept=".epub,.mobi,.azw3,.docx,.doc,.pdf,.txt,.fb2" hidden>
   <div id="loading" class="loading" role="status" hidden><span class="loading-line"></span><span id="loading-text">Abriendo libro…</span></div>
@@ -252,7 +286,7 @@ async function updateLibrary() {
   available.slice(0, 3).forEach(item => {
     const button = document.createElement('button'); button.className = 'resume-button'
     const label = document.createElement('span'); label.textContent = item.title
-    const percent = document.createElement('span'); percent.className = 'muted small'; percent.textContent = `${Math.round((item.fraction ?? 0) * 100)} %`
+    const percent = document.createElement('span'); percent.className = 'muted small'; percent.textContent = `${Math.round((Number.isFinite(item.fraction) ? item.fraction : 0) * 100)} %`
     button.append(label, percent); button.addEventListener('click', attempt(() => openStored(item.id)))
     $('#resume-list').append(button)
   })
@@ -296,7 +330,7 @@ async function openFile(file, saved) {
     saved ??= await getBook(id).catch(() => null)
     const title = metadataText(imported.metadata?.title) || file.name
     const nextRecord = { id, title, filename: file.name, file: $('#remember-file').checked ? file : undefined,
-      notes: saved?.notes ?? [], cfi: saved?.cfi, fraction: saved?.fraction ?? 0, updatedAt: Date.now() }
+      notes: saved?.notes ?? [], cfi: saved?.cfi, fraction: Number.isFinite(saved?.fraction) ? saved.fraction : 0, updatedAt: Date.now() }
     clearTimeout(saveTimer)
     view.close(); book?.destroy?.(); book = null; record = null
     await view.open(imported)
@@ -324,7 +358,7 @@ async function openFile(file, saved) {
 
 view.addEventListener('relocate', ({ detail }) => {
   if (!record) return
-  record.cfi = detail.cfi; record.fraction = detail.fraction ?? 0
+  record.cfi = detail.cfi; record.fraction = Number.isFinite(detail.fraction) ? detail.fraction : record.fraction
   $('#chapter-name').textContent = detail.tocItem?.label ?? ''
   $('#progress-text').textContent = `${Math.round(record.fraction * 100)} %`
   $('#progress-line').style.width = `${Math.max(0, Math.min(100, record.fraction * 100))}%`
