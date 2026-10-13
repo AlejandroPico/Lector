@@ -4,11 +4,13 @@ let connection
 
 async function db() {
   if (!connection) connection = new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 3)
+    const request = indexedDB.open(DB_NAME, 4)
     request.onupgradeneeded = () => {
       if (!request.result.objectStoreNames.contains('books')) request.result.createObjectStore('books', { keyPath: 'id' })
       if (!request.result.objectStoreNames.contains('folders')) request.result.createObjectStore('folders', { keyPath: 'id' })
       if (!request.result.objectStoreNames.contains('fonts')) request.result.createObjectStore('fonts', { keyPath: 'id' })
+      if (!request.result.objectStoreNames.contains('catalog')) request.result.createObjectStore('catalog', { keyPath:'id' })
+      if (!request.result.objectStoreNames.contains('collections')) request.result.createObjectStore('collections', { keyPath:'id' })
     }
     request.onsuccess = () => {
       request.result.onversionchange = () => { request.result.close(); connection = undefined }
@@ -42,6 +44,28 @@ export const removeFolder = id => transact('readwrite', store => store.delete(id
 export const allFonts = () => transact('readonly',store=>store.getAll(),'fonts')
 export const saveFont = font => transact('readwrite',store=>store.put(font),'fonts')
 export const removeFont = id => transact('readwrite',store=>store.delete(id),'fonts')
+export const allCatalog = () => transact('readonly',store=>store.getAll(),'catalog')
+export const getCatalog = id => transact('readonly',store=>store.get(id),'catalog')
+export const saveCatalog = record => transact('readwrite',store=>store.put(record),'catalog')
+export async function updateCatalog(id,change){
+  const database=await db()
+  return new Promise((resolve,reject)=>{const tx=database.transaction('catalog','readwrite'),store=tx.objectStore('catalog'),request=store.get(id);let result
+    request.onsuccess=()=>{try{result={...change(request.result??{id}),id};store.put(result)}catch(error){reject(error);tx.abort()}}
+    tx.oncomplete=()=>resolve(result);tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error)
+  })
+}
+export const removeCatalog = id => transact('readwrite',store=>store.delete(id),'catalog')
+export const allCollections = () => transact('readonly',store=>store.getAll(),'collections')
+export const saveCollection = collection => transact('readwrite',store=>store.put(collection),'collections')
+export async function removeCollection(id){
+  const database=await db()
+  return new Promise((resolve,reject)=>{
+    const tx=database.transaction(['collections','catalog'],'readwrite');tx.objectStore('collections').delete(id)
+    const cursor=tx.objectStore('catalog').openCursor()
+    cursor.onsuccess=()=>{const item=cursor.result;if(!item)return;if(item.value.collections?.includes(id))item.update({...item.value,collections:item.value.collections.filter(value=>value!==id)});item.continue()}
+    tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error)
+  })
+}
 
 export async function fileId(file) {
   const hash = await crypto.subtle.digest('SHA-256', await file.arrayBuffer())
@@ -69,6 +93,7 @@ export const defaults = Object.freeze({
   libraryDialogView: 'covers',
   readingFlow:'paginated',tvMode:false,tvScale:1.35,historyControls:true,
   showReference:false,showChapterTime:false,showBookTime:false,estimateMode:'reading',visualWpm:220,narrationWpm:170,
+  libraryDetails:false,
   voice: '', rate: 1, pitch: 1, language: 'es-ES', speechLanguage: 'auto',
   endpoint: 'https://api.openai.com/v1/audio/speech',
   model: 'gpt-4o-mini-tts', apiVoice: 'coral',

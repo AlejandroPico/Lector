@@ -1,5 +1,17 @@
 # Historial de versiones
 
+## 0.7.0
+
+- Filtros combinables por autor, serie, género, etiquetas, idioma, formato, estado y colección.
+- Estados pendiente, leyendo, terminado y abandonado; colecciones virtuales sin mover archivos.
+- Organización por libro con correcciones locales del catálogo, independientes de notas y posiciones.
+- Series Calibre y EPUB3 con orden numérico; géneros de columnas personalizadas y etiquetas OPF.
+- Carga explícita y cancelable de metadatos de las filas mostradas, sin leer ebooks ni cubiertas.
+- Revisión de posibles duplicados por metadatos o huellas ya conocidas, sin eliminación ni fusión.
+- Conservación de la organización al actualizar carpetas Calibre y añadir formatos.
+- Detalles opcionales de biblioteca y controles traducidos a los diez idiomas.
+- Pruebas de catálogos de 5.000 entradas, persistencia, ediciones, formatos, móvil y cancelación.
+
 ## 0.6.0
 
 - Flujo vertical con narración suavizada, seguimiento por palabras y pausa real del desplazamiento.

@@ -256,6 +256,24 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 84%, transparent)
 .library-controls label { font-size: 10px; display: flex; flex-direction: column; gap: 5px; justify-content: end; }
 .library-controls select { border: 1px solid var(--line); background: var(--paper); border-radius: 0; padding: 8px 5px; font-size: 11px; min-width: 0; width: 100%; }
 .library-entry { min-width: 0; flex: 1; display: flex; flex-direction: column; }
+.library-row-actions { display: flex; gap: 4px; flex: 0 0 auto; }
+.library-row-actions .icon-button { margin-right: 0; color: var(--muted); }
+.cover-grid .library-row-actions { align-self: end; }
+.filter-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 0 10px; }
+.filter-grid .field { min-width: 0; font-size: 11px; }
+.filter-grid select { min-width: 0; width: 100%; }
+.library-dialog .filter-grid { grid-template-columns: repeat(4,minmax(0,1fr)); }
+.collection-create { display: flex; gap: 8px; margin-block: 12px; align-items: center; }
+.collection-create input { min-width: 0; flex: 1; border: 1px solid var(--line); background: var(--paper); color: var(--ink); padding: 9px; border-radius: 0; }
+.collection-fieldset { border: 0; border-top: 1px solid var(--line); padding: 12px 0; margin: 12px 0 0; }
+.collection-fieldset legend { font-size: 12px; padding-right: 8px; }
+#organize-collections { max-height: 220px; overflow: auto; }
+.catalog-details { overflow-wrap: anywhere; margin-top: 5px; font-size: 10px; }
+#metadata-progress { font-size: 11px; margin-block: 10px; }
+.duplicates-dialog { width: min(720px,calc(100vw - 30px)); }
+.duplicate-group { border-top: 1px solid var(--line); padding-block: 12px; }
+.duplicate-group p { font-size: 12px; overflow-wrap: anywhere; }
+@media(max-width:600px){.library-dialog .filter-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }}
 .catalog-formats { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 8px; }
 .catalog-formats button { font-size: 9px; color: var(--accent); border: 1px solid var(--line); padding: 4px 6px; }
 .metadata-button { font-size: 10px; margin-top: 3px; }

@@ -2,7 +2,19 @@
 
 Un lector de libros a toda pantalla, sin cabeceras decorativas ni tarjetas alrededor del texto. Dos columnas por defecto, controles discretos en la esquina superior derecha y un índice lateral que se puede ocultar.
 
-## Versión 0.6
+## Versión 0.7
+
+La biblioteca ofrece «Filtros y colecciones», plegado inicialmente, en el panel lateral y en la ventana ampliada. Combina autor, serie, género, etiquetas, idioma, formato, estado y colección. El buscador también encuentra series, géneros y etiquetas; la ordenación por serie usa posiciones numéricas, incluidos decimales de Calibre. Los formatos de un mismo libro Calibre permanecen agrupados.
+
+El botón discreto de organización de cada libro permite marcar pendiente, leyendo, terminado o abandonado; asignar colecciones virtuales; y completar autor, género, etiquetas, serie e idioma. Estas correcciones se guardan en el navegador, sin modificar ebooks ni OPF. Empezar un libro pendiente lo marca como leyendo; terminado y abandonado se conservan hasta cambiarlos. La actualización de carpeta mantiene la identidad de sus libros Calibre aunque cambie su formato preferido. «Mostrar detalles de biblioteca», apagado inicialmente en Ajustes → Biblioteca, añade estado, serie y etiquetas a las filas.
+
+Los filtros utilizan los datos ya disponibles. Abrir un ebook carga su metadata propia; «Leer metadatos» carga el OPF de ese libro; «Leer metadatos mostrados» carga únicamente los OPF de las filas mostradas (60 inicialmente), con cancelación. Esta acción explícita puede hidratar esos pequeños archivos en OneDrive; no abre los ebooks ni las cubiertas. Género y etiquetas son campos distintos: las etiquetas proceden de `dc:subject`; los géneros se reconocen en columnas Calibre `#genre`, `#genres`, `#genero`, `#generos`, `#gènere` o `#gèneres`. Si faltan, se pueden completar en el lector. Las series aceptan metadatos Calibre y refinamientos EPUB3.
+
+«Revisar duplicados» muestra candidatos por título y autor, identificadores o huellas de archivos que ya se abrieron. Permite ver cada grupo en la biblioteca; nunca borra ni fusiona libros. Dos ediciones con el mismo título pueden aparecer como candidatas. La detección no descarga archivos para calcular huellas.
+
+Se comprueban catálogos de 5.000 entradas, filtros combinados, varias ediciones y formatos, persistencia y cancelación. Las colecciones, estados y correcciones se guardan separados de la posición y las notas para evitar que el guardado durante la narración los sobrescriba.
+
+## Lectura de la versión 0.6
 
 En Ajustes → Lectura se puede alternar entre páginas y desplazamiento vertical. Durante la narración, el texto sigue las palabras con un movimiento suavizado y se detiene al pausar. Las voces sin marcas usan una aproximación dentro del fragmento; el audio externo utiliza su progreso de reproducción. La rueda y las flechas permiten continuar al siguiente capítulo.
 

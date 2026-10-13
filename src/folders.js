@@ -57,5 +57,21 @@ export async function readMetadata(entry) {
   const doc = new DOMParser().parseFromString(await file.text(), 'application/xml')
   if (doc.querySelector('parsererror')) throw new Error('El archivo metadata.opf no es válido.')
   const values = tag => [...doc.getElementsByTagNameNS('*', tag)].map(el => el.textContent.trim()).filter(Boolean)
-  return { title: values('title')[0], author: values('creator').join(', '), language: values('language')[0] }
+  const metas=[...doc.getElementsByTagNameNS('*','meta')]
+  const meta=name=>metas.find(el=>el.getAttribute('name')===name)?.getAttribute('content')
+  const tags=values('subject'),series=meta('calibre:series'),index=meta('calibre:series_index')!==undefined?Number(meta('calibre:series_index')):NaN
+  const refined=(collection,property)=>metas.find(el=>el.getAttribute('property')===property&&el.getAttribute('refines')===`#${collection?.getAttribute('id')}`)?.textContent.trim()
+  const collection=metas.find(el=>el.getAttribute('property')==='belongs-to-collection'&&refined(el,'collection-type')==='series')
+  const genres=[]
+  for(const el of metas){if(!/^calibre:user_metadata:#(?:genre|genres|genero|generos|g[eè]nere|g[eè]neres)$/i.test(el.getAttribute('name')??''))continue
+    try{const value=JSON.parse(el.getAttribute('content'))?.['#value#'];for(const item of Array.isArray(value)?value:[value])if(typeof item==='string'&&item.trim())genres.push(item.trim().slice(0,160))}catch{/* Custom fields are data only; ignore malformed JSON. */}}
+  const result={title:values('title')[0],author:values('creator').join(', '),language:values('language')[0]}
+  if(tags.length)result.tags=tags
+  if(genres.length)result.genres=genres
+  if(series){result.series=series;if(Number.isFinite(index))result.seriesIndex=index}
+  else if(collection){result.series=collection.textContent.trim();const position=refined(collection,'group-position');if(position!==undefined&&Number.isFinite(Number(position)))result.seriesIndex=Number(position)}
+  const identifiers=values('identifier');if(identifiers.length)result.identifiers=identifiers
+  if(values('language').length>1)result.languages=values('language')
+  if(values('creator').length>1)result.authors=values('creator')
+  return result
 }

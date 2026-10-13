@@ -18,6 +18,8 @@ import { scanDirectory, ensureFolderPermission, readMetadata } from './folders.j
 import { attachImageGestures } from './image-viewer.js'
 import { NavigationTrail,readingMetrics,estimateRemaining } from './reading.js'
 import { moveFocus,attachGamepad } from './tv-controls.js'
+import { allCatalog,updateCatalog,removeCatalog,allCollections,saveCollection,removeCollection } from './storage.js'
+import { statuses,catalogKey,catalogMetadata,libraryEntries,filterLibrary,duplicateGroups,labels,normalize,languageCode } from './library.js'
 
 const $ = selector => document.querySelector(selector)
 let userFonts = await allFonts().catch(()=>[])
@@ -39,6 +41,8 @@ let navigationTrail=new NavigationTrail(),preservingAnchor=false,wheelTurning=fa
 let layoutSequence=0
 let chapterStarts=[]
 const metricsCache=new WeakMap()
+let catalogRecords=[],collections=[],catalogItems=[],duplicateClusters=[],duplicateIDs=new Set(),duplicateFocus,organizingItem,metadataBatch
+let shownLibrary=[],lastSpeechSave=0
 
 const rangeControl = (key, label, min, max, step, unit = '') => `<label class="field range-field"><span>${label}<output for="${key}" data-output="${key}">${settings[key]}${unit}</output></span><input id="${key}" type="range" data-setting="${key}" min="${min}" max="${max}" step="${step}" value="${settings[key]}" data-unit="${unit}"></label>`
 const check = (key, label) => `<label class="check-field"><input type="checkbox" data-setting="${key}" ${settings[key] ? 'checked' : ''}>${label}</label>`
@@ -84,7 +88,13 @@ $('#app').innerHTML = `
       <p class="small muted folder-explanation">Los títulos se obtienen de los nombres de carpeta. EPUB, metadatos y portadas se leen solo cuando los eliges.</p>
       <div id="folder-progress" role="status" hidden><span id="folder-progress-text"></span><button id="cancel-scan" class="text-button">Cancelar escaneo</button></div>
       <label class="field"><span class="sr-only">Buscar título o autor</span><input id="library-search" type="search" placeholder="Buscar título o autor"></label>
-      <div class="library-controls"><label>Ordenar por<select id="library-sort"><option value="title">Título</option><option value="author">Autor</option><option value="recent">Recientes</option></select></label><div class="library-view-switch" role="group" aria-label="Vista de biblioteca"><button id="library-view-list" data-library-view="list" aria-label="Mostrar títulos" title="Mostrar títulos">${icon('list')}</button><button id="library-view-covers" data-library-view="covers" aria-label="Mostrar portadas" title="Mostrar portadas">${icon('grid')}</button></div></div>
+      <div class="library-controls"><label>Ordenar por<select id="library-sort"><option value="title">Título</option><option value="author">Autor</option><option value="recent">Recientes</option><option value="series">Serie y número</option></select></label><div class="library-view-switch" role="group" aria-label="Vista de biblioteca"><button id="library-view-list" data-library-view="list" aria-label="Mostrar títulos" title="Mostrar títulos">${icon('list')}</button><button id="library-view-covers" data-library-view="covers" aria-label="Mostrar portadas" title="Mostrar portadas">${icon('grid')}</button></div></div>
+      <details id="library-filters" class="settings-section"><summary>Filtros y colecciones</summary><div class="filter-grid">
+        ${[['author','Autor'],['series','Serie'],['genre','Género'],['tag','Etiqueta'],['language','Idioma'],['format','Formato'],['status','Estado'],['collection','Colección']].map(([key,label])=>`<label class="field">${label}<select id="filter-${key}" data-library-filter="${key}"><option value="">Todos</option></select></label>`).join('')}
+      </div><label class="check-field"><input id="filter-duplicates" type="checkbox">Solo posibles duplicados</label><div class="editor-actions"><button id="clear-library-filters" class="text-button">Limpiar filtros</button><button id="show-duplicates" class="text-button">Revisar duplicados</button></div>
+      <div class="collection-create"><label class="sr-only" for="collection-name">Nueva colección</label><input id="collection-name" maxlength="80" placeholder="Nueva colección"><button id="collection-create" class="icon-button" aria-label="Crear colección">${icon('plus')}</button><button id="collection-delete" class="icon-button" aria-label="Eliminar colección" hidden>${icon('trash')}</button></div>
+      <button id="read-visible-metadata" class="text-button">Leer metadatos mostrados</button><p class="small muted">Los filtros usan metadatos ya cargados. Esta acción lee los metadata.opf de los libros mostrados; en la nube puede descargarlos.</p>
+      <div id="metadata-progress" role="status" hidden><span id="metadata-progress-text"></span><button id="metadata-cancel" class="text-button">Cancelar carga</button></div></details>
       <div id="library-count" class="small muted"></div><div id="library-list"></div>
       <button id="library-more" class="text-button" hidden>Mostrar más</button>
       </div>
@@ -117,7 +127,7 @@ $('#app').innerHTML = `
     <p class="small muted">Los tiempos son aproximados. La narración tiene en cuenta la velocidad de voz; los capítulos sin abrir se estiman por su tamaño.</p></details></details>
     <details class="settings-section"><summary>Apariencia</summary><button class="settings-link" data-settings-panel="theme">Temas y colores ${icon('right')}</button>${check('showOpeningCover','Mostrar cubierta al abrir un libro')}</details>
     <details class="settings-section"><summary>Voz</summary><button class="settings-link" data-settings-panel="voice">Lectura en voz alta ${icon('right')}</button></details>
-    <details class="settings-section"><summary>Biblioteca</summary><button class="settings-link" data-settings-tab="library">Abrir biblioteca ${icon('right')}</button></details>
+    <details class="settings-section"><summary>Biblioteca</summary><button class="settings-link" data-settings-tab="library">Abrir biblioteca ${icon('right')}</button>${check('libraryDetails','Mostrar detalles de biblioteca')}</details>
     <details class="settings-section"><summary>Notas y vocabulario</summary><button class="settings-link" data-settings-tab="notes">Ver notas ${icon('right')}</button></details>
     <details class="settings-section"><summary>Datos</summary><p class="small muted">Los libros y las notas se guardan en este navegador. No se descargan archivos automáticamente.</p></details>
     <details class="settings-section"><summary>Dispositivos</summary>${check('tvMode','Modo televisión')}${rangeControl('tvScale','Escala de televisión',1,2,.05,' ×')}<p class="small muted">Flechas para leer y recorrer controles; Intro para seleccionar. Compatible con mandos que envían teclas y con gamepads del navegador.</p><button id="settings-fullscreen" class="settings-link">Pantalla completa ${icon('expand')}</button><button id="settings-zen" class="settings-link">Modo zen ${icon('zen')}</button></details>
@@ -187,6 +197,13 @@ $('#app').innerHTML = `
   <dialog id="dictionary-dialog" class="small-dialog" aria-labelledby="dictionary-word"><div class="panel-heading"><h2 id="dictionary-word"></h2><button class="icon-button dialog-close" aria-label="Cerrar">${icon('close')}</button></div><p id="dictionary-definition"></p><a id="dictionary-external" class="text-link" target="_blank" rel="noopener noreferrer">Consultar en Wikcionario ↗</a><label class="text-button dictionary-import">Importar diccionario propio<input id="dictionary-file" type="file" accept=".json" hidden></label><p class="small muted">Glosario local básico y diccionarios JSON propios. Formato: {"palabra": "definición"}.</p></dialog>
   <dialog id="image-dialog" class="image-dialog" aria-label="Imagen ampliada"><div class="image-toolbar">${iconButton('zoom-out', 'minus', 'Reducir imagen')}<output id="zoom-level">100 %</output>${iconButton('zoom-in', 'plus', 'Ampliar imagen')}${iconButton('zoom-fit', 'expand', 'Ajustar imagen')}<button class="icon-button dialog-close" aria-label="Cerrar imagen">${icon('close')}</button></div><div class="image-stage"><img id="zoom-image" alt=""></div></dialog>
   <dialog id="library-dialog" class="library-dialog" aria-labelledby="library-dialog-title"><div class="panel-heading"><h2 id="library-dialog-title">Biblioteca</h2><button id="library-dialog-close" class="icon-button" aria-label="Cerrar biblioteca">${icon('close')}</button></div><div id="library-dialog-content"></div></dialog>
+  <dialog id="organize-dialog" class="small-dialog" aria-labelledby="organize-title"><div class="panel-heading"><h2 id="organize-title" data-user-content></h2><button class="icon-button dialog-close" aria-label="Cerrar">${icon('close')}</button></div><form id="organize-form">
+  <label class="field">Estado<select id="organize-status">${Object.entries(statuses).map(([value,label])=>`<option value="${value}">${label}</option>`).join('')}</select></label>
+  <details class="settings-section"><summary>Datos del catálogo</summary><label class="field">Autor<input id="organize-author" maxlength="400"></label><label class="field">Géneros<textarea id="organize-genres" rows="2" maxlength="5000"></textarea></label><label class="field">Etiquetas<textarea id="organize-tags" rows="2" maxlength="5000"></textarea></label><p class="small muted">Un género o etiqueta por línea.</p><label class="field">Serie<input id="organize-series" maxlength="160"></label><label class="field">Número en la serie<input id="organize-series-index" type="number" step="any"></label><label class="field">Idioma<input id="organize-language" maxlength="20" placeholder="es, ca, en…"></label></details>
+  <fieldset class="collection-fieldset"><legend>Colecciones</legend><div id="organize-collections"></div></fieldset>
+  <div class="collection-create"><label class="sr-only" for="organize-collection-name">Nueva colección</label><input id="organize-collection-name" maxlength="80" placeholder="Nueva colección"><button id="organize-collection-create" class="icon-button" type="button" aria-label="Crear colección">${icon('plus')}</button></div>
+  <p class="small muted">Estos cambios se guardan en el lector. Los archivos originales permanecen intactos.</p><button class="primary-button" type="submit">Guardar organización</button></form></dialog>
+  <dialog id="duplicates-dialog" class="duplicates-dialog" aria-labelledby="duplicates-title"><div class="panel-heading"><h2 id="duplicates-title">Posibles duplicados</h2><button class="icon-button dialog-close" aria-label="Cerrar">${icon('close')}</button></div><p class="small muted">Coincidencias de título y autor, identificadores o archivos ya abiertos. Pueden ser ediciones distintas; se muestran para revisión.</p><div id="duplicates-list"></div></dialog>
   <dialog id="footnote-dialog" class="small-dialog" aria-labelledby="footnote-title"><div class="panel-heading"><h2 id="footnote-title">Nota del libro</h2><button class="icon-button dialog-close" aria-label="Cerrar">${icon('close')}</button></div><div id="footnote-content"></div></dialog>
   <dialog id="about-dialog" class="about-dialog" aria-labelledby="about-title">
     <header class="about-header">
@@ -201,7 +218,7 @@ $('#app').innerHTML = `
           <div><dt>Autor</dt><dd>Alejandro Pico</dd></div>
           <div><dt>Carácter</dt><dd>Proyecto personal</dd></div>
           <div><dt>Propósito</dt><dd>Lectura y escucha</dd></div>
-          <div><dt>Edición</dt><dd>Versión 0.6</dd></div>
+          <div><dt>Edición</dt><dd>Versión 0.7</dd></div>
         </dl>
       </aside>
       <div class="about-body">
@@ -253,7 +270,7 @@ const speech = new SpeechController({
   onError: message => { toast(message, 8000); if (settings.provider === 'openai' && !apiKey) togglePanel('voice') },
   onHighlight(range) {
     narratedRange = range
-    if(range && record){record.anchorCFI=anchorCFI(range);updateReadingInformation()}
+    if(range && record){record.anchorCFI=anchorCFI(range);updateReadingInformation();if(performance.now()-lastSpeechSave>3000){lastSpeechSave=performance.now();saveRecord()}}
     for (const { doc } of view.renderer?.getContents() ?? []) doc.defaultView.CSS?.highlights?.delete('spoken')
     if (!range || !settings.highlight) return
     const win = range.startContainer.ownerDocument.defaultView
@@ -331,6 +348,7 @@ function applySettings() {
   speech.onHighlight(narratedRange)
   document.querySelector('[data-setting="columns"]').disabled=settings.readingFlow==='scrolled'
   gamepad.update();updateHistoryControls();updateReadingInformation()
+  if(catalogItems.length)renderLibrary()
   if(!settings.showOpeningCover && !$('#opening-cover').hidden) attempt(()=>finishOpeningCover())()
   writeJSON('lector-settings', settings)
 }
@@ -424,6 +442,7 @@ function updateReadingInformation() {
   const current=view.renderer?.getContents()[0],range=positionRange()
   const info=$('#reading-information');info.hidden=!record||!(settings.showReference||settings.showChapterTime||settings.showBookTime)
   $('#stable-reference').hidden=!settings.showReference;$('#remaining-times').hidden=!(settings.showChapterTime||settings.showBookTime)
+  if(info.hidden&&!$('#position-dialog').open)return
   if(!current||!range||!record)return
   const metrics=metricsCache.get(current.doc)??readingMetrics(current.doc,settings.language);metricsCache.set(current.doc,metrics)
   const position=metrics.position(range)
@@ -475,8 +494,10 @@ function renderTOC(items, target) {
 }
 
 async function updateLibrary() {
-  localBooks = await allBooks()
-  folderSources = await allFolders()
+  ;[localBooks,folderSources,catalogRecords,collections]=await Promise.all([allBooks(),allFolders(),allCatalog(),allCollections()])
+  catalogItems=libraryEntries(localBooks,folderSources,catalogRecords)
+  duplicateClusters=duplicateGroups(catalogItems);duplicateIDs=new Set(duplicateClusters.flatMap(group=>group.map(item=>item.id)))
+  renderLibraryFilters()
   const books = localBooks
   const available = books.filter(item => item.file || item.fileHandle)
   $('#resume-list').replaceChildren()
@@ -496,29 +517,110 @@ function renderFolders() {
     const row = document.createElement('div'); row.className = 'folder-row'
     const label = document.createElement('span'); label.dataset.userContent = ''; label.textContent = `${folder.name} · ${folder.entries.length}`
     const remove = document.createElement('button'); remove.className = 'icon-button'; remove.innerHTML = icon('close'); remove.title = t('Desvincular carpeta'); remove.setAttribute('aria-label',t('Desvincular carpeta'))
-    remove.onclick = attempt(async () => { await removeFolder(folder.id); await updateLibrary() })
+    remove.disabled=Boolean(folderScan||metadataBatch)
+    remove.onclick = attempt(async () => { if(folderScan||metadataBatch)return;await removeFolder(folder.id); await updateLibrary() })
     row.append(label,remove); $('#folder-list').append(row)
   }
+}
+
+function renderLibraryFilters(){
+  const values={author:[],series:[],genre:[],tag:[],language:[],format:[]}
+  for(const item of catalogItems){values.author.push(item.author,...item.authors);values.series.push(item.series);values.genre.push(...item.genres);values.tag.push(...item.tags);values.language.push(...item.languages);values.format.push(...item.formatNames)}
+  const collator=new Intl.Collator(currentLanguage(),{numeric:true,sensitivity:'base'})
+  for(const key of [...Object.keys(values),'status','collection']){
+    const select=$(`#filter-${key}`),previous=select.value
+    const options=key==='status'?Object.entries(statuses).map(([value,label])=>[value,t(label)]):key==='collection'?collections.map(item=>[item.id,item.name]):[...new Set(values[key].filter(Boolean))].sort(collator.compare).map(value=>[value,key==='format'?value.toUpperCase():value])
+    select.replaceChildren(new Option(t('Todos'),''),...options.map(([value,label])=>{const option=new Option(label,value);if(key!=='status')option.dataset.userContent='';return option}))
+    if(options.some(([value])=>value===previous))select.value=previous
+  }
+}
+function clearLibraryFilters(){
+  for(const select of document.querySelectorAll('[data-library-filter]'))select.value=''
+  $('#library-search').value='';$('#filter-duplicates').checked=false;duplicateFocus=undefined;libraryLimit=60
+}
+async function readCatalogMetadata(item,signal){
+  await ensureFolderPermission(item.folder.handle)
+  if(signal?.aborted)return
+  const data=await readMetadata(item)
+  if(signal?.aborted)return
+  Object.assign(item.folder.entries.find(entry=>entry.key===item.key),data,{opfLoaded:true})
+  await updateCatalog(item.id,state=>({...state,metadata:catalogMetadata(data),source:'opf',updatedAt:Date.now()}))
+  await saveFolder(item.folder)
+}
+async function readShownMetadata(){
+  if(metadataBatch||folderScan)return
+  const targets=shownLibrary.filter(item=>item.kind==='folder'&&item.metadata)
+  const controller=metadataBatch=new AbortController();$('#metadata-progress').hidden=false;$('#read-visible-metadata').disabled=true
+  $('#refresh-folders').disabled=true;$('#add-folder').disabled=true;renderFolders()
+  let completed=0,failed=0
+  try{for(const item of targets){
+    if(controller.signal.aborted)break
+    $('#metadata-progress-text').textContent=`${t('Leyendo metadatos…')} ${completed} / ${targets.length}`
+    try{await readCatalogMetadata(item,controller.signal);if(!controller.signal.aborted)completed++}catch{failed++}
+  }}finally{metadataBatch=null;$('#metadata-progress').hidden=true;$('#refresh-folders').disabled=false;$('#add-folder').disabled=false;await updateLibrary();toast(controller.signal.aborted?'Carga cancelada':failed?'No se pudieron leer algunos metadatos.':'Metadatos cargados')}
+}
+function renderCollectionChoices(selected=[]){
+  const target=$('#organize-collections');target.replaceChildren()
+  for(const collection of collections){const label=document.createElement('label');label.className='check-field';const input=document.createElement('input');input.type='checkbox';input.value=collection.id;input.checked=selected.includes(collection.id);const name=document.createElement('span');name.dataset.userContent='';name.textContent=collection.name;label.append(input,name);target.append(label)}
+}
+function openOrganize(item){
+  organizingItem=item;$('#organize-title').textContent=item.title;$('#organize-status').value=item.status
+  for(const [key,value] of Object.entries({author:item.author,genres:item.genres.join('\n'),tags:item.tags.join('\n'),series:item.series,'series-index':item.seriesIndex,language:item.language}))$(`#organize-${key}`).value=value??''
+  $('#organize-collection-name').value='';renderCollectionChoices(item.collections);$('#organize-dialog').showModal()
+}
+async function createCollection(input){
+  const name=input.value.trim().slice(0,80)
+  if(!name)throw new Error(t('Escribe un nombre de colección.'))
+  if(collections.some(item=>normalize(item.name)===normalize(name)))throw new Error(t('Esta colección ya existe.'))
+  const collection={id:crypto.randomUUID(),name,createdAt:Date.now()};await saveCollection(collection);collections.push(collection);input.value='';return collection
+}
+async function saveOrganization(event){
+  event.preventDefault();if(!organizingItem)return
+  const position=$('#organize-series-index').value
+  await updateCatalog(organizingItem.id,state=>({...state,status:$('#organize-status').value,overrides:{...state.overrides,
+    author:$('#organize-author').value.trim(),genres:labels($('#organize-genres').value.split('\n')),tags:labels($('#organize-tags').value.split('\n')),
+    series:$('#organize-series').value.trim(),seriesIndex:position===''?null:Number(position),language:languageCode($('#organize-language').value)},
+    collections:[...$('#organize-collections').querySelectorAll('input:checked')].map(input=>input.value),updatedAt:Date.now()}))
+  $('#organize-dialog').close();await updateLibrary();toast('Organización guardada')
+}
+function showDuplicates(){
+  const target=$('#duplicates-list');target.replaceChildren()
+  if(!duplicateClusters.length){const message=document.createElement('p');message.textContent=t('No hay coincidencias.');target.append(message)}
+  for(const group of duplicateClusters.slice(0,100)){
+    const section=document.createElement('section');section.className='duplicate-group'
+    for(const item of group){const row=document.createElement('p');row.dataset.userContent='';row.textContent=[item.title,item.author,item.path??item.filename].filter(Boolean).join(' · ');section.append(row)}
+    const button=document.createElement('button');button.className='text-button';button.textContent=t('Ver grupo en biblioteca');button.onclick=()=>{clearLibraryFilters();duplicateFocus=new Set(group.map(item=>item.id));$('#filter-duplicates').checked=true;$('#duplicates-dialog').close();if(!$('#library-dialog').open)openLibraryDialog();else renderLibrary()};section.append(button);target.append(section)
+  }
+  if(duplicateClusters.length>100){const more=document.createElement('p');more.textContent=t('Se muestran los primeros 100 grupos.');target.append(more)}
+  $('#duplicates-dialog').showModal()
+}
+async function cacheBookMetadata(imported,current){
+  const metadata=catalogMetadata(imported.metadata)
+  await updateCatalog(catalogKey(current),state=>({...state,metadata:state.source==='opf'?state.metadata:metadata,source:state.source==='opf'?'opf':'book',
+    fingerprints:[...new Set([...(state.fingerprints??[]),current.id])],status:!state.status||state.status==='pending'?(current.coverSeen?'reading':'pending'):state.status,updatedAt:Date.now()}))
+}
+async function markReading(){
+  if(!record)return
+  await updateCatalog(catalogKey(record),state=>({...state,status:!state.status||state.status==='pending'?'reading':state.status}))
+  await updateLibrary()
 }
 
 function renderLibrary() {
   const display=$('#library-dialog').open?settings.libraryDialogView:settings.libraryView
   for (const url of libraryCoverURLs) URL.revokeObjectURL(url)
   libraryCoverURLs = []
-  const query = $('#library-search').value.trim().toLocaleLowerCase(currentLanguage())
-  const cachedCovers=new Map(localBooks.filter(item=>item.folderId).map(item=>[`${item.folderId}:${item.entryKey}`,item.coverBlob]))
-  const linked = folderSources.flatMap(folder => folder.entries.map(entry => ({ ...entry, coverBlob:entry.coverBlob??cachedCovers.get(`${folder.id}:${entry.key}`), folder, kind: 'folder', id: `${folder.id}:${entry.key}` })))
-  const entries = [...localBooks.filter(item => !item.folderId || !folderSources.some(folder => folder.id === item.folderId)).map(item => ({ ...item, kind: 'local' })), ...linked]
-  const filtered = entries.filter(item => `${item.title} ${item.author ?? ''}`.toLocaleLowerCase(currentLanguage()).includes(query))
-  const sort = $('#library-sort').value
-  const collator = new Intl.Collator(currentLanguage(), { numeric: true, sensitivity: 'base' })
-  filtered.sort((a,b) => sort === 'recent' ? (b.updatedAt ?? 0) - (a.updatedAt ?? 0) || collator.compare(a.title,b.title)
-    : collator.compare(sort === 'author' ? a.author ?? '' : a.title, sort === 'author' ? b.author ?? '' : b.title))
+  const query = $('#library-search').value.trim()
+  const filters={query,sort:$('#library-sort').value,duplicates:$('#filter-duplicates').checked}
+  for(const key of ['author','series','genre','tag','language','format','status','collection'])filters[key]=$(`#filter-${key}`).value
+  const filtered=filterLibrary(catalogItems,filters,currentLanguage(),duplicateFocus??duplicateIDs)
+  shownLibrary=filtered.slice(0,libraryLimit)
+  $('#collection-delete').hidden=!filters.collection
+  $('#read-visible-metadata').disabled=Boolean(metadataBatch)||!shownLibrary.some(item=>item.kind==='folder'&&item.metadata)
   $('#library-count').textContent = `${filtered.length.toLocaleString(currentLanguage())} ${t('libros')}`
   const list = $('#library-list'); list.replaceChildren(); list.classList.toggle('cover-grid', display === 'covers')
   document.querySelectorAll('[data-library-view]').forEach(button=>button.setAttribute('aria-pressed',button.dataset.libraryView===display))
   if (!filtered.length) { const empty = document.createElement('p'); empty.className = 'small muted'; empty.textContent = t(query ? 'No hay resultados.' : 'Los libros que abras aparecerán aquí.'); list.append(empty) }
-  for (const item of filtered.slice(0,libraryLimit)) {
+  for (const item of shownLibrary) {
     const row = document.createElement('div'); row.className = 'library-row'
     if (display === 'covers') {
       const cover = document.createElement('button'); cover.className = 'catalog-cover'; cover.title = t(item.coverBlob?'Abrir libro':'Cargar portada'); cover.setAttribute('aria-label',`${cover.title}: ${item.title}`)
@@ -538,6 +640,7 @@ function renderLibrary() {
     button.onclick = attempt(()=>openLibraryItem(item))
     content.append(button)
     if (item.author) { const author = document.createElement('span'); author.className = 'small muted'; author.dataset.userContent=''; author.textContent = item.author; content.append(author) }
+    if(settings.libraryDetails){const details=document.createElement('span');details.className='small muted catalog-details';details.dataset.userContent='';details.textContent=[t(statuses[item.status]),item.series&&`${item.series}${item.seriesIndex===null?'':` · ${item.seriesIndex}`}`,...item.genres,...item.tags].filter(Boolean).join(' · ');content.append(details)}
     if (item.kind === 'folder') {
       const formats = document.createElement('div'); formats.className = 'catalog-formats'
       for (const format of item.formats) {
@@ -547,22 +650,22 @@ function renderLibrary() {
       if (item.metadata) {
         const metadata = document.createElement('button'); metadata.className = 'text-button metadata-button'; metadata.textContent = t('Leer metadatos')
         metadata.onclick = attempt(async () => {
-          await ensureFolderPermission(item.folder.handle)
-          const data = await readMetadata(item)
-          Object.assign(item.folder.entries.find(entry=>entry.key===item.key),data,{opfLoaded:true})
-          await saveFolder(item.folder); renderLibrary(); toast('Metadatos cargados')
+          await readCatalogMetadata(item);await updateLibrary();toast('Metadatos cargados')
         }); content.append(metadata)
       }
     }
     row.append(content)
+    const actions=document.createElement('div');actions.className='library-row-actions'
+    const organize=document.createElement('button');organize.className='icon-button organize-book';organize.innerHTML=icon('settings');organize.title=t('Organizar libro');organize.setAttribute('aria-label',`${organize.title}: ${item.title}`);organize.onclick=()=>openOrganize(item);actions.append(organize)
     if (item.kind === 'local') {
       const remove = document.createElement('button'); remove.className = 'icon-button'; remove.innerHTML = icon('trash'); remove.title = t('Quitar de la biblioteca'); remove.setAttribute('aria-label',t('Quitar de la biblioteca'))
       remove.onclick = attempt(async () => {
         if (item.notes?.length && !confirm(`${t('Quitar de la biblioteca')}: «${item.title}» (${item.notes.length})?`)) return
         if (record?.id === item.id) { clearTimeout(saveTimer); speech.stop();clearOpeningCover(); view.close(); book?.destroy?.(); book = null; record = null; $('#audio-toggle').disabled = true; $('.reading-footer').hidden = true }
-        await removeBook(item.id); await updateLibrary()
-      }); row.append(remove)
+        await removeBook(item.id);await removeCatalog(item.id); await updateLibrary()
+      }); actions.append(remove)
     }
+    row.append(actions)
     list.append(row)
   }
   $('#library-more').hidden = filtered.length <= libraryLimit
@@ -609,7 +712,7 @@ async function loadLibraryCover(item) {
     await coverDimensions(cover)
     if(item.kind==='folder') {
       item.folder.entries.find(entry=>entry.key===item.key).coverBlob=cover;await saveFolder(item.folder)
-    } else {await saveBook({...item,kind:undefined,coverBlob:cover});if(record?.id===item.id) record.coverBlob=cover}
+    } else {const original=await getBook(item.id);await saveBook({...original,coverBlob:cover});if(record?.id===item.id) record.coverBlob=cover}
   } finally{imported?.destroy?.()}
 }
 
@@ -633,7 +736,7 @@ async function openFolderEntry(folder, entry, format = entry.formats[0]) {
 }
 
 async function indexFolder(folder) {
-  if (folderScan) return
+  if (folderScan||metadataBatch) return
   folderScan = new AbortController(); $('#folder-progress').hidden = false
   try {
     await ensureFolderPermission(folder.handle)
@@ -641,13 +744,14 @@ async function indexFolder(folder) {
     const entries = await scanDirectory(folder.handle, { signal: folderScan.signal, onProgress: progress => {
       $('#folder-progress-text').textContent = `${t('Indexando carpetas…')} ${progress.books.toLocaleString(currentLanguage())} ${t('libros')}`
     } })
-    folder.entries = entries.map(entry => ({ ...entry, ...(prior.has(entry.key) ? { coverBlob: prior.get(entry.key).coverBlob, title: prior.get(entry.key).title, author: prior.get(entry.key).author, language: prior.get(entry.key).language, opfLoaded: prior.get(entry.key).opfLoaded, updatedAt: prior.get(entry.key).updatedAt } : {}) }))
+    const priorPaths=new Map((folder.entries??[]).filter(entry=>entry.metadata).map(entry=>[entry.path,entry]))
+    folder.entries=entries.map(entry=>{const old=prior.get(entry.key)??(entry.metadata&&priorPaths.get(entry.path));return old?{...old,...entry,key:old.key,...(old.opfLoaded?{title:old.title,author:old.author,language:old.language}: {})}:entry})
     folder.updatedAt = Date.now(); await saveFolder(folder); await updateLibrary()
   } finally { folderScan = null; $('#folder-progress').hidden = true }
 }
 
 async function connectFolder() {
-  if (folderScan) return
+  if (folderScan||metadataBatch) return
   if (!window.showDirectoryPicker) { toast('Para abrir carpetas sin leer todos sus archivos utiliza Chrome o Edge en HTTPS o localhost.', 12000); return }
   try {
     const handle = await window.showDirectoryPicker({ id: 'lector-library', mode: 'read' })
@@ -713,7 +817,9 @@ async function openFile(file, saved) {
     $('#show-cover').hidden = !cover
     $('#audio-toggle').disabled = false; $('.reading-footer').hidden = false
     $('#search-results').hidden = true; $('#search-query').value = ''
+    if($('#opening-cover').hidden)record.coverSeen=true
     $('#file-dialog').close(); renderNotes(); saveRecord()
+    await cacheBookMetadata(book,record).catch(()=>{})
     await updateLibrary().catch(() => {})
     if (book.warning) toast(book.warning, 10000)
   } catch (error) {
@@ -880,6 +986,7 @@ async function finishOpeningCover(skip=true) {
   clearOpeningCover();if(record) record.coverSeen=true
   if(skip) await skipNativeCoverPage()
   saveRecord()
+  await markReading().catch(()=>{})
 }
 $('#start-reading').onclick=attempt(async()=>{await finishOpeningCover();$('#audio-toggle').focus({preventScroll:true})})
 $('#opening-cover-zoom').onclick=()=>{if(openingCoverURL) showImage(openingCoverURL,record?.title??'')}
@@ -957,7 +1064,7 @@ document.querySelectorAll('[data-setting]').forEach(input => {
     settings[input.dataset.setting] = input.type === 'checkbox' ? input.checked : input.type === 'range' || input.dataset.setting === 'columns' ? Number(input.value) : input.value
     if (input.dataset.setting === 'uiLanguage') {
       setUILanguage(settings.uiLanguage)
-      renderLibrary(); syncVoices()
+      renderLibraryFilters();renderLibrary(); syncVoices()
     }
     if (input.dataset.setting === 'libraryView') renderLibrary()
     Object.assign(settings, safeSettings(settings)); applySettings()
@@ -1130,6 +1237,16 @@ $('#refresh-folders').onclick = attempt(async () => {
 })
 $('#library-search').oninput = () => { libraryLimit = 60; renderLibrary() }
 $('#library-sort').onchange = () => { libraryLimit = 60; renderLibrary() }
+document.querySelectorAll('[data-library-filter]').forEach(select=>select.onchange=()=>{libraryLimit=60;renderLibrary()})
+$('#filter-duplicates').onchange=()=>{duplicateFocus=undefined;libraryLimit=60;renderLibrary()}
+$('#clear-library-filters').onclick=()=>{clearLibraryFilters();renderLibrary()}
+$('#show-duplicates').onclick=showDuplicates
+$('#read-visible-metadata').onclick=attempt(readShownMetadata)
+$('#metadata-cancel').onclick=()=>metadataBatch?.abort()
+$('#collection-create').onclick=attempt(async()=>{await createCollection($('#collection-name'));await updateLibrary()})
+$('#collection-delete').onclick=attempt(async()=>{const id=$('#filter-collection').value;if(id){await removeCollection(id);await updateLibrary()}})
+$('#organize-form').onsubmit=attempt(saveOrganization)
+$('#organize-collection-create').onclick=attempt(async()=>{const selected=[...$('#organize-collections').querySelectorAll('input:checked')].map(input=>input.value);const collection=await createCollection($('#organize-collection-name'));renderCollectionChoices([...selected,collection.id]);renderLibraryFilters()})
 $('#library-more').onclick = () => { libraryLimit += 60; renderLibrary() }
 $('#speech-language').onchange = () => {
   speech.stop()
@@ -1137,7 +1254,7 @@ $('#speech-language').onchange = () => {
   settings.language = $('#speech-language').value === 'auto' ? metadataText(book?.metadata?.language) || currentLanguage() : $('#speech-language').value
   syncVoices(); applySettings()
 }
-$('#position-button').onclick = () => { $('#position-input').value = Math.round((record?.fraction ?? 0) * 100); $('#position-dialog').showModal() }
+$('#position-button').onclick = () => { $('#position-input').value = Math.round((record?.fraction ?? 0) * 100); $('#position-dialog').showModal();updateReadingInformation() }
 $('#go-position').onclick = attempt(async () => {
   if (!book || !$('#position-input').reportValidity()) return
   await navigateTo(Number($('#position-input').value)/100,true); $('#position-dialog').close()
