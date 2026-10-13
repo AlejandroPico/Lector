@@ -202,7 +202,14 @@ test('browser narration starts at the visible sentence, highlights and pauses', 
   })
   await open(page)
   await page.locator('#index-toggle').click(); await page.getByRole('button', { name: 'La ventana', exact: true }).click()
+  // Closing the sidebar repaginates the book; compare narration with the
+  // resulting visible location, rather than the location before that resize.
+  await page.evaluate(() => {
+    const view = document.querySelector('#reader')
+    window.__layoutReady = new Promise(resolve => view.addEventListener('relocate', resolve, { once: true }))
+  })
   await page.locator('#sidebar-close').click()
+  await page.evaluate(() => window.__layoutReady.then(() => undefined))
   const visibleParagraph = await page.evaluate(() => document.querySelector('#reader').lastLocation.range.startContainer.parentElement.closest('p')?.id)
   await page.locator('#audio-toggle').click()
   await expect.poll(() => page.evaluate(() => window.__spoken.length)).toBe(1)
