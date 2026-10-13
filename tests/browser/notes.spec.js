@@ -1,6 +1,7 @@
 import {test,expect} from '@playwright/test'
 import {coverEPUB,epub} from './fixtures.js'
 async function select(page,word='sosiego'){
+  await expect.poll(()=>page.evaluate(word=>document.querySelector('#reader').renderer.getContents()[0]?.doc.body.textContent.includes(word)??false,word)).toBe(true)
   await page.evaluate(word=>{
     const doc=document.querySelector('#reader').renderer.getContents()[0].doc,walker=doc.createTreeWalker(doc.body,NodeFilter.SHOW_TEXT);let node
     while(node=walker.nextNode())if(node.textContent.includes(word))break
