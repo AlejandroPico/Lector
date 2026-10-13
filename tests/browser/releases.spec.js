@@ -132,7 +132,7 @@ test('opening cover fills the reader, zooms and continues to text without repeat
   await page.locator('#opening-cover-zoom').click();await expect(page.locator('#image-dialog')).toBeVisible()
   await page.locator('#image-dialog .dialog-close').click()
   await page.locator('#start-reading').click();await expect(page.locator('#opening-cover')).toBeHidden()
-  await expect.poll(()=>page.evaluate(()=>document.querySelector('#reader').renderer.getContents()[0]?.doc.body.textContent??'')).toContain('El sosiego')
+  await expect.poll(()=>page.evaluate(()=>document.querySelector('#reader').renderer.getContents()[0]?.doc?.body?.textContent??'')).toContain('El sosiego')
   await page.reload();await page.locator('.resume-button').first().click()
   await expect(page.locator('#audio-toggle')).toBeEnabled();await expect(page.locator('#opening-cover')).toBeHidden()
 })
