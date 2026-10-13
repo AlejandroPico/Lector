@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { epub } from './fixtures.js'
+import { readFile } from 'node:fs/promises'
 
 async function open(page, text) {
   await page.goto('/')
@@ -57,4 +58,64 @@ test('clicking a word restarts there and tracking controls persist independently
   await page.locator('[data-setting="clickToRead"]').uncheck()
   await page.reload();await page.locator('#dismiss-file').click();await page.locator('#voice-toggle').click()
   for(const key of ['highlight','followSpeech','clickToRead']) await expect(page.locator(`[data-setting="${key}"]`)).not.toBeChecked()
+})
+
+test('personal themes preview, save, reload, import safely and remain user text',async ({page})=>{
+  await open(page);await page.locator('#theme-toggle').click()
+  await page.locator('#theme-editor > summary').click()
+  await page.locator('#theme-name').fill('Mi noche personal')
+  await page.locator('[data-theme-color="0"]').evaluate(input=>{input.value='#06080a';input.dispatchEvent(new Event('input',{bubbles:true}))})
+  await page.locator('[data-theme-color="2"]').evaluate(input=>{input.value='#e7e8ea';input.dispatchEvent(new Event('input',{bubbles:true}))})
+  await expect(page.locator('html')).toHaveCSS('background-color','rgb(6, 8, 10)')
+  await page.getByRole('button',{name:'Guardar tema',exact:true}).click()
+  await expect(page.locator('.theme-option')).toHaveCount(21)
+  await page.screenshot({path:'test-results/04-themes.png'})
+  await page.reload();await expect(page.locator('html')).toHaveCSS('background-color','rgb(6, 8, 10)')
+  await page.locator('#dismiss-file').click();await page.locator('#theme-toggle').click()
+  await expect(page.locator('button[data-theme^="personal-"]')).toContainText('Mi noche personal')
+  await page.locator('#theme-editor > summary').click()
+  await page.getByText('Importar o copiar tema',{exact:true}).click()
+  await page.locator('#theme-json').fill('{"label":"Importado","colors":["url(javascript:alert(1))"]}')
+  await page.locator('#theme-import').click();await expect(page.locator('.toast')).toContainText('ocho colores')
+  await expect(page.locator('.theme-option')).toHaveCount(21)
+  const theme=await page.evaluate(()=>JSON.parse(localStorage.getItem('lector-settings')).customThemes[0])
+  await page.locator('#theme-json').fill(JSON.stringify({...theme,label:'Segunda paleta'}))
+  await page.locator('#theme-import').click();await expect(page.locator('.theme-option')).toHaveCount(22)
+  await page.locator('#theme-delete').click();await expect(page.locator('.theme-option')).toHaveCount(21)
+})
+test('margins and optional language hyphenation reach the ebook and persist',async ({page})=>{
+  await open(page);await page.locator('#appearance-toggle').click()
+  await expect(page.locator('[data-setting="hyphenate"]')).not.toBeChecked()
+  for(const [key,value] of [['marginOuter','60'],['marginInner','42']]) {
+    await page.locator(`[data-setting="${key}"]`).evaluate((input,value)=>{input.value=value;input.dispatchEvent(new Event('input',{bubbles:true}))},value)
+  }
+  await page.locator('[data-setting="hyphenate"]').check()
+  await expect(page.locator('#reading-area')).toHaveCSS('padding-left','60px')
+  await expect.poll(()=>page.evaluate(()=>{
+    const view=document.querySelector('#reader'),doc=view.renderer.getContents()[0].doc
+    return [view.renderer.getAttribute('margin'),doc.defaultView.getComputedStyle(doc.querySelector('p')).hyphens,doc.documentElement.lang]
+  })).toEqual(['42px','auto','es'])
+  await page.reload();await page.locator('#dismiss-file').click();await page.locator('#appearance-toggle').click()
+  await expect(page.locator('[data-setting="hyphenate"]')).toBeChecked()
+  await expect(page.locator('[data-setting="marginOuter"]')).toHaveValue('60')
+})
+test('personal font loads into ebook, survives restart and can be removed',async ({page})=>{
+  await open(page);await page.locator('#appearance-toggle').click()
+  await page.getByText('Fuentes personales',{exact:true}).click()
+  const buffer=await readFile(new URL('../../node_modules/@fontsource/atkinson-hyperlegible/files/atkinson-hyperlegible-latin-400-normal.woff2',import.meta.url))
+  await page.locator('#font-file').setInputFiles({name:'Mi-fuente.woff2',mimeType:'font/woff2',buffer})
+  await expect(page.locator('#personal-fonts')).toContainText('Mi-fuente')
+  const font=await page.locator('[data-setting="font"]').inputValue()
+  expect(font).toMatch(/^personal-font-/)
+  expect(await page.evaluate(async font=>{
+    const doc=document.querySelector('#reader').renderer.getContents()[0].doc
+    await doc.fonts.load(`21px "${font}"`)
+    return [...doc.fonts].some(face=>face.family.replace(/["']/g,'')===font && face.status==='loaded')
+  },font)).toBe(true)
+  await page.reload();await page.locator('.resume-button').first().click()
+  await expect(page.locator('#audio-toggle')).toBeEnabled();await page.locator('#appearance-toggle').click()
+  await expect(page.locator('[data-setting="font"]')).toHaveValue(font)
+  await page.getByText('Fuentes personales',{exact:true}).click();await page.getByRole('button',{name:'Eliminar fuente',exact:true}).click()
+  await expect(page.locator('[data-setting="font"]')).toHaveValue('Georgia')
+  await expect(page.locator('[data-setting="font"] option')).toHaveCount(20)
 })

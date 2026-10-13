@@ -2,14 +2,16 @@
 
 Un lector de libros a toda pantalla, sin cabeceras decorativas ni tarjetas alrededor del texto. Dos columnas por defecto, controles discretos en la esquina superior derecha y un índice lateral que se puede ocultar.
 
-## Versión 0.3
+## Versión 0.4
+
+La rueda dentada organiza las opciones por categorías. Hay 20 opciones de tema y un editor de paletas personales con vista previa, guardado, copia e importación mediante JSON. Se pueden ajustar los márgenes exteriores y los espacios superiores e inferiores de página, activar el guionado por idioma (apagado inicialmente) y añadir fuentes personales guardadas en el navegador. Los archivos de la carpeta `fuentes` también se detectan durante desarrollo/compilación; consulta su README.
 
 Los controles de abrir y narrar están centrados arriba, con Play circular. La lectura sigue las palabras cuando la voz emite posiciones y divide las frases por páginas para las voces que no lo hacen. Pulsar una palabra durante la narración permite continuar desde ella. Resaltado, seguimiento y lectura al pulsar tienen controles independientes en voz. El resaltado exacto por palabra requiere eventos del motor; el audio externo se sigue por fragmentos.
 
 - EPUB 2/3, MOBI, AZW3, Word `.docx`, PDF con texto seleccionable y TXT.
 - Índice jerárquico, búsqueda, portada e imágenes ampliables. Notas originales del EPUB en ventana flotante.
 - Una, dos o tres columnas; veinte tipografías, tamaño, anchura hasta 3.840 px o todo el ancho disponible, interlineado, espacio entre párrafos y separación de columnas. En pantallas pequeñas se usa una sola columna.
-- Doce opciones de tema: automático, mañana, tarde, noche, confort, natural, contraste negro absoluto, primavera, verano, otoño, invierno y lluvia. Cada tema tiene su icono. El automático sigue la hora del dispositivo: mañana de 07:00 a 18:00, tarde de 18:00 a 22:00 y noche en el resto del día.
+- Veinte opciones de tema: automático, mañana, tarde, noche, confort, natural, contraste negro absoluto, primavera, verano, otoño, invierno, lluvia, soleado, nevado, ventoso, energía, calma, melancolía, alegría y amor. Cada tema tiene su icono. El automático sigue la hora del dispositivo: mañana de 07:00 a 18:00, tarde de 18:00 a 22:00 y noche en el resto del día. Se pueden guardar hasta treinta paletas personales adicionales.
 - Modo zen con ayuda para salir en la primera activación, pantalla completa y transición suave activada por defecto. Se puede desactivar y respeta la preferencia de movimiento reducido.
 - Zoom de imágenes con botones, rueda, gesto de pinza y doble clic; arrastre para desplazarse. Las portadas se centran y ajustan al espacio del visor.
 - Interfaz en español, catalán, inglés, francés, alemán, portugués, italiano, chino, japonés e hindi. Detecta el idioma del navegador/sistema; la rueda dentada permite elegirlo y guarda la elección. No traduce el contenido de los libros.

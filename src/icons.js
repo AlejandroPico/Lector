@@ -1,4 +1,11 @@
 const paths = {
+  palette:'<path d="M21 12a9 9 0 1 0-9 9h2a2 2 0 0 0 0-4h-1a2 2 0 0 1 0-4h5a3 3 0 0 0 3-1z"/><circle cx="7" cy="9" r=".7"/><circle cx="11" cy="6" r=".7"/><circle cx="16" cy="8" r=".7"/>',
+  wind:'<path d="M3 8h12a3 3 0 1 0-3-3M2 12h17a3 3 0 1 1-3 3M4 17h6a3 3 0 1 1-3 3"/>',
+  bolt:'<path d="m13 2-9 12h7l-1 8 10-13h-7z"/>',
+  calm:'<path d="M3 7c3-3 6 3 9 0s6 3 9 0M3 12c3-3 6 3 9 0s6 3 9 0M3 17c3-3 6 3 9 0s6 3 9 0"/>',
+  smile:'<circle cx="12" cy="12" r="9"/><path d="M8 9h.1M16 9h.1M7 14a5 5 0 0 0 10 0"/>',
+  sad:'<circle cx="12" cy="12" r="9"/><path d="M8 9h.1M16 9h.1M8 17a4 4 0 0 1 8 0"/>',
+  heart:'<path d="M12 21 3 12a6 6 0 0 1 9-8 6 6 0 0 1 9 8z"/>',
   index: '<path d="M4 6h16M4 12h16M4 18h16"/><path d="M8 4v16"/>',
   open: '<path d="M3 8V5h6l2 3h10v11H3z"/><path d="M3 12h18"/>',
   type: '<path d="m3 19 6-14 6 14M5 14h8M17 10h5m-2.5 0v9"/>',

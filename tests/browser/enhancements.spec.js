@@ -11,7 +11,7 @@ async function openBook(page) {
 test('theme background stays uniform through resizing, animation and columns', async ({page}) => {
   await openBook(page)
   await page.locator('#theme-toggle').click()
-  await expect(page.locator('button[data-theme]')).toHaveCount(12)
+  await expect(page.locator('button[data-theme]')).toHaveCount(20)
   await page.locator('button[data-theme="contrast"]').click()
   await expect(page.locator('html')).toHaveCSS('background-color','rgb(0, 0, 0)')
   await page.locator('#appearance-toggle').click()

@@ -8,3 +8,5 @@
 - Mantener las traducciones de interfaz en los diez idiomas soportados. No traducir automáticamente libros, notas, autores ni títulos del usuario.
 - Al escanear carpetas, enumerar únicamente nombres y referencias. No leer libros, portadas ni metadatos sin una selección explícita; las carpetas pueden estar en OneDrive sin descargar.
 - Las propuestas de `IDEAS.md` requieren selección del usuario antes de implementarse.
+- `HOJA_DE_RUTA.md` recoge los bloques seleccionados y su estado. El autor autorizó 0.3, 0.4 y 0.5 sucesivamente, con subidas independientes a main. Las posteriores requieren autorización.
+- Guardar preferencias, notas y recursos personales en el navegador. No generar descargas automáticas; exportar solo por acción explícita. Detectar recursos del proyecto en `fuentes` durante desarrollo/compilación.

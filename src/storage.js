@@ -1,13 +1,14 @@
-import { fonts, themes } from './presentation.js'
+import { fonts, themes, validateTheme } from './presentation.js'
 const DB_NAME = 'lector-zen'
 let connection
 
 async function db() {
   if (!connection) connection = new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 2)
+    const request = indexedDB.open(DB_NAME, 3)
     request.onupgradeneeded = () => {
       if (!request.result.objectStoreNames.contains('books')) request.result.createObjectStore('books', { keyPath: 'id' })
       if (!request.result.objectStoreNames.contains('folders')) request.result.createObjectStore('folders', { keyPath: 'id' })
+      if (!request.result.objectStoreNames.contains('fonts')) request.result.createObjectStore('fonts', { keyPath: 'id' })
     }
     request.onsuccess = () => {
       request.result.onversionchange = () => { request.result.close(); connection = undefined }
@@ -38,6 +39,9 @@ export const allBooks = async () => (await transact('readonly', store => store.g
 export const allFolders = () => transact('readonly', store => store.getAll(), 'folders')
 export const saveFolder = folder => transact('readwrite', store => store.put(folder), 'folders')
 export const removeFolder = id => transact('readwrite', store => store.delete(id), 'folders')
+export const allFonts = () => transact('readonly',store=>store.getAll(),'fonts')
+export const saveFont = font => transact('readwrite',store=>store.put(font),'fonts')
+export const removeFont = id => transact('readwrite',store=>store.delete(id),'fonts')
 
 export async function fileId(file) {
   const hash = await crypto.subtle.digest('SHA-256', await file.arrayBuffer())
@@ -60,6 +64,7 @@ export const defaults = Object.freeze({
   justify: false, animated: true, highlight: true, provider: 'browser', uiLanguage: 'auto',
   appearance: 'minimal', libraryView: 'list', fullWidth: false,
   followSpeech: true, clickToRead: true, highlightMode: 'word',
+  marginOuter: 10, marginInner: 28, hyphenate: false, customThemes: [],
   voice: '', rate: 1, pitch: 1, language: 'es-ES', speechLanguage: 'auto',
   endpoint: 'https://api.openai.com/v1/audio/speech',
   model: 'gpt-4o-mini-tts', apiVoice: 'coral',
@@ -81,7 +86,9 @@ export function safeSettings(input = {}) {
   clamp('paragraphGap', 0, 2); clamp('columns', 1, 3); value.columns = Math.round(value.columns)
   clamp('width', 640, 3840); clamp('gutter', 1, 12)
   clamp('rate', 0.5, 2); clamp('pitch', 0.5, 1.5)
-  if (!themes.some(theme => theme.id === value.theme)) value.theme = 'auto'
+  clamp('marginOuter',0,160); clamp('marginInner',0,100)
+  value.customThemes=(Array.isArray(value.customThemes)?value.customThemes:[]).slice(0,30).flatMap(theme=>{try{return [validateTheme(theme,true)]}catch{return []}})
+  if (![...themes,...value.customThemes].some(theme => theme.id === value.theme)) value.theme = 'auto'
   if (!fonts.some(([name]) => name === value.font)) value.font = 'Georgia'
   if (!['auto','es','ca','en','fr','de','pt','it','zh','ja','hi'].includes(value.uiLanguage)) value.uiLanguage = 'auto'
   if (!['auto','es','ca','en','fr','de','pt','it','zh','ja','hi'].includes(value.speechLanguage)) value.speechLanguage = 'auto'

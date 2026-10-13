@@ -1,12 +1,21 @@
 import { describe, it, expect } from 'vitest'
-import { fonts, themes, selectBrowserVoice } from '../src/presentation.js'
+import { fonts, themes, selectBrowserVoice, validateTheme } from '../src/presentation.js'
+import { safeSettings } from '../src/storage.js'
 import { scanDirectory, groupDirectory, readMetadata } from '../src/folders.js'
 import { detectLanguage, languages, t, translationCount } from '../src/i18n.js'
 
 describe('presentation and localization', () => {
-  it('has twelve distinct themes, twenty typefaces and ten complete language catalogs', () => {
-    expect(themes).toHaveLength(12); expect(fonts).toHaveLength(20)
-    expect(new Set(themes.map(theme=>theme.id)).size).toBe(12)
+  it('restores personal theme identity and rejects CSS values or excessive margins',()=>{
+    const theme=validateTheme({label:'Mi tema',colors:themes[2].colors})
+    const restored=safeSettings({theme:theme.id,customThemes:[theme],marginOuter:999,marginInner:-40})
+    expect(restored.theme).toBe(theme.id);expect(restored.customThemes[0].id).toBe(theme.id)
+    expect(restored.marginOuter).toBe(160);expect(restored.marginInner).toBe(0)
+    expect(()=>validateTheme({label:'Malicioso',colors:Array(8).fill('url(javascript:alert(1))')})).toThrow()
+    expect(safeSettings({theme:theme.id,customThemes:[{...theme,colors:[]}]}).theme).toBe('auto')
+  })
+  it('has twenty distinct themes, twenty base typefaces and ten complete language catalogs', () => {
+    expect(themes).toHaveLength(20); expect(fonts.length).toBeGreaterThanOrEqual(20)
+    expect(new Set(themes.map(theme=>theme.id)).size).toBe(20)
     expect(themes.find(theme=>theme.id==='contrast').colors[0]).toBe('#000000')
     expect(translationCount).toBeGreaterThan(140)
     for (const language of Object.keys(languages)) {

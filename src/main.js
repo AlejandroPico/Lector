@@ -7,16 +7,22 @@ import faviconURL from '../favicon.svg?url'
 import 'foliate-js/view.js'
 import { Overlayer } from 'foliate-js/overlayer.js'
 import { importBook, escapeHTML, metadataText, pdfPageImage } from './books.js'
-import { allBooks, allFolders, saveFolder, removeFolder, fileId, getBook, saveBook, removeBook, defaults, readJSON, writeJSON, effectiveTheme, safeSettings } from './storage.js'
+import { allBooks, allFolders, saveFolder, removeFolder, allFonts, saveFont, removeFont, fileId, getBook, saveBook, removeBook, defaults, readJSON, writeJSON, effectiveTheme, safeSettings } from './storage.js'
 import { SpeechController, validateEndpoint, wordAtPoint } from './speech.js'
 import { lookup, normalizeWord, importDictionary } from './dictionary.js'
 import { icon, iconButton } from './icons.js'
-import { fonts, themes, themeById } from './presentation.js'
+import { fonts, themes, themeById, themeProperties, validateTheme } from './presentation.js'
+import { projectFonts, registerFont, unregisterFont, fontLabel, fontCSS } from './font-resources.js'
 import { languages, initializeI18n, setUILanguage, currentLanguage, t, translateUI } from './i18n.js'
 import { scanDirectory, ensureFolderPermission, readMetadata } from './folders.js'
 import { attachImageGestures } from './image-viewer.js'
 
 const $ = selector => document.querySelector(selector)
+let userFonts = await allFonts().catch(()=>[])
+for (const resource of [...projectFonts,...userFonts]) {
+  try { await registerFont(resource); if (!resource.project) fonts.push([resource.id,`"${resource.id}", serif`]) }
+  catch { userFonts=userFonts.filter(font=>font.id!==resource.id) }
+}
 const storedSettings = readJSON('lector-settings', {})
 if (!storedSettings.presentationVersion) storedSettings.animated = true
 const settings = safeSettings(storedSettings)
@@ -25,11 +31,13 @@ setUILanguage(settings.uiLanguage)
 let book, record, selection, apiKey = '', busy = false, saveTimer, loadSequence = 0, searchSequence = 0
 let storageWarning = false, focusBeforePanel
 let folderSources = [], localBooks = [], libraryLimit = 60, folderScan, libraryCoverURLs = []
-let zenHintTimer, narratedRange
+let zenHintTimer, narratedRange, themeDraft
 
 const rangeControl = (key, label, min, max, step, unit = '') => `<label class="field range-field"><span>${label}<output for="${key}" data-output="${key}">${settings[key]}${unit}</output></span><input id="${key}" type="range" data-setting="${key}" min="${min}" max="${max}" step="${step}" value="${settings[key]}" data-unit="${unit}"></label>`
 const check = (key, label) => `<label class="check-field"><input type="checkbox" data-setting="${key}" ${settings[key] ? 'checked' : ''}>${label}</label>`
-const themePicker = `<div class="theme-options" role="group" aria-label="Tema">${themes.map(theme => `<button class="theme-option" data-theme="${theme.id}" aria-pressed="${settings.theme === theme.id}"><span class="theme-sample" style="--sample-bg:${theme.colors?.[0] ?? '#edf0e5'};--sample-ink:${theme.colors?.[2] ?? '#637557'}">${icon(theme.icon)}</span>${theme.label}</button>`).join('')}</div>`
+const themeButtons = () => [...themes,...settings.customThemes].map(theme => `<button class="theme-option" data-theme="${theme.id}" aria-pressed="${settings.theme === theme.id}"><span class="theme-sample" style="--sample-bg:${theme.colors?.[0] ?? '#edf0e5'};--sample-ink:${theme.colors?.[2] ?? '#637557'}">${icon(theme.icon)}</span><span ${theme.id.startsWith('personal-')?'data-user-content':''}>${escapeHTML(theme.label)}</span></button>`).join('')
+const themePicker = `<div class="theme-options" role="group" aria-label="Tema">${themeButtons()}</div>`
+const colorLabels = ['Fondo','Paneles','Texto','Texto secundario','Líneas','Acento','Resaltado','Interacción']
 
 $('#app').innerHTML = `
   <header class="toolbar" aria-label="Controles del lector">
@@ -83,15 +91,25 @@ $('#app').innerHTML = `
   <div id="zen-hint" class="zen-hint" role="status" hidden><p>Aquí puedes volver a la apariencia anterior. También puedes pulsar Esc.</p><button id="dismiss-zen-hint" class="text-button">Entendido</button></div>
   <aside id="preferences-panel" class="panel" role="dialog" aria-labelledby="preferences-title" hidden>
     <div class="panel-heading"><h2 id="preferences-title">Ajustes</h2><button class="icon-button panel-close" aria-label="Cerrar">${icon('close')}</button></div>
+    <details class="settings-section" open><summary>General</summary>
     <label class="field">Idioma de la interfaz<select data-setting="uiLanguage"><option value="auto">Detectar idioma del sistema</option>${Object.entries(languages).map(([code,label])=>`<option value="${code}">${label}</option>`).join('')}</select></label>
     <p class="small muted">El idioma cambia los menús, no el texto del libro.</p>
     <label class="field">Apariencia<select data-setting="appearance"><option value="minimal">Lectura minimalista</option></select></label>
     <p class="small muted">Las próximas apariencias se elegirán aquí.</p>
+    </details>
+    <details class="settings-section"><summary>Lectura</summary><button class="settings-link" data-settings-panel="appearance">Tipografía y página ${icon('right')}</button></details>
+    <details class="settings-section"><summary>Apariencia</summary><button class="settings-link" data-settings-panel="theme">Temas y colores ${icon('right')}</button></details>
+    <details class="settings-section"><summary>Voz</summary><button class="settings-link" data-settings-panel="voice">Lectura en voz alta ${icon('right')}</button></details>
+    <details class="settings-section"><summary>Biblioteca</summary><button class="settings-link" data-settings-tab="library">Abrir biblioteca ${icon('right')}</button></details>
+    <details class="settings-section"><summary>Notas y vocabulario</summary><button class="settings-link" data-settings-tab="notes">Ver notas ${icon('right')}</button></details>
+    <details class="settings-section"><summary>Datos</summary><p class="small muted">Los libros y las notas se guardan en este navegador. No se descargan archivos automáticamente.</p></details>
+    <details class="settings-section"><summary>Dispositivos</summary><button id="settings-fullscreen" class="settings-link">Pantalla completa ${icon('expand')}</button><button id="settings-zen" class="settings-link">Modo zen ${icon('zen')}</button></details>
   </aside>
   <aside id="appearance-panel" class="panel" role="dialog" aria-labelledby="appearance-title" hidden>
     <div class="panel-heading"><h2 id="appearance-title">Tipografía y página</h2><button class="icon-button panel-close" aria-label="Cerrar">${icon('close')}</button></div>
-    <label class="field">Tipografía<select data-setting="font">${fonts.map(([name]) => `<option value="${name}">${name === 'system' ? 'Sans del sistema' : name}</option>`).join('')}</select></label>
+    <label class="field">Tipografía<select data-setting="font">${fonts.map(([name]) => `<option value="${name}" ${/^(personal|project)-/.test(name)?'data-user-content':''}>${escapeHTML(name === 'system' ? 'Sans del sistema' : fontLabel(name))}</option>`).join('')}</select></label>
     <p class="small muted">Las fuentes no instaladas usan una alternativa similar. Atkinson y Lexend están incluidas.</p>
+    <details class="settings-section"><summary>Fuentes personales</summary><label class="text-button font-import">Añadir fuente<input id="font-file" type="file" accept=".woff2,.woff,.ttf,.otf" hidden></label><div id="personal-fonts"></div><p class="small muted">Las fuentes añadidas se guardan en este navegador.</p></details>
     ${rangeControl('fontSize', 'Tamaño', 14, 36, 1, ' px')}
     ${rangeControl('lineHeight', 'Interlineado', 1.2, 2.4, 0.05)}
     ${rangeControl('paragraphGap', 'Espacio entre párrafos', 0, 2, 0.1, ' em')}
@@ -99,12 +117,21 @@ $('#app').innerHTML = `
     ${rangeControl('width', 'Anchura de lectura', 640, 3840, 20, ' px')}
     ${check('fullWidth', 'Usar toda la anchura disponible')}
     ${rangeControl('gutter', 'Separación de columnas', 1, 12, 0.5, ' %')}
-    ${check('justify', 'Justificar el texto')}${check('animated', 'Transición suave de página')}
+    ${rangeControl('marginOuter','Margen exterior',0,160,2,' px')}${rangeControl('marginInner','Margen interior de página',0,100,2,' px')}
+    <p class="small muted">Exterior: laterales del visor. Interior: espacio arriba y abajo de cada página.</p>
+    ${check('justify', 'Justificar el texto')}${check('animated', 'Transición suave de página')}${check('hyphenate','Separar palabras con guiones')}
     <button id="reset-appearance" class="text-button reset-button">Restablecer presentación</button>
   </aside>
   <aside id="theme-panel" class="panel compact-panel" role="dialog" aria-labelledby="theme-title" hidden>
     <div class="panel-heading"><h2 id="theme-title">Tema</h2><button class="icon-button panel-close" aria-label="Cerrar">${icon('close')}</button></div>
     ${themePicker}<p class="small muted">Automático: mañana de 7 a 18 h, tarde de 18 a 22 h y noche de 22 a 7 h, según la hora del dispositivo.</p>
+    <details id="theme-editor" class="settings-section"><summary>Editor de temas</summary>
+      <form id="theme-form"><label class="field">Nombre del tema<input id="theme-name" maxlength="48" required></label>
+      <div class="color-fields">${colorLabels.map((label,index)=>`<label>${label}<input type="color" data-theme-color="${index}" aria-label="${label}"></label>`).join('')}</div>
+      <div class="editor-actions"><button id="theme-new" type="button" class="text-button">Nuevo tema</button><button type="submit" class="text-button">Guardar tema</button><button id="theme-delete" type="button" class="text-button" hidden>Eliminar tema</button></div>
+      <p id="theme-message" class="small muted" role="status"></p></form>
+      <details class="settings-section"><summary>Importar o copiar tema</summary><button id="theme-copy" class="text-button">Copiar tema</button><label class="field">Tema en JSON<textarea id="theme-json" rows="4" spellcheck="false"></textarea></label><button id="theme-import" class="text-button">Importar tema</button></details>
+    </details>
   </aside>
   <aside id="voice-panel" class="panel" role="dialog" aria-labelledby="voice-title" hidden>
     <div class="panel-heading"><h2 id="voice-title">Lectura en voz alta</h2><button class="icon-button panel-close" aria-label="Cerrar">${icon('close')}</button></div>
@@ -155,7 +182,7 @@ $('#app').innerHTML = `
           <div><dt>Autor</dt><dd>Alejandro Pico</dd></div>
           <div><dt>Carácter</dt><dd>Proyecto personal</dd></div>
           <div><dt>Propósito</dt><dd>Lectura y escucha</dd></div>
-          <div><dt>Edición</dt><dd>Versión 0.3</dd></div>
+          <div><dt>Edición</dt><dd>Versión 0.4</dd></div>
         </dl>
       </aside>
       <div class="about-body">
@@ -223,10 +250,11 @@ function bookStyles() {
   const font = fonts.find(([name]) => name === settings.font)?.[1] ?? fonts[0][1]
   const bundledFonts = settings.font === 'Atkinson Hyperlegible' || settings.font === 'Lexend'
     ? [...document.styleSheets].flatMap(sheet => { try { return [...sheet.cssRules].filter(rule => rule.type === CSSRule.FONT_FACE_RULE && rule.style.fontFamily.replace(/["']/g,'') === settings.font).map(rule => rule.cssText.replace(/url\(["']?([^"')]+)["']?\)/g, (_,url) => `url("${new URL(url, sheet.href || document.baseURI).href}")`)) } catch { return [] } }).join('\n') : ''
-  return `${bundledFonts}\nhtml { --theme-bg-color: ${colors.bg}; color: ${colors.ink} !important; background: ${colors.bg} !important; color-scheme: ${themeById(effectiveTheme(settings.theme)).dark ? 'dark' : 'light'}; border: 0 !important; outline: 0 !important; box-shadow: none !important; }
+  return `${bundledFonts}\n${fontCSS(settings.font)}\nhtml { --theme-bg-color: ${colors.bg}; color: ${colors.ink} !important; background: ${colors.bg} !important; color-scheme: ${document.documentElement.style.colorScheme}; border: 0 !important; outline: 0 !important; box-shadow: none !important; }
     body { font-family: ${font} !important; font-size: ${settings.fontSize}px !important; line-height: ${settings.lineHeight} !important; color: ${colors.ink} !important; background: transparent !important; text-align: ${settings.justify ? 'justify' : 'left'} !important; overflow-wrap: break-word; }
     p, div, li, blockquote { font-family: inherit !important; font-size: inherit !important; line-height: inherit !important; color: inherit !important; }
     p { margin-block: 0 ${settings.paragraphGap}em !important; }
+    body,p,div,li,blockquote { hyphens: ${settings.hyphenate?'auto':'none'} !important; }
     body, main, article, section, div { border: 0 !important; outline: 0 !important; box-shadow: none !important; }
     body.reader-cover { display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; min-height: 75vh !important; text-align: center !important; }
     body.reader-cover img, body.reader-cover svg { display: block; margin: auto !important; max-height: 72vh !important; max-width: 100% !important; width: min(100%, 55vh) !important; height: auto !important; }
@@ -241,20 +269,21 @@ function bookStyles() {
 }
 
 function applySettings() {
-  const theme = themeById(effectiveTheme(settings.theme))
+  const theme = themeDraft ?? themeById(effectiveTheme(settings.theme),settings.customThemes)
   document.documentElement.dataset.theme = theme.id
-  const properties = ['paper','surface','ink','muted','line','accent','highlight','hover']
-  theme.colors.forEach((value,index) => document.documentElement.style.setProperty(`--${properties[index]}`,value))
+  theme.colors.forEach((value,index) => document.documentElement.style.setProperty(`--${themeProperties[index]}`,value))
   document.documentElement.style.colorScheme = theme.dark ? 'dark' : 'light'
   $('#theme-toggle').innerHTML = icon(theme.icon)
   $('#reading-area').style.maxWidth = settings.fullWidth ? 'none' : `${settings.width}px`
+  const outer = Math.min(settings.marginOuter,innerWidth<700?48:160)
+  $('#reading-area').style.paddingInline = `${outer}px`
   $('#width').disabled = settings.fullWidth
   if (view.renderer) {
     const count = window.innerWidth < 700 ? 1 : settings.columns
     view.renderer.setAttribute('max-column-count', count)
-    view.renderer.setAttribute('max-inline-size', `${Math.max(220, ($('#reading-area').clientWidth - 16) / count)}px`)
+    view.renderer.setAttribute('max-inline-size', `${Math.max(220, ($('#reading-area').clientWidth - outer*2) / count)}px`)
     view.renderer.setAttribute('gap', `${settings.gutter}%`)
-    view.renderer.setAttribute('margin', window.innerWidth < 700 ? '16px' : '28px')
+    view.renderer.setAttribute('margin', `${Math.min(settings.marginInner,innerWidth<700?48:100)}px`)
     view.renderer.toggleAttribute('animated', settings.animated && !matchMedia('(prefers-reduced-motion: reduce)').matches)
     view.renderer.setStyles?.(bookStyles())
   }
@@ -275,6 +304,7 @@ function applySettings() {
 }
 
 function closePanels() {
+  if (themeDraft) { themeDraft=undefined; applySettings() }
   document.querySelectorAll('.panel').forEach(panel => panel.hidden = true)
   document.querySelectorAll('[aria-controls$="-panel"]').forEach(button => button.setAttribute('aria-expanded', 'false'))
   if (focusBeforePanel?.isConnected) focusBeforePanel.focus({ preventScroll: true })
@@ -555,6 +585,7 @@ view.addEventListener('relocate', ({ detail }) => {
 })
 
 view.addEventListener('load', ({ detail: { doc, index } }) => {
+  doc.documentElement.lang ||= metadataText(book?.metadata?.language) || currentLanguage()
   if (doc.querySelector('img,svg') && (/cover|portada|cubierta/i.test(String(book?.sections[index]?.id ?? '')) || doc.body.textContent.trim().length < 60)) doc.body.classList.add('reader-cover')
   doc.querySelectorAll('[data-no-speech]').forEach(el => { if (!el.querySelector('button')) el.textContent = t(el.textContent.trim()) })
   doc.querySelectorAll('.pdf-original').forEach(button => button.textContent = t('Ver página original'))
@@ -731,8 +762,92 @@ document.querySelectorAll('[data-setting]').forEach(input => {
   })
 })
 $('#api-key').oninput = event => { speech.stop(); apiKey = event.target.value.trim() }
-document.querySelectorAll('button[data-theme]').forEach(button => button.onclick = () => { settings.theme = button.dataset.theme; applySettings() })
-$('#reset-appearance').onclick = () => { for (const key of ['font', 'fontSize', 'lineHeight', 'paragraphGap', 'columns', 'width', 'gutter', 'fullWidth', 'justify', 'animated']) settings[key] = defaults[key]; applySettings() }
+document.querySelectorAll('[data-settings-panel]').forEach(button=>button.onclick=()=>togglePanel(button.dataset.settingsPanel))
+document.querySelectorAll('[data-settings-tab]').forEach(button=>button.onclick=()=>{
+  closePanels(); sidebar(true); document.querySelector(`[data-tab="${button.dataset.settingsTab}"]`).click()
+})
+$('#settings-fullscreen').onclick=()=>$('#fullscreen-toggle').click()
+$('#settings-zen').onclick=()=>$('#zen-toggle').click()
+
+function fillThemeEditor(forceNew=false) {
+  const theme=themeById(effectiveTheme(settings.theme),settings.customThemes)
+  const existing=!forceNew && theme.id.startsWith('personal-')
+  $('#theme-form').dataset.themeId=existing?theme.id:''
+  $('#theme-name').value=existing?theme.label:t('Mi tema')
+  theme.colors.forEach((color,index)=>document.querySelector(`[data-theme-color="${index}"]`).value=color)
+  $('#theme-delete').hidden=!existing; $('#theme-message').textContent=''
+}
+function readThemeEditor() {
+  return validateTheme({id:$('#theme-form').dataset.themeId,label:$('#theme-name').value,
+    colors:[...document.querySelectorAll('[data-theme-color]')].map(input=>input.value)},true)
+}
+function savePersonalTheme(theme) {
+  const index=settings.customThemes.findIndex(item=>item.id===theme.id)
+  if(index<0 && settings.customThemes.length>=30) throw new Error(t('Puedes guardar hasta 30 temas personales.'))
+  if(index<0) settings.customThemes.push(theme); else settings.customThemes[index]=theme
+  themeDraft=undefined; settings.theme=theme.id
+  $('.theme-options').innerHTML=themeButtons(); fillThemeEditor(); applySettings(); translateUI()
+  $('#theme-message').textContent=t('Tema guardado')
+}
+$('#theme-editor').addEventListener('toggle',()=>{
+  if($('#theme-editor').open) fillThemeEditor()
+  else if(themeDraft) {themeDraft=undefined;applySettings()}
+})
+$('#theme-form').addEventListener('input',()=>{
+  try { themeDraft=readThemeEditor(); applySettings() } catch { /* Keep last valid preview until named. */ }
+})
+$('#theme-form').onsubmit=attempt(async event=>{event.preventDefault();savePersonalTheme(readThemeEditor())})
+$('#theme-new').onclick=()=>{themeDraft=undefined;fillThemeEditor(true);applySettings();$('#theme-name').focus()}
+$('#theme-delete').onclick=()=>{
+  settings.customThemes=settings.customThemes.filter(theme=>theme.id!==$('#theme-form').dataset.themeId)
+  themeDraft=undefined;settings.theme='auto';$('.theme-options').innerHTML=themeButtons();fillThemeEditor();applySettings();translateUI()
+}
+$('#theme-copy').onclick=attempt(async()=>{
+  const json=JSON.stringify(readThemeEditor(),null,2);$('#theme-json').value=json
+  try { await navigator.clipboard.writeText(json);toast('Tema copiado') } catch { $('#theme-json').focus();$('#theme-json').select() }
+})
+$('#theme-import').onclick=attempt(async()=>{
+  let input;try {input=JSON.parse($('#theme-json').value)}catch{throw new Error(t('El tema JSON no es válido.'))}
+  savePersonalTheme(validateTheme(input));$('#theme-json').value=''
+})
+
+function renderPersonalFonts() {
+  const select=document.querySelector('[data-setting="font"]')
+  select.replaceChildren(...fonts.map(([id])=>{
+    const option=document.createElement('option');option.value=id;option.textContent=id==='system'?'Sans del sistema':fontLabel(id)
+    if(/^(personal|project)-/.test(id)) option.dataset.userContent=''
+    return option
+  }))
+  const list=$('#personal-fonts');list.replaceChildren()
+  for(const font of userFonts) {
+    const row=document.createElement('div');row.className='personal-font-row'
+    const label=document.createElement('span');label.dataset.userContent='';label.textContent=font.label
+    const remove=document.createElement('button');remove.className='icon-button';remove.innerHTML=icon('trash');remove.setAttribute('aria-label',t('Eliminar fuente'))
+    remove.onclick=attempt(async()=>{
+      await removeFont(font.id);userFonts=userFonts.filter(item=>item.id!==font.id)
+      fonts.splice(fonts.findIndex(([id])=>id===font.id),1)
+      if(settings.font===font.id) settings.font='Georgia'
+      unregisterFont(font.id);renderPersonalFonts();applySettings();translateUI()
+    });row.append(label,remove);list.append(row)
+  }
+}
+$('#font-file').onchange=attempt(async()=>{
+  const file=$('#font-file').files[0];$('#font-file').value=''
+  if(!file) return
+  if(!/\.(woff2?|ttf|otf)$/i.test(file.name) || file.size>10*1024*1024) throw new Error(t('Elige una fuente válida de hasta 10 MB.'))
+  const font={id:`personal-font-${crypto.randomUUID()}`,label:file.name.replace(/\.(woff2?|ttf|otf)$/i,'').slice(0,80),file}
+  try {await registerFont(font)}catch{throw new Error(t('No se pudo cargar la fuente.'))}
+  try {await saveFont(font)}catch(error){unregisterFont(font.id);throw error}
+  userFonts.push(font);fonts.push([font.id,`"${font.id}", serif`]);settings.font=font.id
+  renderPersonalFonts();applySettings();translateUI();toast('Fuente añadida')
+})
+renderPersonalFonts()
+$('#theme-panel').addEventListener('click',event=>{
+  const button=event.target.closest('button[data-theme]')
+  if (!button) return
+  themeDraft=undefined; settings.theme=button.dataset.theme; fillThemeEditor(); applySettings()
+})
+$('#reset-appearance').onclick = () => { for (const key of ['font', 'fontSize', 'lineHeight', 'paragraphGap', 'columns', 'width', 'gutter', 'fullWidth', 'justify', 'animated','marginOuter','marginInner','hyphenate']) settings[key] = defaults[key]; applySettings() }
 $('#voice-preview').onclick = attempt(async () => {
   speech.stop()
   const sample = { text: 'La tarde caía despacio. Por un momento, todo quedó en silencio.' }

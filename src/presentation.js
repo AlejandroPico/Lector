@@ -1,3 +1,4 @@
+import { projectFonts } from './font-resources.js'
 export const fonts = [
   ['Georgia', 'Georgia, serif'], ['Palatino', '"Palatino Linotype", Palatino, serif'],
   ['Times New Roman', '"Times New Roman", Times, serif'], ['Arial', 'Arial, sans-serif'],
@@ -10,6 +11,7 @@ export const fonts = [
   ['Lucida Sans', '"Lucida Sans Unicode", "Lucida Grande", sans-serif'],
   ['Courier New', '"Courier New", monospace'], ['system', 'system-ui, sans-serif'],
   ['Atkinson Hyperlegible', '"Atkinson Hyperlegible", sans-serif'], ['Lexend', 'Lexend, sans-serif'],
+  ...projectFonts.map(font=>[font.id,`"${font.id}", serif`]),
 ]
 
 // paper, surface, ink, muted, line, accent, highlight, hover
@@ -27,7 +29,26 @@ export const themes = [
   { id: 'winter', label: 'Invierno', icon: 'snow', colors: ['#edf2f7','#e2eaf2','#344857','#64798a','#cbd7e3','#4a728e','#c7deef','#d9e6f1'] },
   { id: 'rain', label: 'Lluvia', icon: 'rain', dark: true, colors: ['#1c2630','#24323e','#c5d4df','#98b0c1','#3b5061','#9ebfd6','#35566e','#2d4050'] },
 ]
-export const themeById = id => themes.find(theme => theme.id === id) ?? themes[1]
+themes.push(
+  { id:'sunny',label:'Soleado',icon:'sun',colors:['#fff8e6','#fff0c9','#4e422c','#8a754c','#e8d9b5','#a47923','#f0dea8','#f7e8bf'] },
+  { id:'snowy',label:'Nevado',icon:'snow',colors:['#f7fafc','#edf4f8','#364b59','#758b9b','#dbe6ec','#527f9c','#daeaf5','#e7f0f6'] },
+  { id:'windy',label:'Ventoso',icon:'wind',colors:['#edf4ef','#dfece5','#334d49','#6c8580','#cbded5','#477d70','#c9e4d8','#deeee5'] },
+  { id:'energy',label:'Energía',icon:'bolt',colors:['#fff0df','#ffe3c8','#573b2a','#956d50','#edccb0','#ad612c','#f5c896','#fce0bc'] },
+  { id:'calm',label:'Calma',icon:'calm',colors:['#e9f2f3','#dfeaec','#354c53','#6b848c','#ccdcdf','#487881','#c9e2e6','#d8e9ec'] },
+  { id:'melancholy',label:'Melancolía',icon:'sad',dark:true,colors:['#242338','#302e46','#dbd7e9','#aaa2bd','#49435f','#b5a3d3','#514563','#3c354f'] },
+  { id:'joy',label:'Alegría',icon:'smile',colors:['#f9f5df','#f0ebc8','#485334','#829060','#dde1b4','#718a3d','#dbe9a5','#e9efc4'] },
+  { id:'love',label:'Amor',icon:'heart',colors:['#fbefef','#f4e1e4','#60424d','#977781','#e7cdd5','#a6627d','#edc5d5','#f3dce5'] },
+)
+export const themeById = (id,personal=[]) => [...themes,...personal].find(theme=>theme.id===id) ?? themes[1]
+export const themeProperties = ['paper','surface','ink','muted','line','accent','highlight','hover']
+export function validateTheme(input, keepId = false) {
+  if (!input || !Array.isArray(input.colors) || input.colors.length!==8 || !input.colors.every(color=>typeof color==='string' && /^#[a-f\d]{6}$/i.test(color))) throw new Error('El tema necesita ocho colores hexadecimales válidos.')
+  const label=String(input.label??'').trim().slice(0,48)
+  if (!label) throw new Error('Escribe un nombre para el tema.')
+  const rgb=input.colors[0].slice(1).match(/../g).map(value=>parseInt(value,16)/255)
+  const dark=(rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722)<.45
+  return {id:keepId && /^personal-[a-z\d-]+$/.test(input.id) ? input.id : `personal-${crypto.randomUUID()}`,label,icon:'palette',dark,colors:input.colors.map(color=>color.toLowerCase())}
+}
 
 export function selectBrowserVoice(voices, uri, language = 'es-ES') {
   const chosen = voices.find(voice => voice.voiceURI === uri)
