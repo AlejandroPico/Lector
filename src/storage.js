@@ -4,13 +4,16 @@ let connection
 
 async function db() {
   if (!connection) connection = new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 4)
+    const request = indexedDB.open(DB_NAME, 5)
     request.onupgradeneeded = () => {
       if (!request.result.objectStoreNames.contains('books')) request.result.createObjectStore('books', { keyPath: 'id' })
       if (!request.result.objectStoreNames.contains('folders')) request.result.createObjectStore('folders', { keyPath: 'id' })
       if (!request.result.objectStoreNames.contains('fonts')) request.result.createObjectStore('fonts', { keyPath: 'id' })
       if (!request.result.objectStoreNames.contains('catalog')) request.result.createObjectStore('catalog', { keyPath:'id' })
       if (!request.result.objectStoreNames.contains('collections')) request.result.createObjectStore('collections', { keyPath:'id' })
+      if (!request.result.objectStoreNames.contains('dictionaryPacks')) request.result.createObjectStore('dictionaryPacks', {keyPath:'id'})
+      if (!request.result.objectStoreNames.contains('dictionaryChunks')){const chunks=request.result.createObjectStore('dictionaryChunks',{keyPath:'id'});chunks.createIndex('packId','packId')}
+      if (!request.result.objectStoreNames.contains('vocabulary')) request.result.createObjectStore('vocabulary',{keyPath:'id'})
     }
     request.onsuccess = () => {
       request.result.onversionchange = () => { request.result.close(); connection = undefined }
@@ -56,6 +59,22 @@ export async function updateCatalog(id,change){
 }
 export const removeCatalog = id => transact('readwrite',store=>store.delete(id),'catalog')
 export const allCollections = () => transact('readonly',store=>store.getAll(),'collections')
+export const allDictionaryPacks=()=>transact('readonly',store=>store.getAll(),'dictionaryPacks')
+export const saveDictionaryPack=pack=>transact('readwrite',store=>store.put(pack),'dictionaryPacks')
+export const getDictionaryChunk=(id,bucket)=>transact('readonly',store=>store.get(`${id}:${bucket}`),'dictionaryChunks')
+export const saveDictionaryChunk=chunk=>transact('readwrite',store=>store.put(chunk),'dictionaryChunks')
+export const allVocabulary=()=>transact('readonly',store=>store.getAll(),'vocabulary')
+export const saveVocabulary=word=>transact('readwrite',store=>store.put(word),'vocabulary')
+export const removeVocabulary=id=>transact('readwrite',store=>store.delete(id),'vocabulary')
+export async function removeDictionaryPack(id){
+  const database=await db()
+  return new Promise((resolve,reject)=>{
+    const tx=database.transaction(['dictionaryPacks','dictionaryChunks'],'readwrite');tx.objectStore('dictionaryPacks').delete(id)
+    const store=tx.objectStore('dictionaryChunks'),cursor=store.index('packId').openKeyCursor(IDBKeyRange.only(id))
+    cursor.onsuccess=()=>{const row=cursor.result;if(row){store.delete(row.primaryKey);row.continue()}}
+    tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error)
+  })
+}
 export const saveCollection = collection => transact('readwrite',store=>store.put(collection),'collections')
 export async function removeCollection(id){
   const database=await db()
@@ -96,6 +115,7 @@ export const defaults = Object.freeze({
   libraryDetails:false,
   preloadCovers:false,preloadEmbeddedCovers:false,
   showAnnotations:true,
+  dictionaryLanguage:'auto',
   voice: '', rate: 1, pitch: 1, language: 'es-ES', speechLanguage: 'auto',
   endpoint: 'https://api.openai.com/v1/audio/speech',
   model: 'gpt-4o-mini-tts', apiVoice: 'coral',
@@ -126,6 +146,7 @@ export function safeSettings(input = {}) {
   if (!fonts.some(([name]) => name === value.font)) value.font = 'Georgia'
   if (!['auto','es','ca','en','fr','de','pt','it','zh','ja','hi'].includes(value.uiLanguage)) value.uiLanguage = 'auto'
   if (!['auto','es','ca','en','fr','de','pt','it','zh','ja','hi'].includes(value.speechLanguage)) value.speechLanguage = 'auto'
+  if (!['auto','es','ca','en','fr','de','pt','it','zh','ja','hi'].includes(value.dictionaryLanguage)) value.dictionaryLanguage='auto'
   if (!['list','covers'].includes(value.libraryView)) value.libraryView = 'list'
   if (!['list','covers'].includes(value.libraryDialogView)) value.libraryDialogView = 'covers'
   if (!['browser', 'openai'].includes(value.provider)) value.provider = 'browser'

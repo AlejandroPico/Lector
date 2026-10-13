@@ -1,4 +1,5 @@
 import { readJSON, writeJSON } from './storage.js'
+import { normalizeTerm } from './dictionary-core.js'
 
 const base = {
   sosiego: 'Quietud, tranquilidad o serenidad.',
@@ -36,11 +37,12 @@ const base = {
   alameda: 'Paseo o lugar poblado de álamos u otros árboles.',
 }
 
-export const normalizeWord = word => word.trim().toLocaleLowerCase('es').replace(/^[^\p{L}]+|[^\p{L}]+$/gu, '')
+export const normalizeWord = word => normalizeTerm(word,'es')
+export const legacyDefinition=word=>{const custom=readJSON('lector-dictionary',{}),key=normalizeWord(word);return Object.hasOwn(custom,key)?custom[key]:null}
 export function lookup(word) {
   const key = normalizeWord(word)
   const custom = readJSON('lector-dictionary', {})
-  return custom[key] ?? base[key] ?? null
+  return (Object.hasOwn(custom,key)?custom[key]:null)??(Object.hasOwn(base,key)?base[key]:null)
 }
 
 export function importDictionary(json) {

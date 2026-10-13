@@ -2,7 +2,32 @@
 
 Un lector de libros a toda pantalla, sin cabeceras decorativas ni tarjetas alrededor del texto. Dos columnas por defecto, controles discretos en la esquina superior derecha y un índice lateral que se puede ocultar.
 
-## Versión 0.9
+## Versión 0.10
+
+En Ajustes → Notas y vocabulario están «Diccionarios sin conexión», «Buscar palabra» y «Vocabulario personal». Al consultar un fragmento se usa el idioma del libro, con selección manual independiente de la voz y de los menús. La búsqueda es local: no envía la palabra a un servicio. Cada resultado identifica su paquete, idioma de definiciones y licencia; el enlace a Wiktionary solo se abre al pulsarlo.
+
+Hay diez paquetes voluntarios derivados de Wiktionary/Kaikki, con **6.449.866 entradas normalizadas entre lemas y formas**, repartidos en bloques comprimidos. Los manifiestos y direcciones se cargan al abrir el gestor; no se descargan ni instalan los bloques al arrancar. El gestor muestra cobertura y tamaño antes de instalar, permite cancelar y quitar paquetes. La activación ocurre tras verificar los bloques completos; si se cancela o falla una verificación, se eliminan los datos parciales. Las consultas posteriores usan solo IndexedDB y mantienen en memoria unos pocos bloques, evitando cargar todo el diccionario.
+
+| Idioma | Entradas | Descarga aproximada | Idioma de definiciones |
+| --- | ---: | ---: | --- |
+| Español | 832.842 | 12,4 MiB | Español |
+| Catalán | 189.072 | 2,1 MiB | Inglés |
+| Inglés | 1.350.780 | 34,8 MiB | Inglés |
+| Francés | 1.933.854 | 35,0 MiB | Francés |
+| Alemán | 945.785 | 27,4 MiB | Alemán |
+| Portugués | 379.834 | 6,5 MiB | Portugués |
+| Italiano | 539.392 | 7,4 MiB | Italiano |
+| Chino | 116.818 | 3,9 MiB | Chino |
+| Japonés | 125.713 | 4,8 MiB | Japonés |
+| Hindi | 35.776 | 0,9 MiB | Inglés |
+
+La fuente es colaborativa, de cobertura variable y con posibles errores de extracción; algunas formas tienen descripciones gramaticales. Se conservan hasta doce glosas por entrada. **Catalán e hindi tienen definiciones en inglés en estos paquetes**, señalado tanto en el gestor como al consultar; no se presentan como diccionarios monolingües ni como cobertura universal. El glosario español anterior permanece como alternativa básica cuando no hay un paquete instalado para una palabra.
+
+La carpeta raíz [diccionarios](diccionarios/README.md) documenta las fuentes, transformaciones y licencia CC BY-SA 4.0. Detecta paquetes y JSON propios al desarrollar/compilar; los archivos personales también se pueden importar desde la interfaz, hasta 64 MB y un millón de palabras. Se admite un objeto simple palabra→definición o una cabecera con idioma, nombre y `entries`. Los JSON antiguos guardados en localStorage siguen disponibles, mientras que las nuevas importaciones se guardan por bloques en IndexedDB.
+
+«Guardar palabra» añade la definición consultada al vocabulario personal, junto con procedencia y ubicación del libro cuando corresponde. Allí puedes buscar, añadir una nota y marcar «Aprendida». Quitar un diccionario conserva las palabras guardadas. Nada se descarga en la carpeta Descargas para instalar o guardar vocabulario. Las consultas funcionan sin red con la aplicación abierta y el paquete instalado; el arranque completamente desconectado de la aplicación queda para 0.16.
+
+## Notas de la versión 0.9
 
 Al seleccionar texto puedes anotar, subrayar o copiar una cita. El editor ofrece cinco colores y dos marcas: línea inferior o fondo resaltado. Una anotación existente se puede editar desde Notas, el cuaderno o pulsando la marca, sin duplicar su ancla. «Mostrar subrayados» en Ajustes → Notas y vocabulario permite ocultar las marcas conservándolas guardadas. Los marcadores de página siguen siendo independientes.
 
@@ -56,7 +81,7 @@ Los controles de abrir y narrar están centrados arriba, con Play circular. La l
 - Biblioteca por carpetas con agrupación de Calibre, elección de formato, filtro por título o autor y vista de títulos o portadas. Las portadas y los metadatos se cargan solo bajo demanda.
 - Voz del navegador con selector de voz, velocidad, tono, pausa y resaltado. Continúa entre capítulos y puede comenzar desde una selección.
 - Notas sobre selecciones, marcadores, exportación de notas y biblioteca local. Recupera el punto de lectura al reabrir un archivo idéntico, incluso si cambia su nombre.
-- Glosario local básico; importación de diccionarios propios en JSON y enlace para consultar una palabra en Wikcionario.
+- Diez paquetes de diccionarios para consultas sin conexión, importación de recursos propios y vocabulario personal; glosario básico como alternativa.
 - Conexión opcional con OpenAI o un servicio compatible con su endpoint de generación de voz.
 
 ## Abrir en el equipo
@@ -130,7 +155,7 @@ Referencia: [generación de voz de OpenAI](https://developers.openai.com/api/doc
 - En PDF se extrae el texto para remaquetarlo. «Ver página original» muestra la maquetación y las ilustraciones con zoom. El orden del texto puede necesitar ajustes en PDF con columnas o diseños complejos.
 - Un PDF escaneado se puede visualizar, pero no narrar sin OCR; esta versión no incorpora OCR.
 - Los EPUB de maquetación fija conservan su presentación y pueden no responder a todos los ajustes de tipografía/columnas.
-- El glosario incluido es pequeño. Los diccionarios propios usan el formato `{"palabra": "definición"}`, con un límite de 4 MB y 50.000 entradas.
+- Los diccionarios son colaborativos y su cobertura varía. Las importaciones individuales JSON admiten hasta 64 MB y un millón de palabras; los paquetes grandes usan bloques. Catalán e hindi tienen aquí definiciones en inglés.
 - Las animaciones de libro físico y los diseños adicionales quedan para próximas iteraciones.
 - La rueda dentada contiene el idioma y la elección de apariencia. La apariencia disponible es la lectura minimalista; el libro realista animado y el cuaderno escolar son propuestas futuras, no modos activos.
 

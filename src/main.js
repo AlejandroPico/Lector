@@ -9,7 +9,6 @@ import { Overlayer } from 'foliate-js/overlayer.js'
 import { importBook, escapeHTML, metadataText, pdfPageImage } from './books.js'
 import { allBooks, allFolders, saveFolder, removeFolder, allFonts, saveFont, removeFont, fileId, getBook, saveBook, removeBook, defaults, readJSON, writeJSON, effectiveTheme, safeSettings } from './storage.js'
 import { SpeechController, validateEndpoint, wordAtPoint } from './speech.js'
-import { lookup, normalizeWord, importDictionary } from './dictionary.js'
 import { icon, iconButton } from './icons.js'
 import { fonts, themes, themeById, themeProperties, validateTheme } from './presentation.js'
 import { projectFonts, registerFont, unregisterFont, fontLabel, fontCSS } from './font-resources.js'
@@ -23,6 +22,9 @@ import { statuses,catalogKey,catalogMetadata,libraryEntries,filterLibrary,duplic
 import { reconcileCatalog } from './catalog-refresh.js'
 import { VisibleCoverQueue } from './cover-queue.js'
 import { annotationColors,annotationColor,citation,notebookEntries,notesMarkdown,notesHTML } from './notes.js'
+import { lookupOffline,installDictionary,importOfflineDictionary,uninstallDictionary,clearDictionaryCache } from './offline-dictionaries.js'
+import { normalizeTerm } from './dictionary-core.js'
+import { allDictionaryPacks,allVocabulary,saveVocabulary,removeVocabulary } from './storage.js'
 
 const $ = selector => document.querySelector(selector)
 let userFonts = await allFonts().catch(()=>[])
@@ -48,6 +50,8 @@ let catalogRecords=[],collections=[],catalogItems=[],duplicateClusters=[],duplic
 let shownLibrary=[],lastSpeechSave=0
 let coverQueuePaused=false
 let editingNote,notebookBooks=[],notebookShown=[],notebookLimit=100,exportEntries=[]
+let dictionaryInstall,dictionaryResult,dictionaryQuerySequence=0,vocabularyLimit=100
+let projectDictionaries=[],personalProjectDictionaries=[],dictionaryResourcesPromise
 
 const rangeControl = (key, label, min, max, step, unit = '') => `<label class="field range-field"><span>${label}<output for="${key}" data-output="${key}">${settings[key]}${unit}</output></span><input id="${key}" type="range" data-setting="${key}" min="${min}" max="${max}" step="${step}" value="${settings[key]}" data-unit="${unit}"></label>`
 const check = (key, label) => `<label class="check-field"><input type="checkbox" data-setting="${key}" ${settings[key] ? 'checked' : ''}>${label}</label>`
@@ -135,7 +139,7 @@ $('#app').innerHTML = `
     <details class="settings-section"><summary>Apariencia</summary><button class="settings-link" data-settings-panel="theme">Temas y colores ${icon('right')}</button>${check('showOpeningCover','Mostrar cubierta al abrir un libro')}</details>
     <details class="settings-section"><summary>Voz</summary><button class="settings-link" data-settings-panel="voice">Lectura en voz alta ${icon('right')}</button></details>
     <details class="settings-section"><summary>Biblioteca</summary><button class="settings-link" data-settings-tab="library">Abrir biblioteca ${icon('right')}</button>${check('libraryDetails','Mostrar detalles de biblioteca')}${check('preloadCovers','Cargar portadas visibles')}${check('preloadEmbeddedCovers','Obtener portadas incrustadas automáticamente')}<p class="small muted">La carga anticipada puede descargar cubiertas de la nube. Obtener una cubierta incrustada también lee el ebook visible.</p></details>
-    <details class="settings-section"><summary>Notas y vocabulario</summary><button class="settings-link" data-settings-tab="notes">Ver notas ${icon('right')}</button><button id="settings-notebook" class="settings-link">Cuaderno de notas ${icon('right')}</button>${check('showAnnotations','Mostrar subrayados')}</details>
+    <details class="settings-section"><summary>Notas y vocabulario</summary><button class="settings-link" data-settings-tab="notes">Ver notas ${icon('right')}</button><button id="settings-notebook" class="settings-link">Cuaderno de notas ${icon('right')}</button>${check('showAnnotations','Mostrar subrayados')}<button id="settings-dictionaries" class="settings-link">Diccionarios sin conexión ${icon('right')}</button><button id="settings-vocabulary" class="settings-link">Vocabulario personal ${icon('right')}</button><button id="settings-word" class="settings-link">Buscar palabra ${icon('right')}</button></details>
     <details class="settings-section"><summary>Datos</summary><p class="small muted">Los libros y las notas se guardan en este navegador. No se descargan archivos automáticamente.</p></details>
     <details class="settings-section"><summary>Dispositivos</summary>${check('tvMode','Modo televisión')}${rangeControl('tvScale','Escala de televisión',1,2,.05,' ×')}<p class="small muted">Flechas para leer y recorrer controles; Intro para seleccionar. Compatible con mandos que envían teclas y con gamepads del navegador.</p><button id="settings-fullscreen" class="settings-link">Pantalla completa ${icon('expand')}</button><button id="settings-zen" class="settings-link">Modo zen ${icon('zen')}</button></details>
   </aside>
@@ -203,7 +207,9 @@ $('#app').innerHTML = `
   <dialog id="note-dialog" class="small-dialog" aria-labelledby="note-title"><div class="panel-heading"><h2 id="note-title">Nota de lectura</h2><button class="icon-button dialog-close" aria-label="Cerrar">${icon('close')}</button></div><blockquote id="note-quote" data-user-content></blockquote><label class="field">Tu nota<textarea id="note-text" rows="5" maxlength="10000" placeholder="Escribe una nota…"></textarea></label><div class="filter-grid"><label class="field">Color<select id="note-color">${Object.entries(annotationColors).map(([id,value])=>`<option value="${id}">${value.label}</option>`).join('')}</select></label><label class="field">Marca<select id="note-style"><option value="underline">Subrayado</option><option value="highlight">Fondo resaltado</option></select></label></div><button id="save-note" class="primary-button">Guardar nota</button></dialog>
   <dialog id="notebook-dialog" class="notebook-dialog" aria-labelledby="notebook-title"><div class="panel-heading"><h2 id="notebook-title">Cuaderno de notas</h2><button class="icon-button dialog-close" aria-label="Cerrar">${icon('close')}</button></div><div class="notebook-controls"><label class="field">Libro<select id="notebook-book"><option value="">Todos</option></select></label><label class="field">Tipo<select id="notebook-kind"><option value="">Todos</option><option value="note">Notas</option><option value="highlight">Subrayados</option><option value="bookmark">Marcadores</option></select></label><label class="field">Buscar notas<input id="notebook-search" type="search"></label></div><div class="editor-actions"><button id="notebook-export" class="text-button">Exportar selección</button><span id="notebook-count" class="small muted"></span></div><div id="notebook-list"></div><button id="notebook-more" class="text-button" hidden>Mostrar más</button></dialog>
   <dialog id="notes-export-dialog" class="small-dialog" aria-labelledby="notes-export-title"><div class="panel-heading"><h2 id="notes-export-title">Exportar notas</h2><button class="icon-button dialog-close" aria-label="Cerrar">${icon('close')}</button></div><label class="field">Formato<select id="notes-export-format"><option value="md">Markdown</option><option value="json">JSON</option></select></label><label class="field">Vista previa<textarea id="notes-export-preview" rows="8" readonly></textarea></label><div class="editor-actions"><button id="notes-export-save" class="text-button">Guardar archivo</button><button id="notes-export-copy" class="text-button">Copiar exportación</button><button id="notes-export-pdf" class="text-button">Imprimir / guardar PDF</button><button id="notes-export-download" class="text-button" hidden>Descargar archivo</button></div><p id="notes-export-fallback" class="small muted" hidden>Este navegador no permite elegir destino. Puedes copiar el contenido o descargarlo expresamente.</p></dialog>
-  <dialog id="dictionary-dialog" class="small-dialog" aria-labelledby="dictionary-word"><div class="panel-heading"><h2 id="dictionary-word"></h2><button class="icon-button dialog-close" aria-label="Cerrar">${icon('close')}</button></div><p id="dictionary-definition"></p><a id="dictionary-external" class="text-link" target="_blank" rel="noopener noreferrer">Consultar en Wikcionario ↗</a><label class="text-button dictionary-import">Importar diccionario propio<input id="dictionary-file" type="file" accept=".json" hidden></label><p class="small muted">Glosario local básico y diccionarios JSON propios. Formato: {"palabra": "definición"}.</p></dialog>
+  <dialog id="dictionary-dialog" class="small-dialog" aria-labelledby="dictionary-word"><div class="panel-heading"><h2 id="dictionary-word" data-user-content></h2><button class="icon-button dialog-close" aria-label="Cerrar">${icon('close')}</button></div><form id="dictionary-search-form" class="search-field"><label class="sr-only" for="dictionary-query">Buscar palabra</label><input id="dictionary-query" placeholder="Buscar palabra" maxlength="200"><button aria-label="Buscar">${icon('search')}</button></form><label class="field">Idioma de consulta<select id="dictionary-language" data-setting="dictionaryLanguage"><option value="auto">Automático · idioma del libro</option>${Object.entries(languages).map(([code,name])=>`<option value="${code}" data-user-content>${name}</option>`).join('')}</select></label><p id="dictionary-definition"></p><p id="dictionary-source" class="small muted" data-user-content></p><a id="dictionary-license" class="text-link" target="_blank" rel="noopener noreferrer" hidden></a><div class="editor-actions"><button id="dictionary-save-word" class="text-button" disabled>Guardar palabra</button><button id="dictionary-manage" class="text-button">Diccionarios sin conexión</button></div><a id="dictionary-external" class="text-link" target="_blank" rel="noopener noreferrer">Consultar en Wikcionario ↗</a><label class="text-button dictionary-import">Importar diccionario propio<input id="dictionary-file" type="file" accept=".json" hidden></label><p class="small muted">La consulta local no envía palabras a Internet. El enlace externo solo se abre al pulsarlo.</p></dialog>
+  <dialog id="dictionary-manager" class="dictionary-manager" aria-labelledby="dictionary-manager-title"><div class="panel-heading"><h2 id="dictionary-manager-title">Diccionarios sin conexión</h2><button class="icon-button dialog-close" aria-label="Cerrar">${icon('close')}</button></div><p class="small muted">Instala solo los idiomas que necesites. Los paquetes se guardan dentro del navegador y se consultan sin conexión.</p><label class="field">Idioma<select id="dictionary-pack-language"><option value="">Todos</option>${Object.entries(languages).map(([code,name])=>`<option value="${code}" data-user-content>${name}</option>`).join('')}</select></label><label class="text-button dictionary-import">Importar diccionario propio<input id="dictionary-manager-file" type="file" accept=".json" hidden></label><div id="dictionary-install-progress" class="small" role="status" hidden><span id="dictionary-install-text"></span><button id="dictionary-install-cancel" class="text-button">Cancelar carga</button></div><div id="dictionary-pack-list"></div><p class="small muted">Wiktionary es una fuente colaborativa con cobertura variable. Catalán e hindi ofrecen aquí definiciones en inglés; puedes añadir paquetes propios en otros idiomas.</p></dialog>
+  <dialog id="vocabulary-dialog" class="dictionary-manager" aria-labelledby="vocabulary-title"><div class="panel-heading"><h2 id="vocabulary-title">Vocabulario personal</h2><button class="icon-button dialog-close" aria-label="Cerrar">${icon('close')}</button></div><div class="notebook-controls"><label class="field">Buscar palabra<input id="vocabulary-search" type="search"></label><label class="field">Estado<select id="vocabulary-state"><option value="">Todos</option><option value="learning">Aprendiendo</option><option value="learned">Aprendida</option></select></label></div><div id="vocabulary-list"></div><button id="vocabulary-more" class="text-button" hidden>Mostrar más</button></dialog>
   <dialog id="image-dialog" class="image-dialog" aria-label="Imagen ampliada"><div class="image-toolbar">${iconButton('zoom-out', 'minus', 'Reducir imagen')}<output id="zoom-level">100 %</output>${iconButton('zoom-in', 'plus', 'Ampliar imagen')}${iconButton('zoom-fit', 'expand', 'Ajustar imagen')}<button class="icon-button dialog-close" aria-label="Cerrar imagen">${icon('close')}</button></div><div class="image-stage"><img id="zoom-image" alt=""></div></dialog>
   <dialog id="library-dialog" class="library-dialog" aria-labelledby="library-dialog-title"><div class="panel-heading"><h2 id="library-dialog-title">Biblioteca</h2><button id="library-dialog-close" class="icon-button" aria-label="Cerrar biblioteca">${icon('close')}</button></div><div id="library-dialog-content"></div></dialog>
   <dialog id="organize-dialog" class="small-dialog" aria-labelledby="organize-title"><div class="panel-heading"><h2 id="organize-title" data-user-content></h2><button class="icon-button dialog-close" aria-label="Cerrar">${icon('close')}</button></div><form id="organize-form">
@@ -227,7 +233,7 @@ $('#app').innerHTML = `
           <div><dt>Autor</dt><dd>Alejandro Pico</dd></div>
           <div><dt>Carácter</dt><dd>Proyecto personal</dd></div>
           <div><dt>Propósito</dt><dd>Lectura y escucha</dd></div>
-          <div><dt>Edición</dt><dd>Versión 0.9</dd></div>
+          <div><dt>Edición</dt><dd>Versión 0.10</dd></div>
         </dl>
       </aside>
       <div class="about-body">
@@ -800,6 +806,7 @@ async function openStored(id) {
 
 async function openFile(file, saved) {
   if (busy) return
+  selection=undefined
   busy = true; const sequence = ++loadSequence
   layoutSequence++;preservingAnchor=false
   $('#file-error').hidden = true; closePanels(); speech.stop();clearOpeningCover();$('#audio-toggle').disabled=true
@@ -895,7 +902,7 @@ view.addEventListener('load', ({ detail: { doc, index } }) => {
       const selected = doc.defaultView.getSelection()
       if (!selected?.rangeCount || !selected.toString().trim()) return
       const range = selected.getRangeAt(0).cloneRange()
-      selection = { quote: selected.toString().trim(), cfi: view.getCFI(index, range), range }
+      selection = { quote: selected.toString().trim(), cfi: view.getCFI(index, range), range,index }
       showSelectionMenu(range, doc)
     }, 0)
   })
@@ -986,9 +993,9 @@ function noteActions(source,note){
 }
 function selectedNote(){
   if(!selection||!record)return null
-  const content=view.renderer.getContents()[0],metrics=metricsCache.get(content.doc),position=metrics?.position(selection.range)
-  const original=book.pdf?content.index+1:view.getProgressOf(content.index,selection.range).pageItem?.label
-  const reference=original?`${t('Página original')} ${original}`:`${t('Ubicación')} ${content.index+1}.${position?.block??0}.${position?.offset??0}`
+  const index=selection.index,doc=selection.range.startContainer.ownerDocument,metrics=metricsCache.get(doc)??readingMetrics(doc,settings.language),position=metrics.position(selection.range)
+  const original=book.pdf?index+1:view.getProgressOf(index,selection.range).pageItem?.label
+  const reference=original?`${t('Página original')} ${original}`:`${t('Ubicación')} ${index+1}.${position.block}.${position.offset}`
   return {cfi:selection.cfi,quote:selection.quote,reference,label:view.lastLocation.tocItem?.label??'',fraction:record.fraction}
 }
 function openNoteEditor(source,note,kind='note'){
@@ -1043,6 +1050,74 @@ function renderNotebook(){
 async function openNotebook(){closePanels();notebookLimit=100;if(!$('#notebook-dialog').open)$('#notebook-dialog').showModal();await refreshNotebook()}
 function openNotesExport(entries){exportEntries=entries;$('#notes-export-download').hidden=true;$('#notes-export-fallback').hidden=true;renderNotesExport();$('#notes-export-dialog').showModal()}
 function renderNotesExport(){const format=$('#notes-export-format').value;$('#notes-export-preview').value=format==='md'?notesMarkdown(exportEntries,t('Notas y citas')):JSON.stringify(exportEntries.map(({book,note})=>({book:book.title,author:book.author,note})),null,2)}
+function dictionaryLanguage(){const language=settings.dictionaryLanguage==='auto'?languageCode(book?.metadata?.language)||currentLanguage():settings.dictionaryLanguage;return Object.hasOwn(languages,language)?language:currentLanguage()}
+async function lookupDictionary(word=$('#dictionary-query').value){
+  const language=dictionaryLanguage(),key=normalizeTerm(word,language),sequence=++dictionaryQuerySequence
+  dictionaryResult=undefined;$('#dictionary-save-word').disabled=true;$('#dictionary-word').textContent=key||t('Buscar palabra');$('#dictionary-query').value=key;$('#dictionary-language').value=settings.dictionaryLanguage
+  $('#dictionary-definition').textContent=key?t('Buscando…'):'';$('#dictionary-source').textContent='';$('#dictionary-license').hidden=true
+  const result=key?await lookupOffline(key,language):null
+  if(sequence!==dictionaryQuerySequence)return
+  dictionaryResult=result?{...result,language}:undefined
+  $('#dictionary-definition').textContent=result?.definition??(key?t('No se encontró en los diccionarios instalados.'):t('Selecciona una palabra o escribe una consulta.'))
+  $('#dictionary-save-word').disabled=!result
+  if(result){$('#dictionary-source').textContent=result.basic?t('Glosario básico'): `${result.pack.name} · ${t('Definiciones')}: ${languages[result.pack.definitionLanguage]} · ${result.pack.entries.toLocaleString(currentLanguage())} ${t('entradas')}`
+    if(result.pack?.licenseURL&&/^https:\/\//.test(result.pack.licenseURL)){$('#dictionary-license').textContent=result.pack.license;$('#dictionary-license').href=result.pack.licenseURL;$('#dictionary-license').hidden=false}}
+  $('#dictionary-external').href=result?.sourceURL||`https://${language}.wiktionary.org/wiki/${encodeURIComponent(key)}`;$('#dictionary-external').hidden=!key
+}
+async function openWordDictionary(word=''){closePanels();$('#selection-menu').hidden=true;if(!$('#dictionary-dialog').open)$('#dictionary-dialog').showModal();await lookupDictionary(word)}
+function dictionaryProgress(progress){$('#dictionary-install-text').textContent=`${t('Instalando diccionario…')} ${progress.completed} / ${progress.total}`}
+async function dictionaryJob(action){
+  if(dictionaryInstall)return
+  const controller=dictionaryInstall=new AbortController();$('#dictionary-install-progress').hidden=false;$('#dictionary-install-text').textContent=t('Instalando diccionario…');await renderDictionaryManager()
+  try{await action({signal:controller.signal,onProgress:dictionaryProgress});clearDictionaryCache();toast('Diccionario instalado')}
+  catch(error){if(controller.signal.aborted)toast('Carga cancelada');else handleError(error)}
+  finally{dictionaryInstall=undefined;$('#dictionary-install-progress').hidden=true;await renderDictionaryManager();if($('#dictionary-dialog').open)await lookupDictionary()}
+}
+async function openDictionaryManager(){closePanels();if(!$('#dictionary-manager').open)$('#dictionary-manager').showModal();await renderDictionaryManager()}
+async function renderDictionaryManager(){
+  dictionaryResourcesPromise??=import('./dictionary-resources.js').then(resources=>{projectDictionaries=resources.projectDictionaries;personalProjectDictionaries=resources.personalProjectDictionaries}).catch(()=>{dictionaryResourcesPromise=undefined})
+  await dictionaryResourcesPromise
+  const installed=await allDictionaryPacks(),active=new Set(installed.filter(pack=>pack.installed).map(pack=>pack.id)),list=$('#dictionary-pack-list'),language=$('#dictionary-pack-language').value
+  list.replaceChildren()
+  for(const pack of [...projectDictionaries,...installed.filter(pack=>!projectDictionaries.some(resource=>resource.id===pack.id))]){
+    if(language&&pack.language!==language)continue
+    const row=document.createElement('div');row.className='dictionary-pack-row';const content=document.createElement('div'),name=document.createElement('p'),details=document.createElement('p')
+    name.dataset.userContent='';name.textContent=`${languages[pack.language]} · ${pack.name}`;details.className='small muted';details.dataset.userContent=''
+    details.textContent=[`${pack.entries.toLocaleString(currentLanguage())} ${t('entradas')}`,`${(pack.bytes/1024/1024).toFixed(1)} MB`,`${t('Definiciones')}: ${languages[pack.definitionLanguage]}`,pack.license,active.has(pack.id)?t('Instalado'):pack.installed===false?t('Instalación incompleta'):t('Sin instalar')].join(' · ')
+    const resource=projectDictionaries.some(value=>value.id===pack.id)
+    content.append(name,details);const button=document.createElement('button');button.className='text-button';button.disabled=Boolean(dictionaryInstall);button.textContent=t(active.has(pack.id)||!resource?'Eliminar paquete':'Instalar')
+    button.onclick=attempt(async()=>{if(dictionaryInstall)return;if(active.has(pack.id)||!resource){await uninstallDictionary(pack.id);await renderDictionaryManager()}else await dictionaryJob(options=>installDictionary(pack,options))})
+    row.append(content,button);list.append(row)
+  }
+  for(const resource of personalProjectDictionaries){if(language&&resource.language&&resource.language!==language)continue;const row=document.createElement('div');row.className='dictionary-pack-row';const name=document.createElement('span');name.dataset.userContent='';name.textContent=resource.name;const button=document.createElement('button');button.className='text-button';button.textContent=t('Instalar');button.disabled=Boolean(dictionaryInstall);button.onclick=()=>dictionaryJob(async options=>{const response=await fetch(resource.url,{signal:options.signal});if(!response.ok)throw Error(t('No se pudo cargar el paquete de diccionario.'));const blob=await response.blob();await importOfflineDictionary(new File([blob],resource.name),resource.language||language||dictionaryLanguage(),options)});row.append(name,button);list.append(row)}
+}
+async function importPersonalDictionary(input){const file=input.files[0];if(!file)return;const language=input.id==='dictionary-file'?dictionaryLanguage():$('#dictionary-pack-language').value||dictionaryLanguage();try{await dictionaryJob(options=>importOfflineDictionary(file,language,options))}finally{input.value=''}}
+async function rememberWord(){
+  if(!dictionaryResult)return
+  const result=dictionaryResult,id=`${result.language}:${result.word}`,previous=(await allVocabulary()).find(word=>word.id===id)
+  const selected=selection&&normalizeTerm(selection.quote,result.language)===result.word?selectedNote():null
+  await saveVocabulary({...previous,id,word:result.word,language:result.language,definition:result.definition,definitionLanguage:result.pack?.definitionLanguage??result.language,license:result.pack?.license,sourceURL:result.sourceURL,
+    ...(selected?{bookId:record.id,bookTitle:record.title,cfi:selected.cfi,reference:selected.reference}:{}),status:previous?.status??'learning',createdAt:previous?.createdAt??Date.now(),updatedAt:Date.now()});toast('Palabra guardada')
+}
+async function renderVocabulary(){
+  const query=normalizeTerm($('#vocabulary-search').value,currentLanguage()),state=$('#vocabulary-state').value
+  const words=(await allVocabulary()).filter(word=>(!query||normalizeTerm(`${word.word} ${word.note??''} ${word.definition}`,word.language).includes(query))&&(!state||word.status===state)).sort((a,b)=>b.updatedAt-a.updatedAt)
+  const list=$('#vocabulary-list');list.replaceChildren()
+  for(const word of words.slice(0,vocabularyLimit)){
+    const row=document.createElement('details');row.className='vocabulary-row';const summary=document.createElement('summary');summary.dataset.userContent='';summary.textContent=`${word.word} · ${languages[word.language]} · ${t(word.status==='learned'?'Aprendida':'Aprendiendo')}`
+    const definition=document.createElement('p');definition.dataset.userContent='';definition.className='dictionary-definition';definition.textContent=word.definition
+    const source=document.createElement('p');source.dataset.userContent='';source.className='small muted';source.textContent=[`${t('Definiciones')}: ${languages[word.definitionLanguage]}`,word.bookTitle,word.reference,word.license].filter(Boolean).join(' · ')
+    const label=document.createElement('label');label.className='field';const labelText=document.createElement('span');labelText.textContent=t('Tu nota');const input=document.createElement('textarea');input.rows=2;input.maxLength=5000;input.value=word.note??'';label.append(labelText,input)
+    const learned=document.createElement('label');learned.className='check-field';const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.checked=word.status==='learned';const learnedText=document.createElement('span');learnedText.textContent=t('Aprendida');learned.append(checkbox,learnedText)
+    const actions=document.createElement('div');actions.className='editor-actions'
+    const save=document.createElement('button');save.className='text-button';save.textContent=t('Guardar');save.onclick=attempt(async()=>{await saveVocabulary({...word,note:input.value.trim(),status:checkbox.checked?'learned':'learning',updatedAt:Date.now()});await renderVocabulary()})
+    const remove=document.createElement('button');remove.className='text-button';remove.textContent=t('Eliminar');remove.onclick=attempt(async()=>{await removeVocabulary(word.id);await renderVocabulary()});actions.append(save,remove)
+    if(word.sourceURL&&/^https:\/\//.test(word.sourceURL)){const link=document.createElement('a');link.className='text-link';link.href=word.sourceURL;link.target='_blank';link.rel='noopener noreferrer';link.textContent=t('Fuente');actions.append(link)}
+    row.append(summary,definition,source,label,learned,actions);list.append(row)
+  }
+  $('#vocabulary-more').hidden=words.length<=vocabularyLimit
+}
+async function openVocabulary(){closePanels();vocabularyLimit=100;if(!$('#vocabulary-dialog').open)$('#vocabulary-dialog').showModal();await renderVocabulary()}
 function exportBlob(){return new Blob([$('#notes-export-preview').value],{type:$('#notes-export-format').value==='md'?'text/markdown;charset=utf-8':'application/json'})}
 async function saveNotesExport(){
   if(!window.showSaveFilePicker){$('#notes-export-download').hidden=false;$('#notes-export-fallback').hidden=false;return}
@@ -1275,23 +1350,19 @@ $('#show-cover').onclick = attempt(async () => {
   showImage(url, `Portada de ${record.title}`)
   $('#image-dialog').addEventListener('close', () => URL.revokeObjectURL(url), { once: true })
 })
-$('#define-selection').onclick = () => {
-  const word = normalizeWord(selection.quote)
-  $('#dictionary-word').textContent = word
-  $('#dictionary-definition').textContent = lookup(word) || t('Esta palabra no está en el glosario local. Puedes consultarla en Wikcionario o importar un diccionario propio.')
-  const dictionaryLanguage = metadataText(book?.metadata?.language).split('-')[0] || currentLanguage()
-  $('#dictionary-external').href = `https://${Object.hasOwn(languages,dictionaryLanguage) ? dictionaryLanguage : 'es'}.wiktionary.org/wiki/${encodeURIComponent(word)}`
-  $('#selection-menu').hidden = true; $('#dictionary-dialog').showModal()
-}
-$('#dictionary-file').onchange = attempt(async () => {
-  const file = $('#dictionary-file').files[0]
-  if (!file) return
-  if (file.size > 4 * 1024 * 1024) throw new Error('El diccionario JSON puede ocupar como máximo 4 MB.')
-  const count = importDictionary(JSON.parse(await file.text()))
-  $('#dictionary-definition').textContent = lookup($('#dictionary-word').textContent) || 'Palabra no incluida en el diccionario importado.'
-  toast(`Diccionario importado · ${count.toLocaleString('es')} palabras`)
-  $('#dictionary-file').value = ''
-})
+$('#define-selection').onclick = attempt(()=>openWordDictionary(selection.quote))
+$('#dictionary-file').onchange=attempt(()=>importPersonalDictionary($('#dictionary-file')))
+$('#dictionary-manager-file').onchange=attempt(()=>importPersonalDictionary($('#dictionary-manager-file')))
+$('#settings-dictionaries').onclick=attempt(openDictionaryManager);$('#dictionary-manage').onclick=attempt(openDictionaryManager)
+$('#settings-vocabulary').onclick=attempt(openVocabulary)
+$('#settings-word').onclick=attempt(()=>openWordDictionary())
+$('#dictionary-search-form').onsubmit=attempt(async event=>{event.preventDefault();await lookupDictionary()})
+$('#dictionary-language').onchange=attempt(()=>lookupDictionary())
+$('#dictionary-pack-language').onchange=attempt(renderDictionaryManager)
+$('#dictionary-install-cancel').onclick=()=>dictionaryInstall?.abort()
+$('#dictionary-save-word').onclick=attempt(rememberWord)
+for(const id of ['vocabulary-search','vocabulary-state'])$(`#${id}`).addEventListener(id==='vocabulary-search'?'input':'change',attempt(async()=>{vocabularyLimit=100;await renderVocabulary()}))
+$('#vocabulary-more').onclick=attempt(async()=>{vocabularyLimit+=100;await renderVocabulary()})
 $('#annotate-selection').onclick = () => {const note=selectedNote();if(note)openNoteEditor(record,note)}
 $('#highlight-selection').onclick = () => {const note=selectedNote();if(note)openNoteEditor(record,note,'highlight')}
 $('#copy-selection').onclick=attempt(async()=>{const note=selectedNote();if(note)await copyCitation(record,note)})

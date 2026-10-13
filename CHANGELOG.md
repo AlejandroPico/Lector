@@ -1,5 +1,15 @@
 # Historial de versiones
 
+## 0.10.0
+
+- Diez paquetes Wiktionary opcionales, con 6.449.866 entradas normalizadas y licencias/procedencia documentadas.
+- Consulta sin conexión con idioma automático del libro o selección manual; catalán e hindi indican definiciones en inglés.
+- Instalación por bloques, verificaciones SHA-256 de datos comprimidos o descomprimidos, progreso y cancelación con limpieza de datos parciales.
+- Carpeta diccionarios con detección al compilar; importación de JSON propios a IndexedDB, conservando importaciones antiguas.
+- Vocabulario personal con definiciones, procedencia, notas y estado aprendido; permanece al retirar un paquete.
+- Normalización Unicode para conservar tildes y marcas del hindi, y variantes ortográficas simplificadas/tradicionales del chino.
+- Pruebas de cobertura e integridad, instalación real, consulta offline, cancelación, datos inválidos, persistencia y móvil.
+
 ## 0.9.0
 
 - Subrayados y fondos resaltados en cinco colores, con visibilidad configurable.

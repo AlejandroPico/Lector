@@ -193,6 +193,17 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 84%, transparent)
 .note-actions .icon-button { margin-right:0; }
 .note-quote { padding-left:5px; }
 .notebook-dialog { width:min(900px,calc(100vw - 28px)); }
+.dictionary-manager { width:min(760px,calc(100vw - 28px)); }
+.dictionary-pack-row { display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:14px;border-top:1px solid var(--line); }
+.dictionary-pack-row > div { min-width:0;flex:1; }
+.dictionary-pack-row p { margin:4px 0;overflow-wrap:anywhere;font-size:13px; }
+.dictionary-pack-row p.small { font-size:11px;line-height:1.7; }
+.dictionary-pack-row button { flex:0 0 auto; }
+#dictionary-install-progress { position:sticky;top:0;background:var(--paper);padding:12px 0;z-index:2; }
+#dictionary-definition,.dictionary-definition { white-space:pre-wrap;overflow-wrap:anywhere; }
+.vocabulary-row { padding:16px 0;border-top:1px solid var(--line); }
+.vocabulary-row summary { cursor:pointer;font-size:13px; }
+.vocabulary-row .field { margin-top:12px; }
 .notebook-controls { display:grid;grid-template-columns:1fr 1fr 2fr;gap:12px; }
 .notebook-controls .field { min-width:0; }
 .notebook-row { display:flex;gap:12px;justify-content:space-between;border-top:1px solid var(--line);padding-block:18px; }
