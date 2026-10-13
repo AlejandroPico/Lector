@@ -30,6 +30,8 @@ test('personal Hindi dictionary and learned vocabulary survive reload and packag
   await wordSearch(page,'किताब','hi');await expect(page.locator('#dictionary-definition')).toContainText('पढ़ने');await page.locator('#dictionary-save-word').click()
   await page.locator('#dictionary-dialog .dialog-close').click();await page.locator('#preferences-toggle').click();await page.locator('#settings-vocabulary').click();await page.locator('.vocabulary-row summary').click()
   await page.locator('.vocabulary-row textarea').fill('Palabra aprendida');await page.locator('.vocabulary-row input[type="checkbox"]').check();await page.getByRole('button',{name:'Guardar',exact:true}).click()
+  // The summary is refreshed only after the storage transaction completes.
+  await expect(page.locator('.vocabulary-row summary')).toContainText('Aprendida')
   await page.reload();await page.locator('#dismiss-file').click();await page.locator('#preferences-toggle').click();await page.locator('#preferences-panel summary').filter({hasText:'Notas y vocabulario'}).click();await page.locator('#settings-vocabulary').click()
   await page.locator('#vocabulary-state').selectOption('learned');await expect(page.locator('.vocabulary-row')).toHaveCount(1);await page.locator('.vocabulary-row summary').click();await expect(page.locator('.vocabulary-row textarea')).toHaveValue('Palabra aprendida')
   await page.locator('#vocabulary-dialog .dialog-close').click();await page.locator('#preferences-toggle').click();await page.locator('#settings-dictionaries').click();await page.locator('.dictionary-pack-row').filter({hasText:'Diccionario propio'}).getByRole('button',{name:'Eliminar paquete',exact:true}).click()
