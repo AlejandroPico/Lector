@@ -2,6 +2,7 @@
 
 ## 1.0.0
 
+- Evitar recalcular páginas mientras el documento de un capítulo todavía está cargándose; comprobado con navegación y reanudación repetidas.
 - Lateral con biblioteca completa y libros recientes, sin filtros ni herramientas de catálogo.
 - Biblioteca con barra compacta, filtros en ventana propia y gestión de carpetas y colecciones aparte.
 - Ajustes centrales compartidos con accesos directos, buscador y lectura continua junto a columnas.
