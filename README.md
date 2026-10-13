@@ -2,7 +2,13 @@
 
 Un lector de libros a toda pantalla, sin cabeceras decorativas ni tarjetas alrededor del texto. Dos columnas por defecto, controles discretos en la esquina superior derecha y un índice lateral que se puede ocultar.
 
-## Versión 0.5
+## Versión 0.6
+
+En Ajustes → Lectura se puede alternar entre páginas y desplazamiento vertical. Durante la narración, el texto sigue las palabras con un movimiento suavizado y se detiene al pausar. Las voces sin marcas usan una aproximación dentro del fragmento; el audio externo utiliza su progreso de reproducción. La rueda y las flechas permiten continuar al siguiente capítulo.
+
+El retorno de índice, búsquedas, enlaces y notas mantiene un historial por libro, con botones discretos y Alt+←/→. Las anclas guardadas identifican texto estable, también al cambiar tipografía, tamaño de pantalla o flujo. En PDF se muestra la página original; en EPUB solo si incluye una lista de páginas. El resto utiliza una referencia de sección, bloque y carácter, distinta de una página editorial.
+
+Los tiempos restantes de capítulo y libro y la referencia visible están apagados por defecto. Se estiman con palabras conocidas, tamaño de capítulos aún no abiertos y ritmo configurable de lectura o voz. No se abren todos los capítulos para calcularlos. El modo televisión amplía texto y controles y admite teclas de mando y gamepads expuestos por el navegador. Las pruebas verifican teclado y el mapeo de entradas; la compatibilidad de un mando físico depende del dispositivo y su navegador. La emisión a otros dispositivos queda para la versión 0.19.
 
 La biblioteca tiene un interruptor discreto para alternar títulos y portadas y una ventana ampliada accesible desde el panel lateral o los ajustes. La ventana comienza por portadas y recuerda su vista de forma independiente del lateral; ambas comparten colección y búsqueda. Los libros abiertos guardan su cubierta para el catálogo. Para carpetas de Calibre se prefiere su cubierta externa al abrir el libro elegido, y las portadas de otros libros solo se leen al pulsarlas. Si no hay cubierta externa, se obtiene del ebook seleccionado.
 

@@ -1,6 +1,6 @@
 # Ampliaciones acordadas y versiones propuestas
 
-Base actual: versión 0.5.0. Esta hoja recoge la selección del autor del 13 de octubre de 2026. La selección aprueba el objetivo de las funciones, pero cada versión necesita autorización antes de comenzar. Documentar este plan no cambia la aplicación ni autoriza ejecutar todos los bloques.
+Base actual: versión 0.6.0. Esta hoja recoge la selección del autor del 13 de octubre de 2026. La selección aprueba el objetivo de las funciones, pero cada versión necesita autorización antes de comenzar. Documentar este plan no cambia la aplicación ni autoriza ejecutar todos los bloques.
 
 ## Reglas comunes
 
@@ -65,4 +65,6 @@ Si un bloque excede una entrega razonable, se subdividirá antes de comenzar y s
 - 0.3 completada: seguimiento de voz y controles superiores.
 - 0.4 completada: personalización, categorías, márgenes y fuentes propias.
 - 0.5 completada: biblioteca ampliada, vistas de portadas y cubierta de apertura.
-- Las demás versiones siguen pendientes de autorización.
+- 0.6 completada: lectura continua, televisión, retorno, posiciones y tiempos opcionales.
+- 0.7 autorizada para implementar tras verificar la publicación de 0.6.
+- Las posteriores siguen pendientes de autorización.

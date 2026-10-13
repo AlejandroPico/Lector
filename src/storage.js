@@ -67,6 +67,8 @@ export const defaults = Object.freeze({
   marginOuter: 10, marginInner: 28, hyphenate: false, customThemes: [],
   showOpeningCover: true,
   libraryDialogView: 'covers',
+  readingFlow:'paginated',tvMode:false,tvScale:1.35,historyControls:true,
+  showReference:false,showChapterTime:false,showBookTime:false,estimateMode:'reading',visualWpm:220,narrationWpm:170,
   voice: '', rate: 1, pitch: 1, language: 'es-ES', speechLanguage: 'auto',
   endpoint: 'https://api.openai.com/v1/audio/speech',
   model: 'gpt-4o-mini-tts', apiVoice: 'coral',
@@ -89,6 +91,9 @@ export function safeSettings(input = {}) {
   clamp('width', 640, 3840); clamp('gutter', 1, 12)
   clamp('rate', 0.5, 2); clamp('pitch', 0.5, 1.5)
   clamp('marginOuter',0,160); clamp('marginInner',0,100)
+  clamp('tvScale',1,2);clamp('visualWpm',80,600);clamp('narrationWpm',80,300)
+  if(!['paginated','scrolled'].includes(value.readingFlow))value.readingFlow='paginated'
+  if(!['reading','audio'].includes(value.estimateMode))value.estimateMode='reading'
   value.customThemes=(Array.isArray(value.customThemes)?value.customThemes:[]).slice(0,30).flatMap(theme=>{try{return [validateTheme(theme,true)]}catch{return []}})
   if (![...themes,...value.customThemes].some(theme => theme.id === value.theme)) value.theme = 'auto'
   if (!fonts.some(([name]) => name === value.font)) value.font = 'Georgia'

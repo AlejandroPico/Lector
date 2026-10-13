@@ -1,5 +1,15 @@
 # Historial de versiones
 
+## 0.6.0
+
+- Flujo vertical con narración suavizada, seguimiento por palabras y pausa real del desplazamiento.
+- Alternativa estimada cuando la voz no informa de las palabras y seguimiento por progreso del audio externo.
+- Continuación entre capítulos mediante rueda, flechas y narración.
+- Modo televisión con escala ajustable, navegación de foco y gamepads compatibles con el navegador.
+- Historial de retorno por libro para índice, búsquedas, notas y enlaces.
+- Anclas de texto persistentes que evitan reabrir la página anterior en espacios partidos entre páginas.
+- Ubicaciones y tiempos estimados de capítulo/libro opcionales, apagados inicialmente.
+
 ## 0.5.0
 
 - Interruptor mínimo entre títulos y portadas, con vistas guardadas.

@@ -68,6 +68,24 @@ foliate-view { display: block; height: 100%; width: 100%; }
 foliate-view, foliate-view::part(filter), foliate-view::part(container) { border: 0 !important; outline: 0 !important; box-shadow: none !important; background: var(--paper) !important; }
 foliate-view::part(head), foliate-view::part(foot) { display: none; }
 .reading-footer { position: fixed; inset: auto 0 0; height: 58px; z-index: 5; display: flex; align-items: center; justify-content: center; gap: 25px; background: var(--paper); }
+.reading-information { flex-basis:100%;display:flex;justify-content:center;flex-wrap:wrap;gap:5px 18px;font-size:10px;color:var(--muted);padding:0 10px 9px; }
+.reading-info-visible .reading-footer {height:86px;flex-wrap:wrap;gap:0 16px;padding-top:6px;}
+.reading-info-visible #reading-area {bottom:88px;}
+.tv-mode .toolbar {height:76px;}
+.tv-mode .icon-button,.tv-mode #audio-toggle {width:52px;height:52px;padding:12px;}
+.tv-mode #reading-area {top:78px;bottom:76px;}
+.tv-mode .reading-footer {height:74px;}
+.tv-mode.reading-info-visible .reading-footer {height:106px;}
+.tv-mode.reading-info-visible #reading-area {bottom:108px;}
+.tv-mode .sidebar {top:76px;width:min(360px,calc(100vw - 40px));}
+.tv-mode.sidebar-open #reading-area {left:360px;width:calc(100% - 360px);}
+.tv-mode.sidebar-open .reading-footer {left:360px;}
+.tv-mode .panel {top:76px;width:370px;font-size:15px;}
+.tv-mode .settings-section>summary,.tv-mode .field,.tv-mode .check-field,.tv-mode .settings-link {font-size:15px;}
+.tv-mode button:focus-visible,.tv-mode summary:focus-visible {outline:3px solid var(--accent);outline-offset:2px;}
+.tv-mode.zen #reading-area {inset-block:20px;}
+@media(max-width:900px){.tv-mode.sidebar-open #reading-area {left:0;width:100%;}.tv-mode.sidebar-open .reading-footer {left:0;}}
+@media(max-width:700px){.tv-mode .toolbar {grid-template-columns:auto 1fr auto;padding-inline:8px;}.tv-mode .icon-button,.tv-mode #audio-toggle {width:40px;height:46px;padding:8px;}}
 .position-button { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 11px; letter-spacing: .03em; max-width: min(60vw, 440px); }
 #chapter-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #chapter-name:empty + .position-divider { display: none; }

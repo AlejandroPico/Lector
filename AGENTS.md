@@ -10,3 +10,4 @@
 - Las propuestas de `IDEAS.md` requieren selección del usuario antes de implementarse.
 - `HOJA_DE_RUTA.md` recoge los bloques seleccionados y su estado. El autor autorizó 0.3, 0.4 y 0.5, completadas con subidas independientes a main. Las posteriores requieren autorización.
 - Guardar preferencias, notas y recursos personales en el navegador. No generar descargas automáticas; exportar solo por acción explícita. Detectar recursos del proyecto en `fuentes` durante desarrollo/compilación.
+- El autor autoriza 0.6 y 0.7 en orden: comprobar subida y publicación de 0.6 antes de comenzar 0.7, con registros separados. No avanzar a 0.8 sin autorización.

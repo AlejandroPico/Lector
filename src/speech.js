@@ -1,4 +1,5 @@
 import { selectBrowserVoice } from './presentation.js'
+import { ContinuousFollower } from './reading.js'
 export function splitSentences(text, limit = 1600, language = 'es') {
   const segmenter = new Intl.Segmenter(language, { granularity: 'sentence' })
   const segments = []
@@ -125,10 +126,12 @@ export class SpeechController {
   constructor({ view, settings, getKey, onState, onError, onHighlight }) {
     Object.assign(this, { view, settings, getKey, onState, onError, onHighlight })
     this.cache = new Map(); this.run = 0; this.state = 'stopped'; this.pending = new Set()
+    this.follower=new ContinuousFollower(view,settings)
   }
-  setState(state) { this.state = state; this.onState(state) }
+  setState(state) { this.state = state;this.follower.setState(state); this.onState(state) }
   stop() {
     this.run++; this.abort?.abort(); this.abort = null
+    this.follower.stop()
     globalThis.speechSynthesis?.cancel()
     this.audio?.pause(); this.audio = null
     for (const finish of this.pending) finish()
@@ -163,6 +166,7 @@ export class SpeechController {
   }
   follow(range, run = this.run) {
     if (!range || run !== this.run || !this.settings().followSpeech) return
+    if(this.view.renderer?.scrolled){this.follower.word(range);return}
     const visible = this.view.lastLocation?.range
     if (visible && visible.startContainer.ownerDocument === range.startContainer.ownerDocument
       && range.compareBoundaryPoints(Range.START_TO_START,visible)>=0
@@ -180,7 +184,7 @@ export class SpeechController {
       for (let i = 0; i < segments.length; i++) {
         if (run !== this.run) return
         const segment = segments[i]
-        if (this.settings().followSpeech) await this.view.renderer.scrollToAnchor(segment.range,true)
+        if (this.settings().followSpeech && !this.view.renderer.scrolled) await this.view.renderer.scrollToAnchor(segment.range,true)
         if (run !== this.run) return
         this.onHighlight(segment.range)
         if (this.settings().provider === 'openai') await this.speakAPI(segment, run)
@@ -201,18 +205,21 @@ export class SpeechController {
     return new Promise((resolve, reject) => {
       const settings = this.settings()
       const utterance = new SpeechSynthesisUtterance(segment.text)
+      const startFollowing=()=>{if(segment.range && this.view.renderer?.scrolled && this.settings().followSpeech && run===this.run && this.follower.segment!==segment){this.follower.begin(segment,settings.rate);this.follower.setState(this.state)}}
+      utterance.onstart=startFollowing
       const voices = speechSynthesis.getVoices()
       utterance.voice = selectBrowserVoice(voices, settings.voice, settings.language)
       utterance.lang = settings.language; utterance.rate = settings.rate; utterance.pitch = settings.pitch
       utterance.onboundary = event => {
         if (run !== this.run || event.name !== 'word') return
+        if(this.view.renderer?.scrolled&&this.follower.segment!==segment)startFollowing()
         const tail = segment.text.slice(event.charIndex)
         const length = event.charLength || tail.match(/^\S+/)?.[0].length || 1
         const word = segment.wordRange?.(event.charIndex,length) ?? segment.range
         this.follow(word,run)
         this.onHighlight(this.settings().highlightMode==='sentence' ? segment.range : word)
       }
-      const finish = () => { this.pending.delete(finish); resolve() }
+      const finish = () => {this.follower.stop(); this.pending.delete(finish); resolve() }
       this.pending.add(finish)
       utterance.onend = finish
       utterance.onerror = event => {
@@ -255,10 +262,12 @@ export class SpeechController {
     const url = URL.createObjectURL(blob)
     const audio = this.audio = new Audio(url)
     audio.playbackRate = settings.rate
+    audio.onplaying=()=>{if(segment.range && this.view.renderer?.scrolled && this.settings().followSpeech && run===this.run){if(this.follower.segment!==segment)this.follower.begin(segment,settings.rate,true);this.follower.setState(this.state)}}
+    audio.ontimeupdate=()=>{if(Number.isFinite(audio.duration)&&audio.duration>0)this.follower.progress(audio.currentTime/audio.duration)}
     this.setState('playing')
     try {
       await new Promise((resolve, reject) => {
-        const finish = () => { this.pending.delete(finish); resolve() }
+        const finish = () => {this.follower.stop(); this.pending.delete(finish); resolve() }
         const fail = error => { this.pending.delete(finish); reject(error) }
         this.pending.add(finish)
         audio.onended = finish
