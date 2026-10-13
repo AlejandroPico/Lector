@@ -20,6 +20,8 @@ import { NavigationTrail,readingMetrics,estimateRemaining } from './reading.js'
 import { moveFocus,attachGamepad } from './tv-controls.js'
 import { allCatalog,updateCatalog,removeCatalog,allCollections,saveCollection,removeCollection } from './storage.js'
 import { statuses,catalogKey,catalogMetadata,libraryEntries,filterLibrary,duplicateGroups,labels,normalize,languageCode } from './library.js'
+import { reconcileCatalog } from './catalog-refresh.js'
+import { VisibleCoverQueue } from './cover-queue.js'
 
 const $ = selector => document.querySelector(selector)
 let userFonts = await allFonts().catch(()=>[])
@@ -43,6 +45,7 @@ let chapterStarts=[]
 const metricsCache=new WeakMap()
 let catalogRecords=[],collections=[],catalogItems=[],duplicateClusters=[],duplicateIDs=new Set(),duplicateFocus,organizingItem,metadataBatch
 let shownLibrary=[],lastSpeechSave=0
+let coverQueuePaused=false
 
 const rangeControl = (key, label, min, max, step, unit = '') => `<label class="field range-field"><span>${label}<output for="${key}" data-output="${key}">${settings[key]}${unit}</output></span><input id="${key}" type="range" data-setting="${key}" min="${min}" max="${max}" step="${step}" value="${settings[key]}" data-unit="${unit}"></label>`
 const check = (key, label) => `<label class="check-field"><input type="checkbox" data-setting="${key}" ${settings[key] ? 'checked' : ''}>${label}</label>`
@@ -87,6 +90,8 @@ $('#app').innerHTML = `
       <div id="folder-list"></div>
       <p class="small muted folder-explanation">Los títulos se obtienen de los nombres de carpeta. EPUB, metadatos y portadas se leen solo cuando los eliges.</p>
       <div id="folder-progress" role="status" hidden><span id="folder-progress-text"></span><button id="cancel-scan" class="text-button">Cancelar escaneo</button></div>
+      <p id="folder-summary" class="small muted" hidden></p>
+      <div id="cover-progress" class="small muted" hidden><span id="cover-progress-text"></span><button id="pause-covers" class="text-button">Detener portadas</button><button id="resume-covers" class="text-button" hidden>Continuar portadas</button></div>
       <label class="field"><span class="sr-only">Buscar título o autor</span><input id="library-search" type="search" placeholder="Buscar título o autor"></label>
       <div class="library-controls"><label>Ordenar por<select id="library-sort"><option value="title">Título</option><option value="author">Autor</option><option value="recent">Recientes</option><option value="series">Serie y número</option></select></label><div class="library-view-switch" role="group" aria-label="Vista de biblioteca"><button id="library-view-list" data-library-view="list" aria-label="Mostrar títulos" title="Mostrar títulos">${icon('list')}</button><button id="library-view-covers" data-library-view="covers" aria-label="Mostrar portadas" title="Mostrar portadas">${icon('grid')}</button></div></div>
       <details id="library-filters" class="settings-section"><summary>Filtros y colecciones</summary><div class="filter-grid">
@@ -127,7 +132,7 @@ $('#app').innerHTML = `
     <p class="small muted">Los tiempos son aproximados. La narración tiene en cuenta la velocidad de voz; los capítulos sin abrir se estiman por su tamaño.</p></details></details>
     <details class="settings-section"><summary>Apariencia</summary><button class="settings-link" data-settings-panel="theme">Temas y colores ${icon('right')}</button>${check('showOpeningCover','Mostrar cubierta al abrir un libro')}</details>
     <details class="settings-section"><summary>Voz</summary><button class="settings-link" data-settings-panel="voice">Lectura en voz alta ${icon('right')}</button></details>
-    <details class="settings-section"><summary>Biblioteca</summary><button class="settings-link" data-settings-tab="library">Abrir biblioteca ${icon('right')}</button>${check('libraryDetails','Mostrar detalles de biblioteca')}</details>
+    <details class="settings-section"><summary>Biblioteca</summary><button class="settings-link" data-settings-tab="library">Abrir biblioteca ${icon('right')}</button>${check('libraryDetails','Mostrar detalles de biblioteca')}${check('preloadCovers','Cargar portadas visibles')}${check('preloadEmbeddedCovers','Obtener portadas incrustadas automáticamente')}<p class="small muted">La carga anticipada puede descargar cubiertas de la nube. Obtener una cubierta incrustada también lee el ebook visible.</p></details>
     <details class="settings-section"><summary>Notas y vocabulario</summary><button class="settings-link" data-settings-tab="notes">Ver notas ${icon('right')}</button></details>
     <details class="settings-section"><summary>Datos</summary><p class="small muted">Los libros y las notas se guardan en este navegador. No se descargan archivos automáticamente.</p></details>
     <details class="settings-section"><summary>Dispositivos</summary>${check('tvMode','Modo televisión')}${rangeControl('tvScale','Escala de televisión',1,2,.05,' ×')}<p class="small muted">Flechas para leer y recorrer controles; Intro para seleccionar. Compatible con mandos que envían teclas y con gamepads del navegador.</p><button id="settings-fullscreen" class="settings-link">Pantalla completa ${icon('expand')}</button><button id="settings-zen" class="settings-link">Modo zen ${icon('zen')}</button></details>
@@ -218,7 +223,7 @@ $('#app').innerHTML = `
           <div><dt>Autor</dt><dd>Alejandro Pico</dd></div>
           <div><dt>Carácter</dt><dd>Proyecto personal</dd></div>
           <div><dt>Propósito</dt><dd>Lectura y escucha</dd></div>
-          <div><dt>Edición</dt><dd>Versión 0.7</dd></div>
+          <div><dt>Edición</dt><dd>Versión 0.8</dd></div>
         </dl>
       </aside>
       <div class="about-body">
@@ -257,6 +262,11 @@ function toast(message, duration = 6000) {
 const handleError = error => { console.error(error); toast(error.message || 'No se pudo completar la operación.') }
 const attempt = fn => async (...args) => { try { await fn(...args) } catch (error) { handleError(error) } }
 
+const coverQueue=new VisibleCoverQueue({load:loadLibraryCover,done:()=>updateLibrary(),onState:state=>{
+  $('#cover-progress').hidden=!settings.preloadCovers
+  $('#cover-progress-text').textContent=`${t(state.active?'Cargando portadas…':'Portadas listas')}: ${state.completed}`
+  $('#pause-covers').hidden=coverQueuePaused;$('#resume-covers').hidden=!coverQueuePaused
+}})
 const speech = new SpeechController({
   view, settings: () => settings, getKey: () => apiKey,
   onState(state) {
@@ -518,7 +528,7 @@ function renderFolders() {
     const label = document.createElement('span'); label.dataset.userContent = ''; label.textContent = `${folder.name} · ${folder.entries.length}`
     const remove = document.createElement('button'); remove.className = 'icon-button'; remove.innerHTML = icon('close'); remove.title = t('Desvincular carpeta'); remove.setAttribute('aria-label',t('Desvincular carpeta'))
     remove.disabled=Boolean(folderScan||metadataBatch)
-    remove.onclick = attempt(async () => { if(folderScan||metadataBatch)return;await removeFolder(folder.id); await updateLibrary() })
+    remove.onclick = attempt(async () => { if(folderScan||metadataBatch)return;coverQueue.cancel();await removeFolder(folder.id); await updateLibrary() })
     row.append(label,remove); $('#folder-list').append(row)
   }
 }
@@ -551,6 +561,7 @@ async function readShownMetadata(){
   if(metadataBatch||folderScan)return
   const targets=shownLibrary.filter(item=>item.kind==='folder'&&item.metadata)
   const controller=metadataBatch=new AbortController();$('#metadata-progress').hidden=false;$('#read-visible-metadata').disabled=true
+  coverQueue.cancel()
   $('#refresh-folders').disabled=true;$('#add-folder').disabled=true;renderFolders()
   let completed=0,failed=0
   try{for(const item of targets){
@@ -606,6 +617,7 @@ async function markReading(){
 }
 
 function renderLibrary() {
+  const coverTargets=new Map()
   const display=$('#library-dialog').open?settings.libraryDialogView:settings.libraryView
   for (const url of libraryCoverURLs) URL.revokeObjectURL(url)
   libraryCoverURLs = []
@@ -634,6 +646,7 @@ function renderLibrary() {
         try {await loadLibraryCover(item);await updateLibrary()}finally{cover.disabled=false;cover.removeAttribute('aria-busy')}
       })
       row.append(cover)
+      if(!item.coverBlob&&(item.kind==='folder'&&item.cover||settings.preloadEmbeddedCovers&&(item.kind==='folder'||item.file||item.fileHandle)))coverTargets.set(cover,item)
     }
     const content = document.createElement('div'); content.className = 'library-entry'
     const button = document.createElement('button'); button.className = 'library-book'; button.dataset.userContent = ''; button.textContent = item.title
@@ -669,6 +682,7 @@ function renderLibrary() {
     list.append(row)
   }
   $('#library-more').hidden = filtered.length <= libraryLimit
+  coverQueue.observe(coverTargets,settings.preloadCovers&&!coverQueuePaused&&!folderScan&&!metadataBatch)
 }
 
 function openLibraryDialog() {
@@ -696,11 +710,14 @@ async function coverDimensions(blob) {
   try {await image.decode();return {width:image.naturalWidth,height:image.naturalHeight}}
   finally{URL.revokeObjectURL(url)}
 }
-async function loadLibraryCover(item) {
+async function loadLibraryCover(item,signal) {
+  const check=()=>{if(signal?.aborted)throw new DOMException('Cancelled','AbortError')}
   let cover,imported
   try {
+    check()
     if(item.kind==='folder') {
       await ensureFolderPermission(item.folder.handle)
+      check()
       if(item.cover) cover=await item.cover.getFile()
       else {const file=await item.formats[0].handle.getFile();if(file.size>100*1024*1024) throw new Error(t('El límite de esta versión es de 100 MB por archivo.'));imported=await importBook(file,()=>{});cover=await imported.getCover?.()}
     } else if(record?.id===item.id) cover=record.coverBlob??await book?.getCover?.()
@@ -710,8 +727,9 @@ async function loadLibraryCover(item) {
       imported=await importBook(file,()=>{});cover=await imported.getCover?.()
     } else throw new Error(t('Vuelve a elegir el archivo para recuperar sus notas y su posición.'))
     await coverDimensions(cover)
+    check()
     if(item.kind==='folder') {
-      item.folder.entries.find(entry=>entry.key===item.key).coverBlob=cover;await saveFolder(item.folder)
+      const entry=item.folder.entries.find(entry=>entry.key===item.key);entry.coverBlob=cover;delete entry.coverInvalidated;await saveFolder(item.folder)
     } else {const original=await getBook(item.id);await saveBook({...original,coverBlob:cover});if(record?.id===item.id) record.coverBlob=cover}
   } finally{imported?.destroy?.()}
 }
@@ -723,14 +741,14 @@ async function openFolderEntry(folder, entry, format = entry.formats[0]) {
   if (file.size > 100 * 1024 * 1024) throw new Error('El límite de esta versión es de 100 MB por archivo.')
   const id = await fileId(file)
   const previous = await getBook(id)
-  let coverBlob=entry.coverBlob??previous?.coverBlob
+  let coverBlob=entry.coverBlob??(!entry.coverInvalidated?previous?.coverBlob:undefined)
   if(!coverBlob && entry.cover) {
     try {coverBlob=await entry.cover.getFile();await coverDimensions(coverBlob)}catch{coverBlob=undefined;toast('No se pudo mostrar la cubierta.')}
   }
   await openFile(file, { ...previous, id, folderId: folder.id, entryKey: entry.key, fileHandle: format.handle, author: entry.author, coverBlob, catalogTitle: entry.opfLoaded ? entry.title : undefined })
   if (record?.id === id) {
     const original = folder.entries.find(item=>item.key===entry.key)
-    original.updatedAt = Date.now();original.coverBlob=record.coverBlob; await saveFolder(folder); await updateLibrary()
+    original.updatedAt = Date.now();original.coverBlob=record.coverBlob;delete original.coverInvalidated; await saveFolder(folder); await updateLibrary()
   }
   if (innerWidth < 900) sidebar(false)
 }
@@ -738,16 +756,19 @@ async function openFolderEntry(folder, entry, format = entry.formats[0]) {
 async function indexFolder(folder) {
   if (folderScan||metadataBatch) return
   folderScan = new AbortController(); $('#folder-progress').hidden = false
+  coverQueue.cancel()
   try {
     await ensureFolderPermission(folder.handle)
-    const prior = new Map(folder.entries?.map(entry=>[entry.key,entry]) ?? [])
     const entries = await scanDirectory(folder.handle, { signal: folderScan.signal, onProgress: progress => {
       $('#folder-progress-text').textContent = `${t('Indexando carpetas…')} ${progress.books.toLocaleString(currentLanguage())} ${t('libros')}`
     } })
-    const priorPaths=new Map((folder.entries??[]).filter(entry=>entry.metadata).map(entry=>[entry.path,entry]))
-    folder.entries=entries.map(entry=>{const old=prior.get(entry.key)??(entry.metadata&&priorPaths.get(entry.path));return old?{...old,...entry,key:old.key,...(old.opfLoaded?{title:old.title,author:old.author,language:old.language}: {})}:entry})
-    folder.updatedAt = Date.now(); await saveFolder(folder); await updateLibrary()
-  } finally { folderScan = null; $('#folder-progress').hidden = true }
+    const delta=await reconcileCatalog(folder.entries??[],entries,{signal:folderScan.signal})
+    for(const change of delta.invalidated)await updateCatalog(`${folder.id}:${change.key}`,state=>({...state,...(change.metadata&&state.source==='opf'||change.content&&state.source==='book'?{metadata:undefined,source:undefined}:{}),...(change.content?{fingerprints:[]}: {})}))
+    if(delta.dirty||!folder.entries?.length){folder.entries=delta.entries;folder.updatedAt=Date.now();await saveFolder(folder)}
+    const labels={added:'Añadidos',changed:'Modificados',removed:'Retirados',unchanged:'Sin cambios'}
+    $('#folder-summary').textContent=Object.entries(delta.stats).map(([key,count])=>`${t(labels[key])}: ${count}`).join(' · ');$('#folder-summary').hidden=false
+    await updateLibrary()
+  } finally { folderScan = null; $('#folder-progress').hidden = true;renderLibrary() }
 }
 
 async function connectFolder() {
@@ -1067,6 +1088,7 @@ document.querySelectorAll('[data-setting]').forEach(input => {
       renderLibraryFilters();renderLibrary(); syncVoices()
     }
     if (input.dataset.setting === 'libraryView') renderLibrary()
+    if(['preloadCovers','preloadEmbeddedCovers'].includes(input.dataset.setting)){coverQueuePaused=false;coverQueue.cancel();coverQueue.retry()}
     Object.assign(settings, safeSettings(settings)); applySettings()
     if(origin){await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));if(sequence===layoutSequence&&record?.id===id){await view.goTo(origin);record.anchorCFI=origin;preservingAnchor=false;updateReadingInformation();saveRecord()}}
   })
@@ -1230,6 +1252,8 @@ $('#dismiss-zen-hint').onclick = dismissZenHint
 $('#choose-folder').onclick = connectFolder
 $('#add-folder').onclick = connectFolder
 $('#cancel-scan').onclick = () => folderScan?.abort()
+$('#pause-covers').onclick=()=>{coverQueuePaused=true;coverQueue.cancel();renderLibrary()}
+$('#resume-covers').onclick=()=>{coverQueuePaused=false;coverQueue.retry();renderLibrary()}
 $('#refresh-folders').onclick = attempt(async () => {
   for (const folder of folderSources) {
     try { await indexFolder(folder) } catch (error) { if (error.name === 'AbortError') break; throw error }

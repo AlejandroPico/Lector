@@ -11,3 +11,4 @@
 - `HOJA_DE_RUTA.md` recoge los bloques seleccionados y su estado. El autor autorizó 0.3, 0.4 y 0.5, completadas con subidas independientes a main. Las posteriores requieren autorización.
 - Guardar preferencias, notas y recursos personales en el navegador. No generar descargas automáticas; exportar solo por acción explícita. Detectar recursos del proyecto en `fuentes` durante desarrollo/compilación.
 - El autor autorizó 0.6 y 0.7 en orden, completadas con registros separados y verificación de la publicación de 0.6 antes de comenzar 0.7. No avanzar a 0.8 sin autorización.
+- El autor autoriza ahora 0.8, 0.9 y 0.10 en orden, con comprobaciones y subidas independientes a main. Las versiones posteriores siguen pendientes.

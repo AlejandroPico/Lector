@@ -2,7 +2,15 @@
 
 Un lector de libros a toda pantalla, sin cabeceras decorativas ni tarjetas alrededor del texto. Dos columnas por defecto, controles discretos en la esquina superior derecha y un índice lateral que se puede ocultar.
 
-## Versión 0.7
+## Versión 0.8
+
+«Actualizar carpetas» enumera nombres y referencias y compara el resultado con el catálogo guardado. Conserva las entradas sin cambios, sus cubiertas y sus metadatos; muestra altas, modificaciones detectadas y bajas. Cambiar formatos de un libro Calibre mantiene su identidad y organización. Si desaparece un libro de una carpeta vinculada deja de mostrarse allí, conservando sus notas guardadas. Una actualización cancelada no sustituye el catálogo.
+
+El navegador no proporciona fechas de modificación sin obtener el archivo: para evitar hidratar toda una biblioteca en OneDrive se detectan nombres, formatos e identidad de referencias. Una modificación del contenido que conserve la misma referencia puede requerir reabrir el ebook o pulsar «Leer metadatos». La enumeración de nombres sigue recorriendo la carpeta; se reutilizan los contenidos conocidos, no se promete un monitor nativo del sistema de archivos.
+
+En Ajustes → Biblioteca, «Cargar portadas visibles» activa una cola secuencial, apagada inicialmente. Solo carga imágenes de cubierta de filas que intersectan la pantalla, conserva la caché y ofrece detener/continuar. «Obtener portadas incrustadas automáticamente» permite además abrir el ebook visible para obtener su cubierta; también viene apagado. La interfaz explica que ambas opciones pueden hidratar archivos de nube. Detener la cola impide guardar el resultado pendiente y comenzar nuevas lecturas, aunque el navegador no permita abortar una lectura de archivo ya iniciada.
+
+## Biblioteca de la versión 0.7
 
 La biblioteca ofrece «Filtros y colecciones», plegado inicialmente, en el panel lateral y en la ventana ampliada. Combina autor, serie, género, etiquetas, idioma, formato, estado y colección. El buscador también encuentra series, géneros y etiquetas; la ordenación por serie usa posiciones numéricas, incluidos decimales de Calibre. Los formatos de un mismo libro Calibre permanecen agrupados.
 

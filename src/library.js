@@ -16,9 +16,10 @@ export function catalogMetadata(raw={}){
 export const catalogKey=book=>book.folderId&&book.entryKey?`${book.folderId}:${book.entryKey}`:book.id
 export function libraryEntries(books,folders,records){
   const stored=new Map(records.map(record=>[record.id,record])),opened=new Map(books.filter(book=>book.folderId).map(book=>[catalogKey(book),book]))
-  const linked=folders.flatMap(folder=>folder.entries.map(entry=>{const saved=opened.get(`${folder.id}:${entry.key}`);return {...entry,folder,id:`${folder.id}:${entry.key}`,kind:'folder',coverBlob:entry.coverBlob??saved?.coverBlob,cfi:saved?.cfi,coverSeen:saved?.coverSeen,fraction:saved?.fraction}}))
+  const linked=folders.flatMap(folder=>folder.entries.map(entry=>{const saved=opened.get(`${folder.id}:${entry.key}`);return {...entry,folder,id:`${folder.id}:${entry.key}`,kind:'folder',coverBlob:entry.coverBlob??(!entry.coverInvalidated?saved?.coverBlob:undefined),cfi:saved?.cfi,coverSeen:saved?.coverSeen,fraction:saved?.fraction}}))
   const linkedIDs=new Set(linked.map(item=>item.id))
-  return [...books.filter(book=>!linkedIDs.has(catalogKey(book))).map(book=>({...book,kind:'local'})),...linked].map(base=>{
+  const linkedFolders=new Set(folders.map(folder=>folder.id))
+  return [...books.filter(book=>!linkedIDs.has(catalogKey(book))&&(!book.folderId||!linkedFolders.has(book.folderId))).map(book=>({...book,kind:'local'})),...linked].map(base=>{
     const state=stored.get(base.id)??{},metadata=catalogMetadata(state.metadata??base),overrides=state.overrides??{}
     const formats=base.formats?.map(format=>format.extension)??[base.filename?.split('.').pop()?.toLowerCase()].filter(Boolean)
     return {...base,...Object.fromEntries(Object.entries(metadata).filter(([,value])=>Array.isArray(value)?value.length:value!==''&&value!==null)),...overrides,

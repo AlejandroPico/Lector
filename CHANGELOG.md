@@ -1,5 +1,13 @@
 # Historial de versiones
 
+## 0.8.0
+
+- Reconciliación del catálogo por identidad y estructura, con recuento de altas, cambios, bajas y entradas conservadas.
+- Reutilización de metadatos y cubiertas sin leer archivos; invalidación de cachés cuando cambia una referencia de archivo.
+- Cola secuencial de portadas visibles, apagada inicialmente, con parada y reanudación.
+- Obtención anticipada de cubiertas incrustadas como opción independiente, también apagada.
+- Pruebas de actualización sin lecturas de contenido, conservación de la organización y cancelación de portadas.
+
 ## 0.7.0
 
 - Filtros combinables por autor, serie, género, etiquetas, idioma, formato, estado y colección.
