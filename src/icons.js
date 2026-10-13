@@ -1,0 +1,27 @@
+const paths = {
+  index: '<path d="M4 6h16M4 12h16M4 18h16"/><path d="M8 4v16"/>',
+  open: '<path d="M3 8V5h6l2 3h10v11H3z"/><path d="M3 12h18"/>',
+  type: '<path d="m3 19 6-14 6 14M5 14h8M17 10h5m-2.5 0v9"/>',
+  settings: '<path d="M5 3v18M12 3v18M19 3v18"/><path d="M2 8h6M9 16h6M16 7h6"/>',
+  volume: '<path d="M4 9h4l5-4v14l-5-4H4zM17 8a6 6 0 0 1 0 8M20 5a10 10 0 0 1 0 14"/>',
+  play: '<path d="m8 5 11 7-11 7z"/>',
+  pause: '<path d="M8 5v14M16 5v14"/>',
+  stop: '<path d="M6 6h12v12H6z"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1 1M18 18l1 1M5 19l1-1M18 6l1-1"/>',
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7v1"/>',
+  expand: '<path d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5"/>',
+  zen: '<path d="M3 12c3-5 15-5 18 0-3 5-15 5-18 0z"/><circle cx="12" cy="12" r="2"/>',
+  close: '<path d="m6 6 12 12M6 18 18 6"/>',
+  left: '<path d="m14 5-7 7 7 7"/>',
+  right: '<path d="m10 5 7 7-7 7"/>',
+  note: '<path d="M5 3h14v18H5zM8 8h8M8 12h8M8 16h5"/>',
+  bookmark: '<path d="M6 3h12v18l-6-4-6 4z"/>',
+  search: '<circle cx="10" cy="10" r="6"/><path d="m15 15 6 6"/>',
+  book: '<path d="M3 4h7l2 2 2-2h7v15h-7l-2 2-2-2H3zM12 6v15"/>',
+  minus: '<path d="M5 12h14"/>',
+  plus: '<path d="M5 12h14M12 5v14"/>',
+  download: '<path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/>',
+  trash: '<path d="M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7"/>',
+}
+export const icon = name => `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name] ?? paths.book}</svg>`
+export const iconButton = (id, name, label, extra = '') => `<button id="${id}" type="button" class="icon-button" title="${label}" aria-label="${label}" ${extra}>${icon(name)}</button>`
