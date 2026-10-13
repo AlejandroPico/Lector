@@ -577,7 +577,7 @@ async function openStored(id) {
 async function openFile(file, saved) {
   if (busy) return
   busy = true; const sequence = ++loadSequence
-  $('#file-error').hidden = true; closePanels(); speech.stop();clearOpeningCover()
+  $('#file-error').hidden = true; closePanels(); speech.stop();clearOpeningCover();$('#audio-toggle').disabled=true
   $('#loading').hidden = false; $('#loading-text').textContent = 'Abriendo libro…'
   let imported
   try {
@@ -624,7 +624,7 @@ async function openFile(file, saved) {
     if (book === imported) { view.close(); book = null; record = null; $('#audio-toggle').disabled = true; $('.reading-footer').hidden = true }
     if (!$('#file-dialog').open) $('#file-dialog').showModal()
     $('#file-error').textContent = error.message || 'No se pudo abrir este documento.'; $('#file-error').hidden = false
-  } finally { busy = false; $('#loading').hidden = true; $('#file-input').value = '' }
+  } finally { busy = false; $('#loading').hidden = true; $('#file-input').value = '';$('#audio-toggle').disabled=!book || !record }
 }
 
 view.addEventListener('relocate', ({ detail }) => {

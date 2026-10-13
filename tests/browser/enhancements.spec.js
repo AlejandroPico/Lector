@@ -134,6 +134,7 @@ test('Calibre folder enumeration does not read books, covers or metadata until s
   await expect(page.getByRole('button',{name:'Título personalizado 1',exact:true})).toBeVisible()
   expect(await page.evaluate(()=>window.__fileReads)).toEqual(['metadata.opf'])
   await page.getByRole('button',{name:'Cargar portada: Título personalizado 1',exact:true}).click()
+  await expect(page.getByRole('button',{name:'Abrir libro: Título personalizado 1',exact:true}).locator('img')).toBeVisible()
   expect(await page.evaluate(()=>window.__fileReads)).toEqual(['metadata.opf','cover.svg'])
   await page.getByRole('button',{name:'Título personalizado 1',exact:true}).click()
   await expect(page.locator('#audio-toggle')).toBeEnabled()
