@@ -189,6 +189,18 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 84%, transparent)
 .primary-button:hover { filter: brightness(.92); }
 #note-quote { margin: 0 0 24px; padding: 0 0 0 15px; border-left: 1px solid var(--line); font-family: Georgia, serif; font-size: 16px; line-height: 1.65; max-height: 180px; overflow: auto; }
 .notes-actions { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.note-actions { display:flex;gap:3px;flex:0 0 auto; }
+.note-actions .icon-button { margin-right:0; }
+.note-quote { padding-left:5px; }
+.notebook-dialog { width:min(900px,calc(100vw - 28px)); }
+.notebook-controls { display:grid;grid-template-columns:1fr 1fr 2fr;gap:12px; }
+.notebook-controls .field { min-width:0; }
+.notebook-row { display:flex;gap:12px;justify-content:space-between;border-top:1px solid var(--line);padding-block:18px; }
+.notebook-row > div:first-child { min-width:0;flex:1; }
+.notebook-row blockquote { margin:14px 0;padding-left:14px;border-left:2px solid var(--line);white-space:pre-wrap;overflow-wrap:anywhere;font-family:Georgia,serif; }
+.notebook-row p { font-size:13px;white-space:pre-wrap;overflow-wrap:anywhere; }
+.selection-menu { max-width:calc(100vw - 16px);flex-wrap:wrap; }
+@media(max-width:600px){.notebook-controls { grid-template-columns:1fr 1fr; }.notebook-controls .field:last-child{grid-column:1/-1}.notebook-row{flex-direction:column}.notebook-row .note-actions{align-self:end}.note-row{flex-wrap:wrap}.note-row .note-actions{margin-left:auto}}
 .note-row, .library-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; padding: 12px 0; border-bottom: 1px solid var(--line); }
 .note-link, .library-book { text-align: left; padding: 5px 0; min-width: 0; font-size: 12px; line-height: 1.7; width: 100%; }
 .note-quote { display: block; font-family: Georgia, serif; font-size: 14px; line-height: 1.6; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }

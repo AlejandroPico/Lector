@@ -1,6 +1,6 @@
 # Ampliaciones acordadas y versiones propuestas
 
-Base actual: versión 0.8.0. Esta hoja recoge la selección del autor del 13 de octubre de 2026. La selección aprueba el objetivo de las funciones, pero cada versión necesita autorización antes de comenzar. Documentar este plan no cambia la aplicación ni autoriza ejecutar todos los bloques.
+Base actual: versión 0.9.0. Esta hoja recoge la selección del autor del 13 de octubre de 2026. La selección aprueba el objetivo de las funciones, pero cada versión necesita autorización antes de comenzar. Documentar este plan no cambia la aplicación ni autoriza ejecutar todos los bloques.
 
 ## Reglas comunes
 
@@ -68,4 +68,5 @@ Si un bloque excede una entrega razonable, se subdividirá antes de comenzar y s
 - 0.6 completada: lectura continua, televisión, retorno, posiciones y tiempos opcionales.
 - 0.7 completada tras verificar la publicación de 0.6: filtros, estados, colecciones, series y candidatos a duplicados.
 - 0.8 completada: actualización del catálogo y cola opcional de portadas visibles.
-- 0.9 y 0.10 autorizadas para continuar en orden. Las posteriores siguen pendientes.
+- 0.9 completada: subrayados, edición, cuaderno, citas y exportación deliberada.
+- 0.10 autorizada para continuar. Las posteriores siguen pendientes.

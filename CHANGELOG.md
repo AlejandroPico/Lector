@@ -1,5 +1,15 @@
 # Historial de versiones
 
+## 0.9.0
+
+- Subrayados y fondos resaltados en cinco colores, con visibilidad configurable.
+- Edición de notas y marcas existentes conservando identificador y ancla del ebook.
+- Cuaderno común a los libros guardados, con búsqueda, filtros y navegación a citas.
+- Copia de citas con autor, título y ubicación estable.
+- Vista previa de exportación Markdown/JSON, elección explícita de destino y vista de impresión para guardar PDF.
+- Ninguna descarga al abrir el cuaderno o la exportación; alternativa de descarga solo mediante su botón explícito.
+- Comprobaciones de colores, persistencia, edición entre libros, procedencia y exportación segura de texto.
+
 ## 0.8.0
 
 - Reconciliación del catálogo por identidad y estructura, con recuento de altas, cambios, bajas y entradas conservadas.

@@ -95,6 +95,7 @@ export const defaults = Object.freeze({
   showReference:false,showChapterTime:false,showBookTime:false,estimateMode:'reading',visualWpm:220,narrationWpm:170,
   libraryDetails:false,
   preloadCovers:false,preloadEmbeddedCovers:false,
+  showAnnotations:true,
   voice: '', rate: 1, pitch: 1, language: 'es-ES', speechLanguage: 'auto',
   endpoint: 'https://api.openai.com/v1/audio/speech',
   model: 'gpt-4o-mini-tts', apiVoice: 'coral',

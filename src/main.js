@@ -22,6 +22,7 @@ import { allCatalog,updateCatalog,removeCatalog,allCollections,saveCollection,re
 import { statuses,catalogKey,catalogMetadata,libraryEntries,filterLibrary,duplicateGroups,labels,normalize,languageCode } from './library.js'
 import { reconcileCatalog } from './catalog-refresh.js'
 import { VisibleCoverQueue } from './cover-queue.js'
+import { annotationColors,annotationColor,citation,notebookEntries,notesMarkdown,notesHTML } from './notes.js'
 
 const $ = selector => document.querySelector(selector)
 let userFonts = await allFonts().catch(()=>[])
@@ -46,6 +47,7 @@ const metricsCache=new WeakMap()
 let catalogRecords=[],collections=[],catalogItems=[],duplicateClusters=[],duplicateIDs=new Set(),duplicateFocus,organizingItem,metadataBatch
 let shownLibrary=[],lastSpeechSave=0
 let coverQueuePaused=false
+let editingNote,notebookBooks=[],notebookShown=[],notebookLimit=100,exportEntries=[]
 
 const rangeControl = (key, label, min, max, step, unit = '') => `<label class="field range-field"><span>${label}<output for="${key}" data-output="${key}">${settings[key]}${unit}</output></span><input id="${key}" type="range" data-setting="${key}" min="${min}" max="${max}" step="${step}" value="${settings[key]}" data-unit="${unit}"></label>`
 const check = (key, label) => `<label class="check-field"><input type="checkbox" data-setting="${key}" ${settings[key] ? 'checked' : ''}>${label}</label>`
@@ -82,7 +84,7 @@ $('#app').innerHTML = `
       <form id="search-form" class="search-field"><label class="sr-only" for="search-query">Buscar en el libro</label><input id="search-query" placeholder="Buscar en el libro" type="search"><button aria-label="Buscar" title="Buscar">${icon('search')}</button></form>
       <div id="search-results" hidden></div><nav id="toc" aria-label="Capítulos"><p class="muted small">Abre un libro para ver su índice.</p></nav>
     </section>
-    <section id="notes-tab" role="tabpanel" aria-label="Notas" hidden><div class="notes-actions"><button id="add-bookmark" class="text-button">${icon('bookmark')}Marcar página</button><button id="export-notes" class="icon-button" aria-label="Exportar notas" title="Exportar notas">${icon('download')}</button></div><div id="notes-list"></div></section>
+    <section id="notes-tab" role="tabpanel" aria-label="Notas" hidden><div class="notes-actions"><button id="add-bookmark" class="text-button">${icon('bookmark')}Marcar página</button><button id="open-notebook" class="icon-button" aria-label="Cuaderno de notas" title="Cuaderno de notas">${icon('note')}</button><button id="export-notes" class="icon-button" aria-label="Exportar notas" title="Exportar notas">${icon('download')}</button></div><div id="notes-list"></div></section>
     <section id="library-tab" role="tabpanel" aria-label="Biblioteca" hidden>
       <div class="library-heading"><span>Biblioteca</span>${iconButton('library-expand','expand','Abrir biblioteca ampliada')}</div>
       <div id="library-content">
@@ -133,7 +135,7 @@ $('#app').innerHTML = `
     <details class="settings-section"><summary>Apariencia</summary><button class="settings-link" data-settings-panel="theme">Temas y colores ${icon('right')}</button>${check('showOpeningCover','Mostrar cubierta al abrir un libro')}</details>
     <details class="settings-section"><summary>Voz</summary><button class="settings-link" data-settings-panel="voice">Lectura en voz alta ${icon('right')}</button></details>
     <details class="settings-section"><summary>Biblioteca</summary><button class="settings-link" data-settings-tab="library">Abrir biblioteca ${icon('right')}</button>${check('libraryDetails','Mostrar detalles de biblioteca')}${check('preloadCovers','Cargar portadas visibles')}${check('preloadEmbeddedCovers','Obtener portadas incrustadas automáticamente')}<p class="small muted">La carga anticipada puede descargar cubiertas de la nube. Obtener una cubierta incrustada también lee el ebook visible.</p></details>
-    <details class="settings-section"><summary>Notas y vocabulario</summary><button class="settings-link" data-settings-tab="notes">Ver notas ${icon('right')}</button></details>
+    <details class="settings-section"><summary>Notas y vocabulario</summary><button class="settings-link" data-settings-tab="notes">Ver notas ${icon('right')}</button><button id="settings-notebook" class="settings-link">Cuaderno de notas ${icon('right')}</button>${check('showAnnotations','Mostrar subrayados')}</details>
     <details class="settings-section"><summary>Datos</summary><p class="small muted">Los libros y las notas se guardan en este navegador. No se descargan archivos automáticamente.</p></details>
     <details class="settings-section"><summary>Dispositivos</summary>${check('tvMode','Modo televisión')}${rangeControl('tvScale','Escala de televisión',1,2,.05,' ×')}<p class="small muted">Flechas para leer y recorrer controles; Intro para seleccionar. Compatible con mandos que envían teclas y con gamepads del navegador.</p><button id="settings-fullscreen" class="settings-link">Pantalla completa ${icon('expand')}</button><button id="settings-zen" class="settings-link">Modo zen ${icon('zen')}</button></details>
   </aside>
@@ -188,7 +190,7 @@ $('#app').innerHTML = `
     <p class="small muted">En lectura vertical, sin marcas de palabra el seguimiento es aproximado. El audio externo usa el progreso de reproducción.</p>
     <div class="voice-actions"><button id="voice-preview" class="text-button">${icon('play')}Probar voz</button><button id="audio-stop" class="text-button">${icon('stop')}Detener</button></div>
   </aside>
-  <div id="selection-menu" class="selection-menu" role="toolbar" aria-label="Texto seleccionado" hidden><button id="define-selection">Consultar</button><button id="annotate-selection">Anotar</button><button id="speak-selection">Leer desde aquí</button></div>
+  <div id="selection-menu" class="selection-menu" role="toolbar" aria-label="Texto seleccionado" hidden><button id="define-selection">Consultar</button><button id="annotate-selection">Anotar</button><button id="highlight-selection">Subrayar</button><button id="copy-selection">Copiar cita</button><button id="speak-selection">Leer desde aquí</button></div>
   <dialog id="file-dialog" class="file-dialog" aria-label="Abrir documento">
     <form method="dialog" class="dialog-dismiss">${iconButton('dismiss-file', 'close', 'Cerrar selector')}</form>
     <button id="choose-file" class="choose-file">${icon('open')}<span>Abrir un libro</span></button>
@@ -198,7 +200,9 @@ $('#app').innerHTML = `
     <label class="check-field local-save"><input id="remember-file" type="checkbox" checked>Guardar el archivo en este navegador</label>
     <p id="file-error" class="error small" role="alert" hidden></p>
   </dialog>
-  <dialog id="note-dialog" class="small-dialog" aria-labelledby="note-title"><div class="panel-heading"><h2 id="note-title">Nota de lectura</h2><button class="icon-button dialog-close" aria-label="Cerrar">${icon('close')}</button></div><blockquote id="note-quote"></blockquote><label class="field">Tu nota<textarea id="note-text" rows="5" placeholder="Escribe una nota…"></textarea></label><button id="save-note" class="primary-button">Guardar nota</button></dialog>
+  <dialog id="note-dialog" class="small-dialog" aria-labelledby="note-title"><div class="panel-heading"><h2 id="note-title">Nota de lectura</h2><button class="icon-button dialog-close" aria-label="Cerrar">${icon('close')}</button></div><blockquote id="note-quote" data-user-content></blockquote><label class="field">Tu nota<textarea id="note-text" rows="5" maxlength="10000" placeholder="Escribe una nota…"></textarea></label><div class="filter-grid"><label class="field">Color<select id="note-color">${Object.entries(annotationColors).map(([id,value])=>`<option value="${id}">${value.label}</option>`).join('')}</select></label><label class="field">Marca<select id="note-style"><option value="underline">Subrayado</option><option value="highlight">Fondo resaltado</option></select></label></div><button id="save-note" class="primary-button">Guardar nota</button></dialog>
+  <dialog id="notebook-dialog" class="notebook-dialog" aria-labelledby="notebook-title"><div class="panel-heading"><h2 id="notebook-title">Cuaderno de notas</h2><button class="icon-button dialog-close" aria-label="Cerrar">${icon('close')}</button></div><div class="notebook-controls"><label class="field">Libro<select id="notebook-book"><option value="">Todos</option></select></label><label class="field">Tipo<select id="notebook-kind"><option value="">Todos</option><option value="note">Notas</option><option value="highlight">Subrayados</option><option value="bookmark">Marcadores</option></select></label><label class="field">Buscar notas<input id="notebook-search" type="search"></label></div><div class="editor-actions"><button id="notebook-export" class="text-button">Exportar selección</button><span id="notebook-count" class="small muted"></span></div><div id="notebook-list"></div><button id="notebook-more" class="text-button" hidden>Mostrar más</button></dialog>
+  <dialog id="notes-export-dialog" class="small-dialog" aria-labelledby="notes-export-title"><div class="panel-heading"><h2 id="notes-export-title">Exportar notas</h2><button class="icon-button dialog-close" aria-label="Cerrar">${icon('close')}</button></div><label class="field">Formato<select id="notes-export-format"><option value="md">Markdown</option><option value="json">JSON</option></select></label><label class="field">Vista previa<textarea id="notes-export-preview" rows="8" readonly></textarea></label><div class="editor-actions"><button id="notes-export-save" class="text-button">Guardar archivo</button><button id="notes-export-copy" class="text-button">Copiar exportación</button><button id="notes-export-pdf" class="text-button">Imprimir / guardar PDF</button><button id="notes-export-download" class="text-button" hidden>Descargar archivo</button></div><p id="notes-export-fallback" class="small muted" hidden>Este navegador no permite elegir destino. Puedes copiar el contenido o descargarlo expresamente.</p></dialog>
   <dialog id="dictionary-dialog" class="small-dialog" aria-labelledby="dictionary-word"><div class="panel-heading"><h2 id="dictionary-word"></h2><button class="icon-button dialog-close" aria-label="Cerrar">${icon('close')}</button></div><p id="dictionary-definition"></p><a id="dictionary-external" class="text-link" target="_blank" rel="noopener noreferrer">Consultar en Wikcionario ↗</a><label class="text-button dictionary-import">Importar diccionario propio<input id="dictionary-file" type="file" accept=".json" hidden></label><p class="small muted">Glosario local básico y diccionarios JSON propios. Formato: {"palabra": "definición"}.</p></dialog>
   <dialog id="image-dialog" class="image-dialog" aria-label="Imagen ampliada"><div class="image-toolbar">${iconButton('zoom-out', 'minus', 'Reducir imagen')}<output id="zoom-level">100 %</output>${iconButton('zoom-in', 'plus', 'Ampliar imagen')}${iconButton('zoom-fit', 'expand', 'Ajustar imagen')}<button class="icon-button dialog-close" aria-label="Cerrar imagen">${icon('close')}</button></div><div class="image-stage"><img id="zoom-image" alt=""></div></dialog>
   <dialog id="library-dialog" class="library-dialog" aria-labelledby="library-dialog-title"><div class="panel-heading"><h2 id="library-dialog-title">Biblioteca</h2><button id="library-dialog-close" class="icon-button" aria-label="Cerrar biblioteca">${icon('close')}</button></div><div id="library-dialog-content"></div></dialog>
@@ -223,7 +227,7 @@ $('#app').innerHTML = `
           <div><dt>Autor</dt><dd>Alejandro Pico</dd></div>
           <div><dt>Carácter</dt><dd>Proyecto personal</dd></div>
           <div><dt>Propósito</dt><dd>Lectura y escucha</dd></div>
-          <div><dt>Edición</dt><dd>Versión 0.8</dd></div>
+          <div><dt>Edición</dt><dd>Versión 0.9</dd></div>
         </dl>
       </aside>
       <div class="about-body">
@@ -359,6 +363,7 @@ function applySettings() {
   document.querySelector('[data-setting="columns"]').disabled=settings.readingFlow==='scrolled'
   gamepad.update();updateHistoryControls();updateReadingInformation()
   if(catalogItems.length)renderLibrary()
+  if(record)for(const note of record.notes.filter(note=>note.kind!=='bookmark'))(settings.showAnnotations?view.addAnnotation({value:note.cfi}):view.deleteAnnotation({value:note.cfi})).catch(()=>{})
   if(!settings.showOpeningCover && !$('#opening-cover').hidden) attempt(()=>finishOpeningCover())()
   writeJSON('lector-settings', settings)
 }
@@ -420,7 +425,7 @@ function syncVoices() {
 function saveRecord() {
   if (!record || !book) return
   const snapshot = { ...record, notes: [...record.notes], updatedAt: Date.now() }
-  saveBook(snapshot).catch(() => {
+  return saveBook(snapshot).catch(() => {
     if (!storageWarning) { storageWarning = true; toast('No se pudo guardar en este navegador. Las notas y el punto de lectura podrían perderse al cerrar.', 10000) }
   })
 }
@@ -938,14 +943,14 @@ view.addEventListener('link', event => {
   } else {event.preventDefault();attempt(()=>navigateTo(href))()}
 })
 
-view.addEventListener('draw-annotation', ({ detail }) => detail.draw(Overlayer.underline, { color: themeColors().accent }))
+view.addEventListener('draw-annotation', ({ detail }) => {const note=record?.notes.find(note=>note.cfi===detail.annotation.value);if(settings.showAnnotations&&note)detail.draw(note.style==='highlight'?Overlayer.highlight:Overlayer.underline,{color:annotationColor(note)})})
 view.addEventListener('create-overlay', ({ detail }) => {
   if (!record) return
-  for (const note of record.notes) if (note.kind === 'note') view.addAnnotation({ value: note.cfi }).catch(() => {})
+  for (const note of record.notes) if (note.kind !== 'bookmark'&&settings.showAnnotations) view.addAnnotation({ value: note.cfi }).catch(() => {})
 })
 view.addEventListener('show-annotation', ({ detail }) => {
   const note = record?.notes.find(item => item.cfi === detail.value)
-  if (note) { $('#footnote-title').textContent = 'Tu nota'; $('#footnote-content').textContent = note.text || note.quote; $('#footnote-dialog').showModal() }
+  if (note) openNoteEditor(record,note)
 })
 
 function showSelectionMenu(range, doc) {
@@ -966,14 +971,83 @@ function renderNotes() {
     const quote = document.createElement('span'); quote.className = 'note-quote'; quote.textContent = note.kind === 'bookmark' ? `Marcador · ${note.label || Math.round(note.fraction * 100) + ' %'}` : note.quote
     const text = document.createElement('span'); text.className = 'note-body'; text.textContent = note.text
     navigate.append(quote, text); navigate.addEventListener('click', attempt(async () => { await navigateTo(note.cfi); if (innerWidth < 900) sidebar(false) }))
-    const remove = document.createElement('button'); remove.className = 'icon-button'; remove.innerHTML = icon('trash'); remove.title = 'Eliminar nota'; remove.setAttribute('aria-label', 'Eliminar nota')
-    remove.addEventListener('click', attempt(async () => {
-      record.notes = record.notes.filter(item => item.id !== note.id)
-      if (note.kind === 'note') await view.deleteAnnotation({ value: note.cfi })
-      saveRecord(); renderNotes()
-    }))
-    row.append(navigate, remove); list.append(row)
+    if(note.kind!=='bookmark')quote.style.borderLeft=`2px solid ${annotationColor(note)}`
+    const actions=noteActions(record,note)
+    row.append(navigate,actions); list.append(row)
   }
+}
+
+function noteActions(source,note){
+  const actions=document.createElement('div');actions.className='note-actions'
+  for(const [name,symbol,action] of [['Editar nota','gear',()=>openNoteEditor(source,note)],['Copiar cita','note',()=>copyCitation(source,note)],['Eliminar nota','trash',()=>deleteNote(source,note)]]){
+    const button=document.createElement('button');button.className='icon-button';button.innerHTML=icon(symbol);button.title=t(name);button.setAttribute('aria-label',t(name));button.onclick=attempt(action);actions.append(button)
+  }
+  return actions
+}
+function selectedNote(){
+  if(!selection||!record)return null
+  const content=view.renderer.getContents()[0],metrics=metricsCache.get(content.doc),position=metrics?.position(selection.range)
+  const original=book.pdf?content.index+1:view.getProgressOf(content.index,selection.range).pageItem?.label
+  const reference=original?`${t('Página original')} ${original}`:`${t('Ubicación')} ${content.index+1}.${position?.block??0}.${position?.offset??0}`
+  return {cfi:selection.cfi,quote:selection.quote,reference,label:view.lastLocation.tocItem?.label??'',fraction:record.fraction}
+}
+function openNoteEditor(source,note,kind='note'){
+  const current=source.id===record?.id?record:source
+  const existing=note.id?current.notes.find(item=>item.id===note.id):current.notes.find(item=>item.cfi===note.cfi&&item.kind!=='bookmark')
+  editingNote={bookId:source.id,note:{...note,...existing},kind:existing?.kind??kind}
+  $('#note-quote').textContent=note.quote??note.label??'';$('#note-text').value=existing?.text??note.text??''
+  $('#note-color').value=existing?.color??'gold';$('#note-style').value=existing?.style??'underline'
+  $('#note-color').disabled=editingNote.kind==='bookmark';$('#note-style').disabled=editingNote.kind==='bookmark'
+  $('#selection-menu').hidden=true;$('#note-dialog').showModal();$('#note-text').focus()
+}
+async function saveNoteEdit(){
+  if(!editingNote)return
+  const source=editingNote.bookId===record?.id?record:await getBook(editingNote.bookId)
+  if(!source)return
+  const text=$('#note-text').value.trim(),note={...editingNote.note,id:editingNote.note.id??crypto.randomUUID(),kind:text?'note':editingNote.kind==='bookmark'?'bookmark':'highlight',text,
+    color:$('#note-color').value,style:$('#note-style').value,createdAt:editingNote.note.createdAt??Date.now(),updatedAt:Date.now()}
+  if(editingNote.kind==='bookmark')note.kind='bookmark'
+  const index=source.notes.findIndex(item=>item.id===note.id)
+  if(index>=0)source.notes[index]=note;else source.notes.push(note)
+  if(source===record){if(note.kind!=='bookmark')await view.addAnnotation({value:note.cfi});await saveRecord();renderNotes()}else await saveBook({...source,updatedAt:Date.now()})
+  $('#note-dialog').close();editingNote=undefined;await refreshNotebook();toast('Nota guardada')
+}
+async function deleteNote(source,note){
+  const current=source.id===record?.id?record:await getBook(source.id);if(!current)return
+  current.notes=current.notes.filter(item=>item.id!==note.id)
+  if(current===record){if(note.kind!=='bookmark')await view.deleteAnnotation({value:note.cfi});await saveRecord();renderNotes()}else await saveBook({...current,updatedAt:Date.now()})
+  await refreshNotebook()
+}
+async function copyCitation(source,note){await navigator.clipboard.writeText(citation(source,note));toast('Cita copiada')}
+async function refreshNotebook(){
+  if(!$('#notebook-dialog').open)return
+  notebookBooks=await allBooks();if(record)notebookBooks=[record,...notebookBooks.filter(item=>item.id!==record.id)]
+  const select=$('#notebook-book'),previous=select.value;select.replaceChildren(new Option(t('Todos'),''))
+  for(const source of notebookBooks.filter(source=>source.notes?.length)){const option=new Option(source.title,source.id);option.dataset.userContent='';select.append(option)}
+  if([...select.options].some(option=>option.value===previous))select.value=previous
+  renderNotebook()
+}
+function renderNotebook(){
+  notebookShown=notebookEntries(notebookBooks,{query:$('#notebook-search').value,bookId:$('#notebook-book').value,kind:$('#notebook-kind').value})
+  const list=$('#notebook-list');list.replaceChildren();$('#notebook-count').textContent=String(notebookShown.length)
+  for(const {book:source,note} of notebookShown.slice(0,notebookLimit)){
+    const row=document.createElement('article');row.className='notebook-row'
+    const content=document.createElement('div'),heading=document.createElement('button');heading.className='text-button';heading.dataset.userContent='';heading.textContent=[source.title,note.reference??note.label].filter(Boolean).join(' · ')
+    heading.onclick=attempt(async()=>{if(record?.id!==source.id)await openStored(source.id);if(record?.id===source.id){$('#notebook-dialog').close();await navigateTo(note.cfi)}})
+    const quote=document.createElement('blockquote');quote.dataset.userContent='';quote.textContent=note.quote??'';if(note.kind!=='bookmark')quote.style.borderLeftColor=annotationColor(note)
+    const body=document.createElement('p');body.dataset.userContent='';body.textContent=note.text??'';content.append(heading,quote,body)
+    row.append(content,noteActions(source,note));list.append(row)
+  }
+  $('#notebook-more').hidden=notebookShown.length<=notebookLimit
+}
+async function openNotebook(){closePanels();notebookLimit=100;if(!$('#notebook-dialog').open)$('#notebook-dialog').showModal();await refreshNotebook()}
+function openNotesExport(entries){exportEntries=entries;$('#notes-export-download').hidden=true;$('#notes-export-fallback').hidden=true;renderNotesExport();$('#notes-export-dialog').showModal()}
+function renderNotesExport(){const format=$('#notes-export-format').value;$('#notes-export-preview').value=format==='md'?notesMarkdown(exportEntries,t('Notas y citas')):JSON.stringify(exportEntries.map(({book,note})=>({book:book.title,author:book.author,note})),null,2)}
+function exportBlob(){return new Blob([$('#notes-export-preview').value],{type:$('#notes-export-format').value==='md'?'text/markdown;charset=utf-8':'application/json'})}
+async function saveNotesExport(){
+  if(!window.showSaveFilePicker){$('#notes-export-download').hidden=false;$('#notes-export-fallback').hidden=false;return}
+  const extension=$('#notes-export-format').value
+  try{const handle=await window.showSaveFilePicker({suggestedName:`lector-notas.${extension}`,types:[{description:extension==='md'?'Markdown':'JSON',accept:{[extension==='md'?'text/markdown':'application/json']:[`.${extension}`]}}]}),stream=await handle.createWritable();await stream.write(exportBlob());await stream.close();toast('Exportación guardada')}catch(error){if(error.name!=='AbortError')throw error}
 }
 
 function showImage(src, alt) {
@@ -1218,18 +1292,10 @@ $('#dictionary-file').onchange = attempt(async () => {
   toast(`Diccionario importado · ${count.toLocaleString('es')} palabras`)
   $('#dictionary-file').value = ''
 })
-$('#annotate-selection').onclick = () => {
-  $('#note-quote').textContent = selection.quote; $('#note-text').value = ''
-  $('#selection-menu').hidden = true; $('#note-dialog').showModal(); $('#note-text').focus()
-}
-$('#save-note').onclick = attempt(async () => {
-  if (!record || !selection) return
-  const text = $('#note-text').value.trim()
-  if (!text) { $('#note-text').focus(); return }
-  const note = { id: crypto.randomUUID(), kind: 'note', cfi: selection.cfi, quote: selection.quote, text, createdAt: Date.now() }
-  record.notes.push(note); await view.addAnnotation({ value: note.cfi })
-  saveRecord(); renderNotes(); $('#note-dialog').close(); toast('Nota guardada')
-})
+$('#annotate-selection').onclick = () => {const note=selectedNote();if(note)openNoteEditor(record,note)}
+$('#highlight-selection').onclick = () => {const note=selectedNote();if(note)openNoteEditor(record,note,'highlight')}
+$('#copy-selection').onclick=attempt(async()=>{const note=selectedNote();if(note)await copyCitation(record,note)})
+$('#save-note').onclick = attempt(saveNoteEdit)
 $('#speak-selection').onclick = attempt(async () => {
   speech.stop(); await view.select(selection.cfi); $('#selection-menu').hidden = true; await speech.restart(selection.range)
 })
@@ -1239,11 +1305,16 @@ $('#add-bookmark').onclick = () => {
   record.notes.push({ id: crypto.randomUUID(), kind: 'bookmark', cfi: record.cfi, fraction: record.fraction, label: view.lastLocation.tocItem?.label ?? '', text: '', createdAt: Date.now() })
   saveRecord(); renderNotes(); toast('Página marcada')
 }
-$('#export-notes').onclick = () => {
-  if (!record) return
-  const url = URL.createObjectURL(new Blob([JSON.stringify({ book: record.title, file: record.filename, notes: record.notes }, null, 2)], { type: 'application/json' }))
-  const anchor = document.createElement('a'); anchor.href = url; anchor.download = `${record.title.replace(/[\\/:*?"<>|]/g, '-')}-notas.json`; anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 1000)
-}
+$('#export-notes').onclick = () => {if(record)openNotesExport(record.notes.map(note=>({book:record,note})))}
+$('#open-notebook').onclick=attempt(openNotebook);$('#settings-notebook').onclick=attempt(openNotebook)
+for(const id of ['notebook-book','notebook-kind','notebook-search'])$(`#${id}`).addEventListener(id==='notebook-search'?'input':'change',()=>{notebookLimit=100;renderNotebook()})
+$('#notebook-more').onclick=()=>{notebookLimit+=100;renderNotebook()}
+$('#notebook-export').onclick=()=>openNotesExport(notebookShown)
+$('#notes-export-format').onchange=renderNotesExport
+$('#notes-export-save').onclick=attempt(saveNotesExport)
+$('#notes-export-copy').onclick=attempt(async()=>{await navigator.clipboard.writeText($('#notes-export-preview').value);toast('Exportación copiada')})
+$('#notes-export-download').onclick=()=>{const url=URL.createObjectURL(exportBlob()),anchor=document.createElement('a');anchor.href=url;anchor.download=`lector-notas.${$('#notes-export-format').value}`;anchor.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+$('#notes-export-pdf').onclick=()=>{const popup=window.open('','_blank');if(!popup){toast('Permite abrir la ventana de impresión.');return}popup.opener=null;popup.document.write(notesHTML(exportEntries,t('Notas y citas')));popup.document.close();popup.focus();popup.print()}
 $('#zoom-in').onclick = () => imageViewer.step(.25)
 $('#zoom-out').onclick = () => imageViewer.step(-.25)
 $('#zoom-fit').onclick = fitImage

@@ -2,7 +2,15 @@
 
 Un lector de libros a toda pantalla, sin cabeceras decorativas ni tarjetas alrededor del texto. Dos columnas por defecto, controles discretos en la esquina superior derecha y un índice lateral que se puede ocultar.
 
-## Versión 0.8
+## Versión 0.9
+
+Al seleccionar texto puedes anotar, subrayar o copiar una cita. El editor ofrece cinco colores y dos marcas: línea inferior o fondo resaltado. Una anotación existente se puede editar desde Notas, el cuaderno o pulsando la marca, sin duplicar su ancla. «Mostrar subrayados» en Ajustes → Notas y vocabulario permite ocultar las marcas conservándolas guardadas. Los marcadores de página siguen siendo independientes.
+
+El «Cuaderno de notas» reúne notas, subrayados y marcadores de los libros guardados. Permite buscar y filtrar por libro o tipo, editar y eliminar notas de otro libro sin cambiar la lectura abierta y volver al fragmento citado. Las citas copiadas incluyen texto, autor disponible, título y ubicación original o estable. Las notas antiguas que no tienen una referencia legible conservan su ancla CFI como procedencia.
+
+«Exportar notas» y «Exportar selección» abren una vista previa Markdown/JSON: no crean archivos automáticamente. «Guardar archivo» ofrece elegir destino donde el navegador lo permite. La alternativa permite copiar y, mediante un botón adicional explícito, descargar. «Imprimir / guardar PDF» abre una página de impresión limpia para el diálogo del navegador, donde se puede seleccionar Guardar como PDF; no genera una descarga automática ni una captura de la interfaz. Las exportaciones escapan el texto del usuario y conservan Unicode.
+
+## Catálogo de la versión 0.8
 
 «Actualizar carpetas» enumera nombres y referencias y compara el resultado con el catálogo guardado. Conserva las entradas sin cambios, sus cubiertas y sus metadatos; muestra altas, modificaciones detectadas y bajas. Cambiar formatos de un libro Calibre mantiene su identidad y organización. Si desaparece un libro de una carpeta vinculada deja de mostrarse allí, conservando sus notas guardadas. Una actualización cancelada no sustituye el catálogo.
 
