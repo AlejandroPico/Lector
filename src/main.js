@@ -1,3 +1,5 @@
+import {addSyncMenus,createSyncTools,restoreSyncedBook} from './sync-tools.js'
+import {applyPortable} from './sync-core.js'
 import {addCastingMenus,createCastingTools} from './casting-tools.js'
 import {addNarrationMenus,createNarrationTools} from './narration-tools.js'
 import {addLocalVoiceMenus,createLocalVoiceTools} from './local-voice-tools.js'
@@ -249,7 +251,7 @@ $('#app').innerHTML = `
           <div><dt>Autor</dt><dd>Alejandro Pico</dd></div>
           <div><dt>Carácter</dt><dd>Proyecto personal</dd></div>
           <div><dt>Propósito</dt><dd>Lectura y escucha</dd></div>
-          <div><dt>Edición</dt><dd>Versión 1.6</dd></div>
+          <div><dt>Edición</dt><dd>Versión 1.7</dd></div>
         </dl>
       </aside>
       <div class="about-body">
@@ -282,6 +284,7 @@ addAudioMenus(settings)
 addLocalVoiceMenus()
 addNarrationMenus()
 addCastingMenus()
+addSyncMenus()
 initializeI18n($('#app'), settings.uiLanguage)
 $('#speech-language').value = settings.speechLanguage
 
@@ -320,7 +323,7 @@ const speech = new SpeechController({
     if(range&&!view.renderer?.getContents().some(({doc})=>doc===range.startContainer.ownerDocument&&doc.defaultView))range=null
     narratedRange = range
     languageTools?.follow(range)
-    if(range && record){record.anchorCFI=anchorCFI(range);if(speech.state==='playing')record.lastReadAt=Date.now();updateReadingInformation();if(performance.now()-lastSpeechSave>3000){lastSpeechSave=performance.now();saveRecord()}}
+    if(range && record){const next=anchorCFI(range);if(next!==record.anchorCFI)record.positionUpdatedAt=Date.now();record.anchorCFI=next;if(speech.state==='playing')record.lastReadAt=Date.now();updateReadingInformation();if(performance.now()-lastSpeechSave>3000){lastSpeechSave=performance.now();saveRecord()}}
     for (const { doc } of view.renderer?.getContents() ?? []) doc.defaultView?.CSS?.highlights?.delete('spoken')
     if (!range || !settings.highlight) return
     const win = range.startContainer.ownerDocument.defaultView
@@ -882,11 +885,12 @@ async function openFile(file, saved) {
     const id = saved?.id ?? await fileId(file)
     ++searchSequence
     saved ??= await getBook(id).catch(() => null)
+    saved=await restoreSyncedBook(id,saved)
     imported = await importBook(file, text => $('#loading-text').textContent = text,saved??{})
     const title = saved?.catalogTitle || metadataText(imported.metadata?.title) || file.name
     const nextRecord = { id, title, filename: file.name, file: saved?.fileHandle ? undefined : $('#remember-file').checked ? file : undefined,
       fileHandle: saved?.fileHandle, folderId: saved?.folderId, entryKey: saved?.entryKey, catalogTitle: saved?.catalogTitle, author: saved?.author ?? metadataText(imported.metadata?.author), coverBlob: saved?.coverBlob,
-      notes: saved?.notes ?? [], narration:saved?.narration, pdfText:saved?.pdfText,pdfOptions:saved?.pdfOptions,cfi: saved?.cfi,anchorCFI:saved?.anchorCFI,readingStats:saved?.readingStats??{},navigationTrail:saved?.navigationTrail,
+      notes: saved?.notes ?? [],deletedNotes:saved?.deletedNotes??[],positionUpdatedAt:saved?.positionUpdatedAt??0,narration:saved?.narration, pdfText:saved?.pdfText,pdfOptions:saved?.pdfOptions,cfi: saved?.cfi,anchorCFI:saved?.anchorCFI,readingStats:saved?.readingStats??{},navigationTrail:saved?.navigationTrail,
       coverSeen:saved?.coverSeen??Boolean(saved?.cfi), lastReadAt:Date.now(), fraction: Number.isFinite(saved?.fraction) ? saved.fraction : 0, updatedAt: Date.now() }
     clearTimeout(saveTimer)
     view.close(); book?.destroy?.(); book = null; record = null
@@ -932,6 +936,7 @@ async function openFile(file, saved) {
 view.addEventListener('relocate', ({ detail }) => {
   if (!record) return
   if(!$('#opening-cover').hidden && detail.reason==='navigation') attempt(()=>finishOpeningCover(false))()
+  if(record.cfi!==detail.cfi&&!busy&&!preservingAnchor)record.positionUpdatedAt=Date.now()
   record.cfi = detail.cfi; record.fraction = Number.isFinite(detail.fraction) ? detail.fraction : record.fraction
   if(!busy&&!preservingAnchor&&detail.reason==='navigation')record.lastReadAt=Date.now()
   if(!preservingAnchor)record.anchorCFI=anchorCFI(narratedRange??detail.range)
@@ -1095,6 +1100,7 @@ async function saveNoteEdit(){
 async function deleteNote(source,note){
   const current=source.id===record?.id?record:await getBook(source.id);if(!current)return
   current.notes=current.notes.filter(item=>item.id!==note.id)
+  current.deletedNotes=[...(current.deletedNotes??[]).filter(item=>item.id!==note.id),{id:note.id,updatedAt:Date.now()}]
   if(current===record){if(note.kind!=='bookmark')await view.deleteAnnotation({value:note.cfi});await saveRecord();renderNotes()}else await saveBook({...current,updatedAt:Date.now()})
   await refreshNotebook()
 }
@@ -1555,3 +1561,15 @@ localVoiceTools=createLocalVoiceTools({settings,save:()=>{writeJSON('lector-sett
 
 narrationTools=createNarrationTools({view,getRecord:()=>record,getSettings:()=>settings,getSelection:()=>selection,save:saveRecord,closePanels,onError:handleError})
 createCastingTools({closePanels,onError:handleError})
+createSyncTools({getRecord:()=>record,getSettings:()=>settings,saveCurrent:saveRecord,closePanels,onError:handleError,
+ applyCurrent:async(data,options)=>{
+  if(!record)return
+  const previous=[...record.notes],next=applyPortable(record,data,{...options,positions:false});record.notes=next.notes;record.deletedNotes=next.deletedNotes
+  for(const note of previous)if(!record.notes.some(item=>item.id===note.id)&&note.kind!=='bookmark')await view.deleteAnnotation({value:note.cfi}).catch(()=>{})
+  // Keep the current narration and visual position. Approved remote positions
+  // are restored on the next open if the reader has not since moved further.
+  if(options.positions&&data.position){const saved=applyPortable(record,data,options);await saveBook(saved)}else await saveRecord()
+  renderNotes();await refreshNotebook()
+ },
+ applyPreferences:async value=>{await preserveLayout(()=>{Object.assign(settings,safeSettings({...settings,...value}));setUILanguage(settings.uiLanguage);$('.theme-options').innerHTML=themeButtons();applySettings();syncVoices();translateUI()})}
+})

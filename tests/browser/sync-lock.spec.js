@@ -1,0 +1,6 @@
+import {test,expect} from '@playwright/test'
+test('a review in one tab blocks another and closing it releases the shared sync lock',async({page,context})=>{
+ await context.route('https://sync.example/lector.json',route=>route.fulfill({status:404,body:''}))
+ async function open(target){await target.goto('/');await target.locator('#dismiss-file').click();await target.locator('#preferences-toggle').click();const section=target.locator('#preferences-panel > details').filter({has:target.locator('#settings-sync')});if(!await section.evaluate(el=>el.open))await section.locator('summary').first().click();await target.locator('#settings-sync').click();await target.locator('#sync-provider').selectOption('webdav');await target.locator('#sync-url').fill('https://sync.example/lector.json');await target.locator('#sync-url').press('Tab')}
+ await open(page);await page.locator('#sync-prepare').click();await expect(page.locator('#sync-review')).toBeVisible();const second=await context.newPage();await open(second);await second.locator('#sync-prepare').click();await expect(second.locator('#sync-status')).toHaveText('Otra pestaña está sincronizando.');await expect(second.locator('#sync-review')).toBeHidden();await page.locator('#sync-dialog .dialog-close').click();await second.locator('#sync-prepare').click();await expect(second.locator('#sync-review')).toBeVisible()
+})

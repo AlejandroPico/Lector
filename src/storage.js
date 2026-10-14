@@ -5,7 +5,7 @@ let connection
 
 async function db() {
   if (!connection) connection = new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 7)
+    const request = indexedDB.open(DB_NAME, 8)
     request.onupgradeneeded = () => {
       if (!request.result.objectStoreNames.contains('books')) request.result.createObjectStore('books', { keyPath: 'id' })
       if (!request.result.objectStoreNames.contains('folders')) request.result.createObjectStore('folders', { keyPath: 'id' })
@@ -17,6 +17,7 @@ async function db() {
       if (!request.result.objectStoreNames.contains('vocabulary')) request.result.createObjectStore('vocabulary',{keyPath:'id'})
       if (!request.result.objectStoreNames.contains('translations')) request.result.createObjectStore('translations',{keyPath:'id'})
       if (!request.result.objectStoreNames.contains('audioChapters')) request.result.createObjectStore('audioChapters',{keyPath:'id'})
+      if (!request.result.objectStoreNames.contains('syncData')) request.result.createObjectStore('syncData',{keyPath:'id'})
     }
     request.onsuccess = () => {
       request.result.onversionchange = () => { request.result.close(); connection = undefined }
@@ -45,6 +46,8 @@ export const removeBook = async id => {await transact('readwrite', store => stor
 export const allAudioChapters=()=>transact('readonly',store=>store.getAll(),'audioChapters')
 export const saveAudioChapter=value=>transact('readwrite',store=>store.put(value),'audioChapters')
 export const removeAudioChapter=id=>transact('readwrite',store=>store.delete(id),'audioChapters')
+export const getSyncData=id=>transact('readonly',store=>store.get(id),'syncData')
+export const saveSyncData=value=>transact('readwrite',store=>store.put(value),'syncData')
 export const getTranslation = id => transact('readonly',store=>store.get(id),'translations')
 export const saveTranslation = value => transact('readwrite',store=>store.put(value),'translations')
 export const removeTranslation = id => transact('readwrite',store=>store.delete(id),'translations')

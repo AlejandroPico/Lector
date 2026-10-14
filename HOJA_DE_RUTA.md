@@ -1,6 +1,6 @@
 # Ampliaciones acordadas y versiones propuestas
 
-Base actual: versión 1.6.0. Esta hoja recoge la selección del autor del 13 de octubre de 2026. El autor autorizó 1.2 y 1.3 en orden, con publicación y comprobación independiente. 1.6 y 1.7 autorizadas en orden, con comprobaciones y publicaciones independientes.
+Base actual: versión 1.7.0. Esta hoja recoge la selección del autor del 13 de octubre de 2026. El autor autorizó 1.2 y 1.3 en orden, con publicación y comprobación independiente. 1.6 y 1.7 autorizadas en orden, con comprobaciones y publicaciones independientes.
 
 ## Reglas comunes
 
@@ -82,4 +82,9 @@ Si un bloque excede una entrega razonable, se subdividirá antes de comenzar y s
 - 1.5 completada: reparto persistente, correcciones precisas, seis perfiles, propuestas locales y análisis de fragmentos confirmado con revisión; 64 pruebas unitarias y 100 casos de navegador. La exportación utiliza las voces asignadas. No implementa clonación ni identificación automática garantizada de personajes.
 
 - 1.6: emisión explícita de audio con servicio local, receptor propio web y adaptador Google Cast estándar/personalizado. Texto opcional por fragmentos temporizados. Registro del receptor propio y prueba física en dispositivos pendientes de sus requisitos externos; Matter Casting no integrado.
-`n- Verificación local de 1.6: 69 pruebas unitarias y 104 de navegador, compilación de ambas páginas y favicon raíz. Receptor LAN probado con WAV real, pausa, búsqueda temporal y revocación; adaptador Cast comprobado con SDK simulado.
+- Verificación local de 1.6: 69 pruebas unitarias y 104 de navegador, compilación de ambas páginas y favicon raíz. Receptor LAN probado con WAV real, pausa, búsqueda temporal y revocación; adaptador Cast comprobado con SDK simulado.
+
+- 1.6 publicada y verificada en main: comprobación GitHub 38506125938, Pages 38506126075, reproducción real desde producción con pausa, búsqueda temporal, revocación y cero errores de aplicación.
+- 1.7: sincronización manual de posiciones, notas y preferencias; OneDrive con carpeta de aplicación/PKCE y credenciales de sesión, WebDAV con ETag, revisión de posiciones y marcas de eliminación. Requiere registro Microsoft propio para activar una cuenta real.
+
+- Comprobaciones locales de 1.7: 81 unitarias; 113 casos de navegador completos y, tras reforzar configuración/cancelación, los 11 de sincronización (incluidos 2 nuevos) aprobados: 115 casos distintos. Compilación de lector, receptor y callback, con favicon raíz. Microsoft/Google SDK comprobados con respuestas controladas; no se usaron cuentas de pago.

@@ -1,5 +1,9 @@
 # Lector
 
+## Versión 1.7
+
+**Ajustes → Datos → Sincronizar dispositivos**: revisión y confirmación voluntarias de posiciones, notas/subrayados y preferencias. OneDrive con acceso de sesión a la carpeta de aplicación; alternativa WebDAV con ETag para evitar sobrescribir cambios concurrentes. Los libros no se suben y las posiciones se vinculan al mismo archivo por su contenido. OneDrive requiere completar el registro Microsoft del proyecto. Consulta la [guía de sincronización](SINCRONIZACION.md).
+
 ## Versión 1.6
 
 **Ajustes → Dispositivos → Emitir lectura**: capítulos guardados o archivo de audio, receptor web propio, Google Cast de audio y configuración de receptor Cast personalizado. Texto por fragmentos temporizados opcional, controles de reproducción y enlaces que caducan. Requiere iniciar el puente local; el receptor Google con interfaz propia requiere registro. Consulta la [guía de emisión](emision-local/README.md). La apertura del menú no inicia generación ni interrumpe la voz. Matter Casting se reserva para una integración nativa compatible.

@@ -24,6 +24,8 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+        env:
+          VITE_MICROSOFT_CLIENT_ID: ${{ vars.VITE_MICROSOFT_CLIENT_ID }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
