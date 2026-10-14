@@ -1,5 +1,13 @@
 # Historial de versiones
 
+## 1.3.0
+
+- Temporizador configurable y apagado inicialmente; retroceso a una frase anterior, incluso entre capítulos. El audio de API admite retroceso por segundos; el del navegador usa una aproximación por frases.
+- Pronunciaciones literales personales, opcionales y persistentes, con conservación del texto y sus posiciones de resaltado. Las abreviaturas configuradas pueden mantener unida la frase.
+- Tarifa y moneda configurables, reserva de gasto estimado antes de enviar cada fragmento, límite independiente de caracteres y tamaño de respuesta. Contadores locales persistentes, caché de sesión para evitar regeneraciones y distinción de peticiones sin tarifa.
+- Generación deliberada por capítulos con el servicio de voz configurado, cancelación, archivo WAV completo y almacenamiento local opcional. Reproducción y guardado en un destino elegido; no hay descargas automáticas ni exportación ficticia de voces del navegador.
+- Si falta espacio, el capítulo generado queda disponible durante la sesión para guardarlo. La facturación real depende del proveedor; cancelar no garantiza anular un cargo ya iniciado.
+
 ## 1.2.0
 
 - Revisión de PDF desde los ajustes: lectura por coordenadas, columnas automáticas o manuales y omisión opcional de encabezados y pies repetidos.

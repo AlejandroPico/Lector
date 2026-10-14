@@ -31,6 +31,7 @@ import { recentReadingOrder } from './library.js'
 import {addLanguageMenus} from './language-menus.js'
 import {createLanguageTools} from './language-tools.js'
 import {addPDFMenus,createPDFTools} from './pdf-tools.js'
+import {addAudioMenus,createAudioTools} from './audio-tools.js'
 
 const $ = selector => document.querySelector(selector)
 let userFonts = await allFonts().catch(()=>[])
@@ -61,6 +62,7 @@ let projectDictionaries=[],personalProjectDictionaries=[],dictionaryResourcesPro
 let languageTools
 let pdfTools
 let readingFile
+let audioTools
 
 const rangeControl = (key, label, min, max, step, unit = '') => `<label class="field range-field"><span>${label}<output for="${key}" data-output="${key}">${settings[key]}${unit}</output></span><input id="${key}" type="range" data-setting="${key}" min="${min}" max="${max}" step="${step}" value="${settings[key]}" data-unit="${unit}"></label>`
 const check = (key, label) => `<label class="check-field"><input type="checkbox" data-setting="${key}" ${settings[key] ? 'checked' : ''}>${label}</label>`
@@ -242,7 +244,7 @@ $('#app').innerHTML = `
           <div><dt>Autor</dt><dd>Alejandro Pico</dd></div>
           <div><dt>Carácter</dt><dd>Proyecto personal</dd></div>
           <div><dt>Propósito</dt><dd>Lectura y escucha</dd></div>
-          <div><dt>Edición</dt><dd>Versión 1.2</dd></div>
+          <div><dt>Edición</dt><dd>Versión 1.3</dd></div>
         </dl>
       </aside>
       <div class="about-body">
@@ -271,6 +273,7 @@ $('#app').innerHTML = `
 const menuLayout = organizeMenus()
 addLanguageMenus()
 addPDFMenus()
+addAudioMenus(settings)
 initializeI18n($('#app'), settings.uiLanguage)
 $('#speech-language').value = settings.speechLanguage
 
@@ -292,6 +295,7 @@ const coverQueue=new VisibleCoverQueue({load:loadLibraryCover,done:()=>updateLib
 const speech = new SpeechController({
   view, settings: () => settings, getKey: () => apiKey,
   onState(state) {
+    audioTools?.refresh()
     $('#audio-toggle').innerHTML = icon(state === 'playing' ? 'pause' : 'play')
     $('#audio-toggle').classList.toggle('active', ['playing', 'paused', 'loading'].includes(state))
     const label = ({ playing: 'Pausar lectura', paused: 'Continuar lectura', loading: 'Generando audio…', stopped: 'Leer en voz alta' })[state]
@@ -301,6 +305,7 @@ const speech = new SpeechController({
     languageTools?.audioState(state)
   },
   onError: message => { toast(message, 8000); if (settings.provider === 'openai' && !apiKey) togglePanel('voice') },
+  onActivity:()=>audioTools?.refresh(),
   onHighlight(range) {
     narratedRange = range
     languageTools?.follow(range)
@@ -849,6 +854,7 @@ async function openStored(id) {
 async function openFile(file, saved) {
   if (busy) return
   if($('#pdf-dialog').open)$('#pdf-dialog').close()
+  if($('#audio-export-dialog').open)$('#audio-export-dialog').close()
   selection=undefined
   busy = true; const sequence = ++loadSequence
   layoutSequence++;preservingAnchor=false
@@ -1276,8 +1282,9 @@ document.querySelectorAll('[data-setting]').forEach(input => {
     const layout=['readingFlow','font','fontSize','lineHeight','paragraphGap','columns','width','gutter','fullWidth','marginOuter','marginInner','hyphenate','tvMode','tvScale'].includes(input.dataset.setting)
     const origin=layout&&book?(preservingAnchor?record.anchorCFI:anchorCFI()):null,sequence=layout?++layoutSequence:layoutSequence,id=record?.id
     if(layout){speech.stop();preservingAnchor=Boolean(origin)}
-    if (['provider', 'voice', 'rate', 'pitch', 'endpoint', 'model', 'apiVoice', 'instructions'].includes(input.dataset.setting)) speech.stop()
+    if (['provider', 'voice', 'rate', 'pitch', 'endpoint', 'model', 'apiVoice', 'instructions','sleepEnabled','sleepMinutes','pronunciationsEnabled','voicePrice','voicePriceUnit','voiceCurrency','costLimitEnabled','costLimit','characterLimitEnabled','characterLimit','costMargin'].includes(input.dataset.setting)) {speech.stop();audioTools?.cancel()}
     settings[input.dataset.setting] = input.type === 'checkbox' ? input.checked : input.type === 'range' || input.dataset.setting === 'columns' ? Number(input.value) : input.value
+    if(input.dataset.setting==='endpoint'){apiKey='';$('#api-key').value=''}
     if (input.dataset.setting === 'uiLanguage') {
       setUILanguage(settings.uiLanguage)
       renderLibraryFilters();renderLibrary(); syncVoices()
@@ -1286,6 +1293,7 @@ document.querySelectorAll('[data-setting]').forEach(input => {
     if (input.dataset.setting === 'libraryView') renderLibrary()
     if(['preloadCovers','preloadEmbeddedCovers'].includes(input.dataset.setting)){coverQueuePaused=false;coverQueue.cancel();coverQueue.retry()}
     Object.assign(settings, safeSettings(settings)); applySettings()
+    audioTools?.refresh()
     if(origin){await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));if(sequence===layoutSequence&&record?.id===id){await view.goTo(origin);record.anchorCFI=origin;preservingAnchor=false;updateReadingInformation();saveRecord()}}
   })
 })
@@ -1515,6 +1523,7 @@ languageTools=createLanguageTools({getBook:()=>book,getRecord:()=>record,getSele
 pdfTools=createPDFTools({getBook:()=>book,getRecord:()=>record,getIndex:()=>view.renderer?.getContents()[0]?.index,closePanels,
   showOriginal:async number=>showImage(await pdfPageImage(book.pdf,number),`${t('Página')} ${number}`),
   apply:async(pdfText,pdfOptions,index)=>{const saved={...record,pdfText,pdfOptions,cfi:undefined,anchorCFI:undefined,readingStats:{},navigationTrail:undefined};clearTimeout(saveTimer);await saveBook(saved);await openFile(readingFile,saved);if(book?.pdf)await view.goTo(index)}})
+audioTools=createAudioTools({speech,view,getBook:()=>book,getRecord:()=>record,getSettings:()=>settings,saveSettings:applySettings,closePanels,onError:handleError})
 applySettings(); syncVoices(); translateUI()
 updateLibrary().catch(() => toast('El almacenamiento local no está disponible. Puedes abrir un libro, pero no se guardará al cerrar.'))
 $('#file-dialog').showModal()

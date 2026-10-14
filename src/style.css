@@ -444,3 +444,10 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 84%, transparent)
 .pdf-review textarea{width:100%;min-height:30dvh;resize:vertical;font:inherit;line-height:1.6}
 .pdf-toolbar .small{flex-basis:100%}
 #pdf-error:empty{display:none}
+.audio-export-dialog{width:min(740px,calc(100vw - 24px));max-height:90dvh;overflow:auto}
+.pronunciation-form{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.pronunciation-row{display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px solid var(--line)}
+.pronunciation-row span{overflow-wrap:anywhere}
+#audio-text-preview{white-space:pre-wrap;max-height:25dvh;overflow:auto;font:inherit}
+#audio-saved-list audio{width:100%;margin:12px 0}
+#audio-export-error:empty{display:none}

@@ -4,7 +4,7 @@ let connection
 
 async function db() {
   if (!connection) connection = new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 6)
+    const request = indexedDB.open(DB_NAME, 7)
     request.onupgradeneeded = () => {
       if (!request.result.objectStoreNames.contains('books')) request.result.createObjectStore('books', { keyPath: 'id' })
       if (!request.result.objectStoreNames.contains('folders')) request.result.createObjectStore('folders', { keyPath: 'id' })
@@ -15,6 +15,7 @@ async function db() {
       if (!request.result.objectStoreNames.contains('dictionaryChunks')){const chunks=request.result.createObjectStore('dictionaryChunks',{keyPath:'id'});chunks.createIndex('packId','packId')}
       if (!request.result.objectStoreNames.contains('vocabulary')) request.result.createObjectStore('vocabulary',{keyPath:'id'})
       if (!request.result.objectStoreNames.contains('translations')) request.result.createObjectStore('translations',{keyPath:'id'})
+      if (!request.result.objectStoreNames.contains('audioChapters')) request.result.createObjectStore('audioChapters',{keyPath:'id'})
     }
     request.onsuccess = () => {
       request.result.onversionchange = () => { request.result.close(); connection = undefined }
@@ -39,7 +40,10 @@ async function transact(mode, action, storeName = 'books') {
 
 export const getBook = id => transact('readonly', store => store.get(id))
 export const saveBook = book => transact('readwrite', store => store.put(book))
-export const removeBook = async id => {await transact('readwrite', store => store.delete(id));await removeTranslation(id)}
+export const removeBook = async id => {await transact('readwrite', store => store.delete(id));await removeTranslation(id);for(const audio of await allAudioChapters())if(audio.bookId===id)await removeAudioChapter(audio.id)}
+export const allAudioChapters=()=>transact('readonly',store=>store.getAll(),'audioChapters')
+export const saveAudioChapter=value=>transact('readwrite',store=>store.put(value),'audioChapters')
+export const removeAudioChapter=id=>transact('readwrite',store=>store.delete(id),'audioChapters')
 export const getTranslation = id => transact('readonly',store=>store.get(id),'translations')
 export const saveTranslation = value => transact('readwrite',store=>store.put(value),'translations')
 export const removeTranslation = id => transact('readwrite',store=>store.delete(id),'translations')
@@ -124,6 +128,11 @@ export const defaults = Object.freeze({
   endpoint: 'https://api.openai.com/v1/audio/speech',
   model: 'gpt-4o-mini-tts', apiVoice: 'coral',
   instructions: 'Narra el texto íntegro en español de España, con entonación natural y expresiva. Respeta las pausas y no añadas ni omitas palabras.',
+  sleepEnabled:false,sleepMinutes:30,rewindMode:'sentence',rewindSeconds:10,
+  pronunciationsEnabled:false,pronunciations:[],
+  voicePrice:0,voicePriceUnit:'characters',voiceCurrency:'EUR',costMargin:1.25,
+  costLimitEnabled:false,costLimit:5,characterLimitEnabled:false,characterLimit:100000,
+  audioResponseLimitMB:16,audioExportLimitMB:128,
 })
 
 export function effectiveTheme(theme, hour = new Date().getHours()) {
@@ -143,6 +152,11 @@ export function safeSettings(input = {}) {
   clamp('rate', 0.5, 2); clamp('pitch', 0.5, 1.5)
   clamp('marginOuter',0,160); clamp('marginInner',0,100)
   clamp('tvScale',1,2);clamp('visualWpm',80,600);clamp('narrationWpm',80,300)
+  clamp('sleepMinutes',1,240);clamp('rewindSeconds',3,120);clamp('voicePrice',0,1000);clamp('costMargin',1,3);clamp('costLimit',.01,10000);clamp('characterLimit',1,100000000);clamp('audioResponseLimitMB',1,64);clamp('audioExportLimitMB',8,512)
+  if(!['sentence','seconds'].includes(value.rewindMode))value.rewindMode='sentence'
+  if(!['characters','minutes'].includes(value.voicePriceUnit))value.voicePriceUnit='characters'
+  if(!['EUR','USD','GBP'].includes(value.voiceCurrency))value.voiceCurrency='EUR'
+  value.pronunciations=(Array.isArray(value.pronunciations)?value.pronunciations:[]).slice(0,100).filter(rule=>typeof rule?.from==='string'&&rule.from.trim()&&typeof rule?.to==='string'&&rule.to.trim()).map(rule=>({from:rule.from.slice(0,100),to:rule.to.slice(0,200),whole:rule.whole!==false}))
   if(!['paginated','scrolled'].includes(value.readingFlow))value.readingFlow='paginated'
   if(!['reading','audio'].includes(value.estimateMode))value.estimateMode='reading'
   value.customThemes=(Array.isArray(value.customThemes)?value.customThemes:[]).slice(0,30).flatMap(theme=>{try{return [validateTheme(theme,true)]}catch{return []}})

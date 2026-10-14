@@ -1,9 +1,16 @@
 import { selectBrowserVoice } from './presentation.js'
 import { ContinuousFollower } from './reading.js'
-export function splitSentences(text, limit = 1600, language = 'es') {
+import {spokenSegment,AudioBudget,SleepTimer} from './audio-policy.js'
+export function splitSentences(text, limit = 1600, language = 'es',protectedTerms=[]) {
   const segmenter = new Intl.Segmenter(language, { granularity: 'sentence' })
   const segments = []
-  for (const { segment, index } of segmenter.segment(text)) {
+  const sentences=[]
+  for(const item of segmenter.segment(text)){
+    const previous=sentences.at(-1)
+    if(previous&&protectedTerms.some(term=>term&&previous.segment.trimEnd().endsWith(term)))previous.segment+=item.segment
+    else sentences.push({segment:item.segment,index:item.index})
+  }
+  for (const { segment, index } of sentences) {
     let offset = 0
     while (offset < segment.length) {
       let end = Math.min(segment.length, offset + limit)
@@ -21,7 +28,7 @@ export function splitSentences(text, limit = 1600, language = 'es') {
   return segments
 }
 
-export function documentSpeech(doc, language = 'es') {
+export function documentSpeech(doc, language = 'es',protectedTerms=[]) {
   const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT, {
     acceptNode(node) {
       return node.parentElement?.closest('[data-no-speech],script,style,button,nav,[hidden],rt,rp')
@@ -46,7 +53,7 @@ export function documentSpeech(doc, language = 'es') {
     range.setEnd(last.node, Math.min(last.node.length, end - last.start))
     return range
   }
-  return splitSentences(text, 1600, language).map(segment => ({
+  return splitSentences(text, 1600, language,protectedTerms).map(segment => ({
     ...segment, range: rangeFor(segment.start, segment.end),
     wordRange: (charIndex, length) => rangeFor(segment.start + charIndex,
       Math.min(segment.end, segment.start + charIndex + length)),
@@ -108,7 +115,7 @@ export function speechPages(segments, renderer, language) {
     cuts.push(segment.text.length)
     return cuts.slice(0,-1).map((offset,index) => {
       const text = segment.text.slice(offset,cuts[index+1]).trimEnd()
-      return { ...segment,text,range:segment.wordRange(offset,text.length),wordRange:(start,length)=>segment.wordRange(offset+start,length) }
+      return { ...segment,sentenceRange:segment.range,text,range:segment.wordRange(offset,text.length),wordRange:(start,length)=>segment.wordRange(offset+start,length) }
     }).filter(item=>item.text && item.range)
   })
 }
@@ -123,15 +130,19 @@ export function validateEndpoint(value) {
 }
 
 export class SpeechController {
-  constructor({ view, settings, getKey, onState, onError, onHighlight }) {
+  constructor({ view, settings, getKey, onState, onError, onHighlight,onActivity=()=>{} }) {
     Object.assign(this, { view, settings, getKey, onState, onError, onHighlight })
     this.cache = new Map(); this.run = 0; this.state = 'stopped'; this.pending = new Set()
     this.follower=new ContinuousFollower(view,settings)
+    this.onActivity=onActivity;this.history=[]
+    this.budget=new AudioBudget(settings,()=>this.onActivity())
+    this.timer=new SleepTimer(()=>{this.stop();this.onError('El temporizador ha detenido la lectura.')},()=>this.onActivity())
   }
-  setState(state) { this.state = state;this.follower.setState(state); this.onState(state) }
-  stop() {
+  setState(state) { this.state = state;this.follower.setState(state);if(state==='playing'&&this.settings().sleepEnabled)this.timer.arm(this.settings().sleepMinutes);this.onState(state) }
+  stop({keepTimer=false}={}) {
     this.run++; this.abort?.abort(); this.abort = null
     this.follower.stop()
+    if(!keepTimer)this.timer.clear()
     globalThis.speechSynthesis?.cancel()
     this.audio?.pause(); this.audio = null
     for (const finish of this.pending) finish()
@@ -158,7 +169,8 @@ export class SpeechController {
     if (settings.provider === 'openai' && !this.getKey()) {
       this.onError('Introduce tu clave en los ajustes de voz antes de usar el servicio externo.'); return
     }
-    this.stop()
+    const keepTimer=Boolean(this.rewinding);this.stop({keepTimer})
+    if(this.historyBook!==this.view.book){this.historyBook=this.view.book;this.history=[]}
     const run = this.run
     const visible = startRange ?? this.view.lastLocation?.range
     this.setState('playing')
@@ -178,12 +190,14 @@ export class SpeechController {
     try {
       const { doc, index } = this.view.renderer.getContents()[0]
       const settings = this.settings()
-      let segments = speechFrom(documentSpeech(doc,settings.language),visible,exact)
+      let segments = speechFrom(documentSpeech(doc,settings.language,settings.pronunciationsEnabled?settings.pronunciations.map(rule=>rule.from).filter(term=>term.includes('.')):[]),visible,exact)
       if (settings.followSpeech) segments = speechPages(segments,this.view.renderer,settings.language)
       if (!segments.length) { this.stop(); this.onError('Esta sección no contiene texto para narrar.'); return }
       for (let i = 0; i < segments.length; i++) {
         if (run !== this.run) return
         const segment = segments[i]
+        const reference=this.view.getCFI?.(index,segment.sentenceRange??segment.range)
+        if(reference&&this.history.at(-1)?.cfi!==reference){this.history.push({cfi:reference,seconds:segment.text.split(/\s+/).length/(this.settings().narrationWpm||170)*60/this.settings().rate});this.history=this.history.slice(-150);this.onActivity()}
         if (this.settings().followSpeech && !this.view.renderer.scrolled) await this.view.renderer.scrollToAnchor(segment.range,true)
         if (run !== this.run) return
         this.onHighlight(segment.range)
@@ -204,6 +218,7 @@ export class SpeechController {
   speakBrowser(segment, run) {
     return new Promise((resolve, reject) => {
       const settings = this.settings()
+      segment=spokenSegment(segment,settings)
       const utterance = new SpeechSynthesisUtterance(segment.text)
       const startFollowing=()=>{if(segment.range && this.view.renderer?.scrolled && this.settings().followSpeech && run===this.run && this.follower.segment!==segment){this.follower.begin(segment,settings.rate);this.follower.setState(this.state)}}
       utterance.onstart=startFollowing
@@ -232,32 +247,51 @@ export class SpeechController {
       speechSynthesis.speak(utterance)
     })
   }
-  async speakAPI(segment, run) {
-    const settings = this.settings()
+  async rewind(){
+    if(this.audio&&this.settings().rewindMode==='seconds'&&this.audio.currentTime>this.settings().rewindSeconds){this.audio.currentTime-=this.settings().rewindSeconds;return}
+    if(this.historyBook!==this.view.book||!this.history.length)return
+    let position=Math.max(0,this.history.length-2)
+    if(this.settings().rewindMode==='seconds'){let seconds=0;while(position>0&&seconds<this.settings().rewindSeconds){seconds+=this.history[position].seconds;position--}}
+    const target=this.history[position];this.history=this.history.slice(0,position);this.rewinding=true
+    this.stop({keepTimer:true})
+    try{await this.view.goTo(target.cfi);const current=this.view.renderer.getContents()[0],resolved=this.view.resolveNavigation(target.cfi),reading=this.toggle(resolved.anchor?.(current.doc),true);this.rewinding=false;await reading}finally{this.rewinding=false}
+  }
+  cacheKey(text,settings=this.settings()){return JSON.stringify([validateEndpoint(settings.endpoint),settings.model,settings.apiVoice,settings.instructions,text])}
+  async generateAudio(text,{signal,settings={...this.settings()}}={}){
+    if(!text.trim()||text.length>4096)throw new Error('La pronunciación ampliada supera el límite del fragmento. Acorta las reglas.')
+    if(!this.getKey())throw new Error('Introduce tu clave en los ajustes de voz antes de usar el servicio externo.')
     const endpoint = validateEndpoint(settings.endpoint)
-    const cacheKey = JSON.stringify([endpoint, settings.model, settings.apiVoice, settings.instructions, segment.text])
-    let blob = this.cache.get(cacheKey)
-    if (!blob) {
-      this.setState('loading')
-      this.abort = new AbortController()
+    const cacheKey=this.cacheKey(text,settings)
+    if(this.cache.has(cacheKey))return this.cache.get(cacheKey)
+    const request=async()=>{
+      signal?.throwIfAborted();if(this.cache.has(cacheKey))return this.cache.get(cacheKey);this.budget.reserve(text)
       const response = await fetch(endpoint, {
-        method: 'POST', signal: this.abort.signal, redirect: 'error',
+        method: 'POST', signal: AbortSignal.any([...(signal?[signal]:[]),AbortSignal.timeout(120000)]), redirect: 'error',credentials:'omit',referrerPolicy:'no-referrer',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.getKey()}` },
-        body: JSON.stringify({ model: settings.model, voice: settings.apiVoice, input: segment.text,
-          instructions: settings.instructions, response_format: 'mp3' }),
+        body: JSON.stringify({ model: settings.model, voice: settings.apiVoice, input:text,
+          ...(/^tts-1(?:-hd)?$/.test(settings.model)?{}:{instructions:settings.instructions}), response_format: 'mp3' }),
       })
       if (!response.ok) {
         const message = response.status === 401 ? 'La clave de API no es válida.' : response.status === 429
           ? 'El servicio de voz ha alcanzado su límite o no tiene saldo.' : `El servicio de voz respondió con el error ${response.status}.`
         throw new Error(message)
       }
-      blob = await response.blob()
+      const reader=response.body.getReader(),chunks=[],limit=(settings.audioResponseLimitMB||16)*1024*1024;let size=0
+      try{while(true){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>limit)throw new Error('El audio recibido supera el límite de tamaño configurado.');chunks.push(value)}}catch(error){await reader.cancel().catch(()=>{});throw error}
+      const blob=new Blob(chunks,{type:response.headers.get('Content-Type')?.split(';')[0]||''})
       if (!blob.size || !/^audio\//i.test(blob.type)) throw new Error('El servicio no ha devuelto un archivo de audio válido.')
-      if (run !== this.run) return
+      signal?.throwIfAborted()
       // Bounded session cache avoids repeated charges when replaying recent passages.
-      if (this.cache.size >= 80) this.cache.delete(this.cache.keys().next().value)
+      while(this.cache.size&&(this.cache.size>=80||[...this.cache.values()].reduce((sum,item)=>sum+item.size,0)+blob.size>32*1024*1024))this.cache.delete(this.cache.keys().next().value)
       this.cache.set(cacheKey, blob)
+      return blob
     }
+    return navigator.locks?navigator.locks.request('lector-audio-budget',{...(signal?{signal}:{})},request):request()
+  }
+  async speakAPI(segment, run) {
+    const settings=this.settings();segment=spokenSegment(segment,settings)
+    this.setState('loading');this.abort=new AbortController()
+    const blob=await this.generateAudio(segment.text,{signal:this.abort.signal})
     if (run !== this.run) return
     const url = URL.createObjectURL(blob)
     const audio = this.audio = new Audio(url)
