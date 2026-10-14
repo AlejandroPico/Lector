@@ -11,7 +11,7 @@ export default defineConfig({
     target: 'es2022',
     assetsInlineLimit: 0,
     rollupOptions: {
-      input: ['index.html','receptor.html','sincronizacion.html'],
+      input: ['index.html','sincronizacion.html'],
       output: {
         assetFileNames: asset => asset.names?.includes('favicon.svg')
           ? 'favicon.svg' : 'assets/[name]-[hash][extname]',

@@ -132,13 +132,14 @@ export function validateEndpoint(value) {
 }
 
 export class SpeechController {
-  constructor({ view, settings, getKey, onState, onError, onHighlight,onActivity=()=>{},waitForView=()=>Promise.resolve(),getCast=()=>({}) }) {
+  constructor({ view, settings, getKey, onState, onError, onHighlight,onAudio=()=>{},onActivity=()=>{},waitForView=()=>Promise.resolve(),getCast=()=>({}) }) {
     Object.assign(this, { view, settings, getKey, onState, onError, onHighlight })
     this.cache = new Map(); this.run = 0; this.state = 'stopped'; this.pending = new Set()
     this.follower=new ContinuousFollower(view,settings)
     this.onActivity=onActivity;this.history=[]
     this.waitForView=waitForView;this.documents=new WeakMap()
     this.getCast=getCast
+    this.onAudio=onAudio
     view.addEventListener('load',({detail:{doc,index}})=>this.documents.set(doc,index))
     this.budget=new AudioBudget(settings,()=>this.onActivity())
     this.timer=new SleepTimer(()=>{this.stop();this.onError('El temporizador ha detenido la lectura.')},()=>this.onActivity())
@@ -347,7 +348,7 @@ export class SpeechController {
     const url = URL.createObjectURL(blob)
     const audio = this.audio = new Audio(url)
     audio.playbackRate = settings.rate
-    audio.onplaying=()=>{if(segment.range && this.view.renderer?.scrolled && this.settings().followSpeech && run===this.run){if(this.follower.segment!==segment)this.follower.begin(segment,settings.rate,true);this.follower.setState(this.state)}}
+    audio.onplaying=()=>{if(run!==this.run)return;this.onAudio(audio,segment);if(segment.range && this.view.renderer?.scrolled && this.settings().followSpeech){if(this.follower.segment!==segment)this.follower.begin(segment,settings.rate,true);this.follower.setState(this.state)}}
     audio.ontimeupdate=()=>{if(Number.isFinite(audio.duration)&&audio.duration>0)this.follower.progress(audio.currentTime/audio.duration)}
     this.setState('playing')
     try {

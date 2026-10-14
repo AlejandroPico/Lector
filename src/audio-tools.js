@@ -18,7 +18,7 @@ export function addAudioMenus(settings){
  document.querySelector('.voice-actions').insertAdjacentHTML('afterbegin',`<button id="audio-rewind" class="icon-button" disabled aria-label="Retroceder audio" title="Retroceder audio">${icon('undo')}</button>`)
  const dialog=document.createElement('dialog');dialog.id='audio-export-dialog';dialog.className='audio-export-dialog';dialog.innerHTML=`<div class="panel-heading"><h2>Audio por capítulos</h2><button class="icon-button dialog-close" aria-label="Cerrar">${icon('close')}</button></div><label class="field">Capítulo<select id="audio-chapter" data-user-content></select></label><details class="settings-section"><summary>Texto que se enviará</summary><p id="audio-text-preview" data-user-content></p></details><p id="audio-chapter-estimate" class="small muted"></p><p class="small muted">Generar procesa el capítulo con el motor elegido. Las voces del navegador no producen archivos exportables.</p><label class="check-field"><input id="audio-remember" type="checkbox" checked>Guardar audio en este navegador</label><div class="editor-actions"><button id="audio-generate" class="primary-button" disabled>Generar capítulo</button><button id="audio-export-cancel" class="text-button" hidden>Cancelar</button></div><p id="audio-export-progress" role="status" hidden></p><p id="audio-export-error" role="status"></p><div id="audio-saved-list"></div>`;document.querySelector('#app').append(dialog)
 }
-export function createAudioTools({speech,view,getBook,getRecord,getSettings,saveSettings,closePanels,onError}){
+export function createAudioTools({speech,view,mediaControls,getBook,getRecord,getSettings,saveSettings,closePanels,onError}){
  const $=id=>document.getElementById(id),dialog=$('audio-export-dialog');let controller,source,recordID,chapters=[],text='',parts=[],sequence=0,urls=[],transient=[],working=false,audioLimit=30
  const safe=fn=>async(...args)=>{try{await fn(...args)}catch(error){onError(error)}}
  const money=cost=>`${cost.toFixed(4)} ${getSettings().voiceCurrency}`
@@ -38,7 +38,8 @@ export function createAudioTools({speech,view,getBook,getRecord,getSettings,save
  $('audio-reset-usage').onclick=safe(()=>{speech.budget.reset();refresh()})
  const cancel=()=>controller?.abort()
  $('audio-export-cancel').onclick=cancel
- dialog.addEventListener('close',()=>{sequence++;cancel();source=null;text='';parts=[];for(const url of urls)URL.revokeObjectURL(url);urls=[];$('audio-saved-list').replaceChildren()})
+ function clearPlayers(){for(const audio of $('audio-saved-list').querySelectorAll('audio')){audio.pause();mediaControls?.release(audio)}for(const url of urls)URL.revokeObjectURL(url);urls=[];$('audio-saved-list').replaceChildren()}
+ dialog.addEventListener('close',()=>{sequence++;cancel();source=null;text='';parts=[];clearPlayers()})
  async function loadChapter(){
    const job=++sequence,snapshot=source,chapter=chapters[Number($('audio-chapter').value)];text='';parts=[];$('audio-generate').disabled=true;$('audio-text-preview').textContent='';if(!chapter)return
    const sections=[],settings={...getSettings()},cast=safeCast(getRecord().narration)
@@ -56,10 +57,14 @@ export function createAudioTools({speech,view,getBook,getRecord,getSettings,save
    $('audio-generate').disabled=!text||getSettings().provider==='browser';$('audio-export-error').textContent=''
  }
  async function renderSaved(){
-   for(const url of urls)URL.revokeObjectURL(url);urls=[];$('audio-saved-list').replaceChildren()
+   clearPlayers()
    const records=[...(await allAudioChapters()).filter(item=>item.bookId===recordID),...transient.filter(item=>item.bookId===recordID)].sort((a,b)=>b.createdAt-a.createdAt)
    for(const item of records.slice(0,audioLimit)){
      const row=document.createElement('details');row.className='settings-section';const summary=document.createElement('summary');summary.dataset.userContent='';summary.textContent=`${item.label} · ${(item.blob.size/1024/1024).toFixed(1)} MB`;const audio=document.createElement('audio'),url=URL.createObjectURL(item.blob);urls.push(url);audio.controls=true;audio.preload='none';audio.src=url
+     audio.onplaying=()=>{const current=getRecord();mediaControls?.claim(audio,{title:item.bookTitle,artist:item.author??(current?.id===item.bookId?current.author:''),album:item.label,coverBlob:current?.id===item.bookId?current.coverBlob:undefined},{play:()=>audio.play(),pause:()=>audio.pause(),stop:()=>{audio.pause();audio.currentTime=0;mediaControls?.release(audio)},seekbackward:({seekOffset=10})=>{audio.currentTime=Math.max(0,audio.currentTime-seekOffset)},seekforward:({seekOffset=10})=>{if(Number.isFinite(audio.duration))audio.currentTime=Math.min(audio.duration,audio.currentTime+seekOffset)},seekto:({seekTime})=>{if(Number.isFinite(seekTime)&&Number.isFinite(audio.duration))audio.currentTime=Math.max(0,Math.min(audio.duration,seekTime))}});mediaControls?.position(audio,audio)}
+     audio.onpause=()=>mediaControls?.state(audio,'paused')
+     audio.onended=()=>mediaControls?.release(audio)
+     audio.ontimeupdate=()=>mediaControls?.position(audio,audio)
      const save=document.createElement('button');save.className='text-button';save.textContent='Guardar archivo de audio';save.onclick=safe(async()=>{
        const name=`${item.bookTitle} - ${item.label}`.replace(/[<>:"/\\|?*\u0000-\u001f]/g,' ').slice(0,120)+'.wav'
        if(window.showSaveFilePicker){let writable;try{const handle=await window.showSaveFilePicker({suggestedName:name,types:[{description:'WAV',accept:{'audio/wav':['.wav']}}]});writable=await handle.createWritable();await writable.write(item.blob);await writable.close()}catch(error){await writable?.abort().catch(()=>{});if(error.name!=='AbortError')throw error}}

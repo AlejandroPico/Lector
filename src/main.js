@@ -1,6 +1,6 @@
 import {addSyncMenus,createSyncTools,restoreSyncedBook} from './sync-tools.js'
 import {applyPortable} from './sync-core.js'
-import {addCastingMenus,createCastingTools} from './casting-tools.js'
+import {createMediaControls} from './media-session.js'
 import {addNarrationMenus,createNarrationTools} from './narration-tools.js'
 import {addLocalVoiceMenus,createLocalVoiceTools} from './local-voice-tools.js'
 import './style.css'
@@ -251,7 +251,7 @@ $('#app').innerHTML = `
           <div><dt>Autor</dt><dd>Alejandro Pico</dd></div>
           <div><dt>Carácter</dt><dd>Proyecto personal</dd></div>
           <div><dt>Propósito</dt><dd>Lectura y escucha</dd></div>
-          <div><dt>Edición</dt><dd>Versión 1.7</dd></div>
+          <div><dt>Edición</dt><dd>Versión 1.7.1</dd></div>
         </dl>
       </aside>
       <div class="about-body">
@@ -283,7 +283,6 @@ addPDFMenus()
 addAudioMenus(settings)
 addLocalVoiceMenus()
 addNarrationMenus()
-addCastingMenus()
 addSyncMenus()
 initializeI18n($('#app'), settings.uiLanguage)
 $('#speech-language').value = settings.speechLanguage
@@ -303,10 +302,14 @@ const coverQueue=new VisibleCoverQueue({load:loadLibraryCover,done:()=>updateLib
   $('#cover-progress-text').textContent=`${t(state.active?'Cargando portadas…':'Portadas listas')}: ${state.completed}`
   $('#pause-covers').hidden=coverQueuePaused;$('#resume-covers').hidden=!coverQueuePaused
 }})
+try{localStorage.removeItem('lector-casting')}catch{}
+const mediaControls=createMediaControls()
 const speech = new SpeechController({
   view, settings: () => settings, getKey: () => apiKey,
   waitForView:()=>Promise.all([layoutNavigation,pageNavigation]),getCast:()=>record?.narration,
   onState(state) {
+    if(state==='stopped')mediaControls.release('narration')
+    else mediaControls.state('narration',state)
     audioTools?.refresh()
     $('#voice-preview').disabled=state!=='stopped'
     $('#audio-toggle').innerHTML = icon(state === 'playing' ? 'pause' : 'play')
@@ -316,6 +319,14 @@ const speech = new SpeechController({
     $('#audio-toggle').setAttribute('aria-busy', state === 'loading')
     updateReadingInformation()
     languageTools?.audioState(state)
+  },
+  onAudio(audio,segment){
+    if(!segment.range||!record)return
+    mediaControls.claim('narration',{title:record.title,artist:record.author,album:'',coverBlob:record.coverBlob},{
+      play:()=>{if(speech.state==='paused')return speech.toggle()},
+      pause:()=>{if(['playing','loading'].includes(speech.state))return speech.toggle()},
+      stop:()=>speech.stop(),seekbackward:()=>speech.rewind(),
+    })
   },
   onError: message => { toast(message, 8000); if (settings.provider === 'openai' && !apiKey) togglePanel('voice') },
   onActivity:()=>audioTools?.refresh(),
@@ -1552,7 +1563,7 @@ languageTools=createLanguageTools({getBook:()=>book,getRecord:()=>record,getSele
 pdfTools=createPDFTools({getBook:()=>book,getRecord:()=>record,getIndex:()=>view.renderer?.getContents()[0]?.index,closePanels,
   showOriginal:async number=>showImage(await pdfPageImage(book.pdf,number),`${t('Página')} ${number}`),
   apply:async(pdfText,pdfOptions,index)=>{const saved={...record,pdfText,pdfOptions,cfi:undefined,anchorCFI:undefined,readingStats:{},navigationTrail:undefined};clearTimeout(saveTimer);await saveBook(saved);await openFile(readingFile,saved);if(book?.pdf)await view.goTo(index)}})
-audioTools=createAudioTools({speech,view,getBook:()=>book,getRecord:()=>record,getSettings:()=>settings,saveSettings:applySettings,closePanels,onError:handleError})
+audioTools=createAudioTools({speech,view,mediaControls,getBook:()=>book,getRecord:()=>record,getSettings:()=>settings,saveSettings:applySettings,closePanels,onError:handleError})
 applySettings(); syncVoices(); translateUI()
 updateLibrary().catch(() => toast('El almacenamiento local no está disponible. Puedes abrir un libro, pero no se guardará al cerrar.'))
 $('#file-dialog').showModal()
@@ -1560,7 +1571,6 @@ $('#file-dialog').showModal()
 localVoiceTools=createLocalVoiceTools({settings,save:()=>{writeJSON('lector-settings',settings);applySettings()},onError:handleError})
 
 narrationTools=createNarrationTools({view,getRecord:()=>record,getSettings:()=>settings,getSelection:()=>selection,save:saveRecord,closePanels,onError:handleError})
-createCastingTools({closePanels,onError:handleError})
 createSyncTools({getRecord:()=>record,getSettings:()=>settings,saveCurrent:saveRecord,closePanels,onError:handleError,
  applyCurrent:async(data,options)=>{
   if(!record)return

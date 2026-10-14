@@ -1,12 +1,20 @@
 # Lector
 
+## Versión 1.7.1
+
+Retirado el sistema de emisión de 1.6: puente local, receptor, SDK de Cast y configuración de IP. No ofrecía la integración sencilla solicitada.
+
+El audio generado con API o Piper y los capítulos guardados proporcionan título, autor, cubierta y controles reales al panel multimedia del navegador mediante Media Session. Los controles de narración permiten pausar, continuar, detener y retroceder; los capítulos completos también permiten buscar una posición. La aparición del panel depende del navegador. No se generan audios ficticios para activar controles.
+
+**Esto no transmite a dispositivos.** La voz `speechSynthesis` del navegador no entrega un archivo ni un flujo de audio a Lector; la tarjeta Google Network Speech pertenece a la extensión de Chrome. La emisión solicitada sigue pendiente: necesita transporte de audio gestionado y, para una interfaz propia en la televisión, un receptor alojado y registrado. No se exige al lector introducir direcciones IP ni instalar un puente.
+
 ## Versión 1.7
 
 **Ajustes → Datos → Sincronizar dispositivos**: revisión y confirmación voluntarias de posiciones, notas/subrayados y preferencias. OneDrive con acceso de sesión a la carpeta de aplicación; alternativa WebDAV con ETag para evitar sobrescribir cambios concurrentes. Los libros no se suben y las posiciones se vinculan al mismo archivo por su contenido. OneDrive requiere completar el registro Microsoft del proyecto. Consulta la [guía de sincronización](SINCRONIZACION.md).
 
 ## Versión 1.6
 
-**Ajustes → Dispositivos → Emitir lectura**: capítulos guardados o archivo de audio, receptor web propio, Google Cast de audio y configuración de receptor Cast personalizado. Texto por fragmentos temporizados opcional, controles de reproducción y enlaces que caducan. Requiere iniciar el puente local; el receptor Google con interfaz propia requiere registro. Consulta la [guía de emisión](emision-local/README.md). La apertura del menú no inicia generación ni interrumpe la voz. Matter Casting se reserva para una integración nativa compatible.
+Implementación histórica retirada en 1.7.1 a petición del autor. La emisión con selector nativo de dispositivos no se considera completada.
 
 Un lector de libros a toda pantalla, sin cabeceras decorativas ni tarjetas alrededor del texto. Dos columnas por defecto, controles discretos en la esquina superior derecha y un índice lateral que se puede ocultar.
 

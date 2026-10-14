@@ -1,6 +1,6 @@
 # Ampliaciones acordadas y versiones propuestas
 
-Base actual: versión 1.7.0. Esta hoja recoge la selección del autor del 13 de octubre de 2026. El autor autorizó 1.2 y 1.3 en orden, con publicación y comprobación independiente. 1.6 y 1.7 autorizadas en orden, con comprobaciones y publicaciones independientes.
+Base actual: versión 1.7.1. Esta hoja recoge la selección del autor del 13 de octubre de 2026. El autor autorizó 1.2 y 1.3 en orden, con publicación y comprobación independiente. 1.6 y 1.7 autorizadas en orden, con comprobaciones y publicaciones independientes.
 
 ## Reglas comunes
 
@@ -33,7 +33,7 @@ Base actual: versión 1.7.0. Esta hoja recoge la selección del autor del 13 de 
 | 1.3 | Temporizador apagado inicialmente, retroceso de audio, pronunciaciones, estimaciones/límites de coste y exportación deliberada de audio por capítulos. | Sin saltos de contenido, detener costes antes del límite; estimaciones basadas en las tarifas configuradas y exportación solo con motores que generen audio. |
 | 1.4 | Evaluación y primera integración de voz de IA local; adaptadores para otros servicios de voz. | Calidad real, español y demás idiomas disponibles, hardware, licencia y funcionamiento sin nube. Cada proveedor necesita su adaptador, no basta con una URL genérica. |
 | 1.5 | Voces persistentes de personajes, corrección de interlocutores y perfiles de narración. | Consistencia entre capítulos y controles manuales; entonación según las capacidades reales del motor seleccionado. |
-| 1.6 | Emisión de contenido con receptor propio: primero Google Cast; evaluar AirPlay y Alexa por separado. | Audio real accesible al receptor, interfaz propia y prueba en dispositivos. No espejo de pestaña ni promesa de compatibilidad universal. |
+| 1.6 | Emisión: solución inicial retirada en 1.7.1; integración nativa pendiente. | Audio real accesible al receptor, interfaz propia y prueba en dispositivos. No espejo de pestaña ni promesa de compatibilidad universal. |
 | 1.7 | Sincronización voluntaria de posiciones, notas y preferencias entre dispositivos. | Resolver conflictos y elegir destino/cuenta; no subir libros por defecto. Concretar servicio, autenticación y posibles costes antes de integrarlos. |
 | 1.8 | Preparación de funcionamiento sin conexión y copias internas con restauración. | Recursos opcionales con tamaño visible y arranque desconectado. Una copia interna no protege frente a borrar todo el almacenamiento del navegador. |
 | 1.9 | Distribución final: web instalable, Windows, macOS, Linux, Android y iPhone/iPad; integración de carpetas y proveedores según sus capacidades. | Producto validado antes de empaquetar. Firmas, tiendas, arquitectura, cuentas y credenciales se concretan por plataforma. |
@@ -88,3 +88,11 @@ Si un bloque excede una entrega razonable, se subdividirá antes de comenzar y s
 - 1.7: sincronización manual de posiciones, notas y preferencias; OneDrive con carpeta de aplicación/PKCE y credenciales de sesión, WebDAV con ETag, revisión de posiciones y marcas de eliminación. Requiere registro Microsoft propio para activar una cuenta real.
 
 - Comprobaciones locales de 1.7: 81 unitarias; 113 casos de navegador completos y, tras reforzar configuración/cancelación, los 11 de sincronización (incluidos 2 nuevos) aprobados: 115 casos distintos. Compilación de lector, receptor y callback, con favicon raíz. Microsoft/Google SDK comprobados con respuestas controladas; no se usaron cuentas de pago.
+
+## Corrección 1.7.1
+
+La emisión de 1.6 se retira a petición del autor: eliminados puente local, receptor, SDK Cast, menús y configuración persistida. Los puntos históricos anteriores no acreditan emisión nativa ni prueba en dispositivos físicos. La emisión sencilla con selector del navegador sigue pendiente de una arquitectura de transporte adecuada, sin configuración de red para el usuario.
+
+Media Session integra únicamente audio real de API/Piper y capítulos guardados: título, autor, cubierta y controles. No transmite audio ni configura dispositivos. La voz del navegador no entrega un flujo utilizable a la aplicación.
+
+Verificación local de 1.7.1: 81 pruebas unitarias y 114 casos de navegador aprobados. Compilación de lector y callback, favicon raíz y ausencia del receptor anterior. Integración comprobada con audio WAV real y API simulada, sin facturación ni pruebas físicas de emisión.
