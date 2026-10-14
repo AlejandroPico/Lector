@@ -1,5 +1,7 @@
 # Convenciones del proyecto
 
+- 1.8 y 1.9 completadas por separado en main. v1.9.0 publica APK Android/TV firmado, AAB, Windows, macOS Intel/Apple Silicon, Linux y archivo iOS sin firma/simulador tras todas las comprobaciones. Apple/Microsoft y tiendas requieren identidades del titular; no afirmar instalación iOS real ni validación física universal. La clave Android queda fuera de Git/OneDrive y en secretos cifrados de CI; conservarla para actualizaciones. Ver DISTRIBUCION.md.
+
 - El autor autorizó 1.8 (corrección de navegación durante narración) y, tras publicarla y verificarla, 1.9 (PWA, instalables de escritorio, Android/TV, iOS y preparación de tiendas). Cancela el anterior contenido de 1.8 (copias y preparación sin conexión) y aplaza la emisión. La navegación manual suspende solo el seguimiento; un botón temporal devuelve al punto narrado sin cortar la voz ni redimensionar el texto. No publicar en tiendas sin cuentas/firmas propias; ofrecer artefactos descargables de GitHub y distinguir compilados reales de preparación.
 
 - El autor autorizó 1.6 (emisión) y 1.7 (sincronización voluntaria), en ese orden. Publicar y verificar 1.6 antes de iniciar 1.7. Las instalaciones se reservan para las versiones finales; no activar registros de proveedores ni gastos ajenos.

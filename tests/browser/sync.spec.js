@@ -39,7 +39,10 @@ test('a concurrent remote change refuses the write and can be reviewed again',as
 test('data received before opening the ebook is applied by the content hash, leaving its original untouched',async({page})=>{
  await load(page);const original=await page.evaluate(async()=>{const {allBooks}=await import('/src/storage.js');const book=(await allBooks())[0];return{id:book.id,cfi:book.anchorCFI??book.cfi,size:book.file.size}})
  body=JSON.stringify({format:'lector-sync',version:1,books:[{id:original.id,title:'Other title',notes:[{id:'remote-note',kind:'note',cfi:original.cfi,text:'Desde otro dispositivo',color:'pink',updatedAt:100,createdAt:100}],position:{cfi:original.cfi,fraction:0,updatedAt:Date.now()}}]});etag='"remote-data"'
- await page.evaluate(async()=>{const {removeBook}=await import('/src/storage.js');await removeBook((await(await import('/src/storage.js')).allBooks())[0].id)})
+ // Remove the open book through the UI, which also closes its active autosave.
+ // Deleting IndexedDB behind the reader races its pagehide/position save.
+ await page.locator('#index-toggle').click();await page.locator('[data-tab="library"]').click();await page.locator('#library-expand').click();await page.locator('#library-dialog').getByRole('button',{name:'Quitar de la biblioteca',exact:true}).click()
+ await expect.poll(()=>page.evaluate(async()=>{const {allBooks}=await import('/src/storage.js');return(await allBooks()).length})).toBe(0);await page.locator('#library-dialog-close').click()
  await page.reload();await page.locator('#dismiss-file').click();await configure(page);await sync(page);expect(await page.evaluate(async()=>{const {allBooks}=await import('/src/storage.js');return(await allBooks()).length})).toBe(0)
  await page.locator('#sync-dialog .dialog-close').click();await page.locator('#file-input').setInputFiles({name:'same-book.epub',mimeType:'application/epub+zip',buffer:bookBuffer});await expect(page.locator('#audio-toggle')).toBeEnabled();const restored=await page.evaluate(async()=>{const {allBooks}=await import('/src/storage.js');const book=(await allBooks())[0];return {notes:book.notes,size:book.file.size}});expect(restored.notes[0].text).toBe('Desde otro dispositivo');expect(restored.size).toBe(original.size)
 })

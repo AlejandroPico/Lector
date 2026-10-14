@@ -102,3 +102,9 @@ Verificación local de 1.7.1: 81 pruebas unitarias y 114 casos de navegador apro
 1.8: navegación independiente de la voz y retorno al punto narrado. 1.9: distribución PWA, Windows, macOS, Linux, Android (incluido Android TV/Chromecast con Google TV), iOS/iPadOS y preparación de tiendas. Publicar y verificar cada entrega en main por separado. La retransmisión queda para el futuro; no se registra ni publica en tiendas sin cuentas y firmas propias.
 
 Verificación local de 1.8: 81 pruebas unitarias y 118 casos de navegador aprobados, compilación y favicon raíz. Incluye navegación durante voz del navegador y audio WAV real de API simulada, retorno explícito con voz pausada, lectura continua, móvil e inglés, modo zen y ausencia de cambios de dimensiones. No se realizaron llamadas de pago.
+
+1.8 publicada en main en 59b7c74, comprobación 38517156950 y Pages 38517156986 aprobadas; regresión comprobada con audio WAV real en producción antes de iniciar 1.9.
+
+1.9 completada: PWA y paquetes Windows x64, Linux x64, macOS Intel/Apple Silicon; APK Android/Android TV firmado y AAB; iPhone/iPad compilados para simulador y archivo Xcode sin firma. Descargas públicas en v1.9.0, sumas SHA-256 y guía DISTRIBUCION.md. Las firmas Apple/Microsoft, cuentas, capturas y revisiones físicas de tiendas corresponden al titular y siguen pendientes; no se ha publicado en tiendas ni se implementa Cast.
+
+Comprobación GitHub 38569439089 y distribución 38569438947 aprobadas: 87 unitarias, 118 de navegador y todas las compilaciones. Pages 38569438976 publicada. Windows abre EPUB y detecta voces reales con Node aislado; APK local con firma RSA 4096 verificada, versión 1.9.0, minSDK 26 y entrada Leanback. Producción conserva la navegación manual y el retorno explícito durante WAV real, sin reiniciar audio, modificar dimensiones ni errores. Los adaptadores API se verifican con respuestas controladas, sin facturación. No se afirma prueba en televisores, iPhone o iPad físicos.
