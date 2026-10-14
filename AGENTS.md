@@ -1,5 +1,7 @@
 # Convenciones del proyecto
 
+- Corrección 1.9.1 solicitada para voces Edge: prueba global independiente del reparto, idioma/región de la voz y errores explícitos sin sustitución silenciosa. En el perfil de prueba Edge 155 funcionaron Elvira, Álvaro y Ximena con síntesis real y fragmentos EPUB; no afirmar recuperación comprobada del perfil habitual del autor. No empaquetar ni presentar las voces online de Edge como modelos locales; Azure es una integración distinta, con cuenta/cuota, no añadida en esta corrección. Ver VOCES_MICROSOFT.md.
+
 - 1.8 y 1.9 completadas por separado en main. v1.9.0 publica APK Android/TV firmado, AAB, Windows, macOS Intel/Apple Silicon, Linux y archivo iOS sin firma/simulador tras todas las comprobaciones. Apple/Microsoft y tiendas requieren identidades del titular; no afirmar instalación iOS real ni validación física universal. La clave Android queda fuera de Git/OneDrive y en secretos cifrados de CI; conservarla para actualizaciones. Ver DISTRIBUCION.md.
 
 - El autor autorizó 1.8 (corrección de navegación durante narración) y, tras publicarla y verificarla, 1.9 (PWA, instalables de escritorio, Android/TV, iOS y preparación de tiendas). Cancela el anterior contenido de 1.8 (copias y preparación sin conexión) y aplaza la emisión. La navegación manual suspende solo el seguimiento; un botón temporal devuelve al punto narrado sin cortar la voz ni redimensionar el texto. No publicar en tiendas sin cuentas/firmas propias; ofrecer artefactos descargables de GitHub y distinguir compilados reales de preparación.

@@ -1,4 +1,6 @@
-Lector 1.9 incorpora distribución web instalable, Windows, macOS (Intel y Apple Silicon), Linux, Android/Android TV y proyectos iPhone/iPad compilados.
+Lector 1.9.1 corrige la selección y prueba de voces: la muestra usa la voz elegida y no la asignación guardada para el narrador del libro. Se utiliza el idioma exacto de la voz y se prioriza la región. Las voces no disponibles se identifican y no se reemplazan silenciosamente. Elvira, Álvaro y Ximena se comprobaron con síntesis real en un perfil independiente de Edge; la disponibilidad de cada perfil y servicio sigue dependiendo del navegador.
+
+Incluye distribución web instalable, Windows, macOS (Intel y Apple Silicon), Linux, Android/Android TV y proyectos iPhone/iPad compilados. La guía VOCES_MICROSOFT.md explica las comprobaciones y la vía oficial Azure para otras plataformas; esta corrección no añade Azure ni cuentas de pago.
 
 Android-TV.apk es el instalador firmado para móvil, tableta y Android TV/Chromecast con Google TV. Google-Play.aab es el bundle para preparar Google Play. No transmite a Chromecast ni funciona en LG webOS/Samsung Tizen.
 

@@ -1,6 +1,6 @@
 {
   "applicationId": "io.github.alejandropico.lector",
-  "version": "1.9.0",
+  "version": "1.9.1",
   "name": "Lector",
   "category": "Books / Education",
   "privacyPolicy": "https://alejandropico.github.io/Lector/privacidad.html",
@@ -23,5 +23,15 @@
   "ownAnalytics": false,
   "microphoneRequired": false,
   "purchases": false,
-  "pendingOwnerFields": ["storeAccounts", "publicContact", "ageRating", "publisherIdentity", "storeScreenshots", "privacyDeclarationsReview", "physicalDeviceReview", "appleSigning", "windowsSigning"]
+  "pendingOwnerFields": [
+    "storeAccounts",
+    "publicContact",
+    "ageRating",
+    "publisherIdentity",
+    "storeScreenshots",
+    "privacyDeclarationsReview",
+    "physicalDeviceReview",
+    "appleSigning",
+    "windowsSigning"
+  ]
 }

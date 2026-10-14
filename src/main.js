@@ -255,7 +255,7 @@ $('#app').innerHTML = `
           <div><dt>Autor</dt><dd>Alejandro Pico</dd></div>
           <div><dt>Carácter</dt><dd>Proyecto personal</dd></div>
           <div><dt>Propósito</dt><dd>Lectura y escucha</dd></div>
-          <div><dt>Edición</dt><dd>Versión 1.9</dd></div>
+          <div><dt>Edición</dt><dd>Versión 1.9.1</dd></div>
         </dl>
       </aside>
       <div class="about-body">
@@ -486,6 +486,7 @@ function syncVoices() {
   const language = settings.language.split('-')[0]
   voices.sort((a, b) => (b.lang.startsWith(language) - a.lang.startsWith(language)) || a.name.localeCompare(b.name))
   $('#browser-voices').innerHTML = `<option value="">${t('Automática · idioma del libro')}</option>` + voices.map(voice => `<option value="${escapeHTML(voice.voiceURI)}">${escapeHTML(voice.name)} · ${escapeHTML(voice.lang)}</option>`).join('')
+  if(settings.voice&&!voices.some(voice=>voice.voiceURI===settings.voice))$('#browser-voices').insertAdjacentHTML('beforeend',`<option value="${escapeHTML(settings.voice)}" disabled>${t('Voz guardada no disponible')}</option>`)
   $('#browser-voices').value = settings.voice
   $('#voice-availability').textContent = voices.length ? `${voices.length} ${t('voces disponibles')}. ${t('Las voces de red pueden necesitar conexión.')}` : t('El navegador todavía no ha cargado sus voces. Si no aparecen, prueba otro navegador o revisa las voces instaladas en el sistema.')
 }
@@ -1456,10 +1457,10 @@ $('#voice-preview').onclick = attempt(async () => {
   const sample = { text: 'La tarde caía despacio. Por un momento, todo quedó en silencio.' }
   if (settings.provider !== 'browser') {
     if (settings.provider!=='piper'&&!apiKey) { toast('Introduce una clave de API para probar esta voz.'); return }
-    try { await speech.speakAPI(sample, speech.run) } finally { speech.stop() }
+    try { await speech.speakAPI(sample, speech.run,{preview:true}) } finally { speech.stop() }
   } else {
     if (!globalThis.speechSynthesis) { toast('Este navegador no dispone de lectura en voz alta.'); return }
-    speech.setState('playing'); try { await speech.speakBrowser(sample, speech.run) } finally { speech.stop() }
+    speech.setState('playing'); try { await speech.speakBrowser(sample, speech.run,{preview:true}) } finally { speech.stop() }
   }
 })
 $('#show-cover').onclick = attempt(async () => {

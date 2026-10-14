@@ -52,10 +52,11 @@ export function validateTheme(input, keepId = false) {
 
 export function selectBrowserVoice(voices, uri, language = 'es-ES') {
   const chosen = voices.find(voice => voice.voiceURI === uri)
-  if (chosen) return chosen
+  if (uri) return chosen ?? null
   const languageBase = language.split('-')[0].toLowerCase()
   const candidates = voices.filter(voice => voice.lang.toLowerCase().split('-')[0] === languageBase)
+  const preferred = language.includes('-') ? language : globalThis.navigator?.languages?.find(locale=>locale.toLowerCase().split('-')[0]===languageBase) ?? language
   const rank = voice => (/google|natural|neural|online/i.test(voice.name) ? 20 : 0)
-    + (voice.lang.toLowerCase() === language.toLowerCase() ? 5 : 0) + (voice.default ? 1 : 0)
+    + (voice.lang.toLowerCase() === preferred.toLowerCase() ? 50 : 0) + (voice.default ? 1 : 0)
   return candidates.sort((a, b) => rank(b) - rank(a))[0] ?? voices.find(voice => voice.default) ?? voices[0] ?? null
 }

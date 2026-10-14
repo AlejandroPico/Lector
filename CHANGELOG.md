@@ -1,5 +1,12 @@
 # Historial de versiones
 
+## 1.9.1
+
+- Prueba de voz independiente de las asignaciones del narrador guardadas por libro, tanto para navegador como para API. La narración real conserva el reparto.
+- Idioma exacto de la voz seleccionada y prioridad regional en selección automática.
+- Voz guardada no disponible identificada en el menú; no se cambia silenciosamente por la automática. Errores con nombre de voz, código y contexto del navegador.
+- Diez idiomas y versiones coherentes de web, escritorio, Android e iOS. Guía de Microsoft/Edge y límite de las voces online entre navegadores.
+
 ## 1.9.0
 
 - Manifest e iconos para instalación web; sin caché ni copias automáticas.

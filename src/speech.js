@@ -3,6 +3,7 @@ import { ContinuousFollower } from './reading.js'
 import {spokenSegment,AudioBudget,SleepTimer} from './audio-policy.js'
 import {voiceRequest} from './voice-providers.js'
 import {castSegments,narrationSettings} from './narration.js'
+import {t} from './i18n.js'
 export function splitSentences(text, limit = 1600, language = 'es',protectedTerms=[]) {
   const segmenter = new Intl.Segmenter(language, { granularity: 'sentence' })
   const segments = []
@@ -286,16 +287,20 @@ export class SpeechController {
       if (run === this.run) { this.stop(); this.onError(error.message || 'No se pudo reproducir la voz.') }
     }
   }
-  speakBrowser(segment, run) {
+  speakBrowser(segment, run, {preview=false}={}) {
     return new Promise((resolve, reject) => {
-      const settings = narrationSettings(this.settings(),this.getCast(),segment.characterId)
+      const settings = narrationSettings(this.settings(),preview?{}:this.getCast(),segment.characterId)
       segment=spokenSegment(segment,settings)
       const utterance = new SpeechSynthesisUtterance(segment.text)
       const startFollowing=()=>{if(segment.range && this.view.renderer?.scrolled && this.canFollow() && run===this.run && this.follower.segment!==segment){this.follower.begin(segment,settings.rate);this.follower.setState(this.state)}}
       utterance.onstart=startFollowing
       const voices = speechSynthesis.getVoices()
       utterance.voice = selectBrowserVoice(voices, settings.voice, settings.language)
-      utterance.lang = settings.language; utterance.rate = settings.rate; utterance.pitch = settings.pitch
+      if(settings.voice && !voices.some(voice=>voice.voiceURI===settings.voice)) {
+        reject(new Error(t('La voz guardada ya no está disponible en este navegador. Elige otra voz.')));return
+      }
+      // A manually selected voice carries its own locale (including country).
+      utterance.lang = utterance.voice?.lang || settings.language; utterance.rate = settings.rate; utterance.pitch = settings.pitch
       utterance.onboundary = event => {
         if (run !== this.run || event.name !== 'word') return
         if(this.view.renderer?.scrolled&&this.follower.segment!==segment)startFollowing()
@@ -311,7 +316,7 @@ export class SpeechController {
       utterance.onerror = event => {
         this.pending.delete(finish)
         if (event.error === 'interrupted' || event.error === 'canceled' || run !== this.run) resolve()
-        else reject(new Error(`La voz del navegador no pudo continuar (${event.error}). Prueba otra voz.`))
+        else reject(new Error(`${t('No se pudo reproducir la voz seleccionada')}${utterance.voice?.name?`: ${utterance.voice.name}`:''} (${event.error}). ${t('El navegador o su servicio de voz ha rechazado la lectura. Prueba esta voz en «Leer en voz alta» del navegador. No se ha cambiado por otra voz.')}`))
       }
       // Retain the utterance: Chromium can discard its callbacks otherwise.
       this.utterance = utterance
@@ -356,8 +361,8 @@ export class SpeechController {
     }
     return navigator.locks?navigator.locks.request('lector-audio-budget',{...(signal?{signal}:{})},request):request()
   }
-  async speakAPI(segment, run) {
-    const settings=narrationSettings(this.settings(),this.getCast(),segment.characterId);segment=spokenSegment(segment,settings)
+  async speakAPI(segment, run, {preview=false}={}) {
+    const settings=narrationSettings(this.settings(),preview?{}:this.getCast(),segment.characterId);segment=spokenSegment(segment,settings)
     this.setState('loading');this.abort=new AbortController()
     const blob=await this.generateAudio(segment.text,{signal:this.abort.signal,settings})
     if (run !== this.run) return

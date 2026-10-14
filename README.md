@@ -1,5 +1,9 @@
 # Lector
 
+## Corrección 1.9.1 · voces
+
+«Probar voz» respeta la voz elegida, sin aplicar el narrador guardado del libro. La voz utiliza su idioma completo; no se sustituye silenciosamente una voz guardada que ya no esté disponible. Selección automática por región y errores identificados por voz. [Comprobación de Edge y disponibilidad de voces Microsoft en otras plataformas](VOCES_MICROSOFT.md).
+
 ## Versión 1.9
 
 Distribución web instalable y aplicaciones Windows, macOS, Linux, Android/Android TV e iPhone/iPad. [Descargas en GitHub](https://github.com/AlejandroPico/Lector/releases/latest) y [guía de instalación y tiendas](DISTRIBUCION.md). El APK firmado también sirve para Chromecast con Google TV; no implementa transmisión ni funciona en Chromecast clásicos, LG webOS o Samsung Tizen. iOS requiere firma propia de Apple para instalarlo fuera del simulador; Windows/macOS se ofrecen sin certificados comerciales. Las tiendas quedan preparadas, sin publicación ni cuentas ajenas.

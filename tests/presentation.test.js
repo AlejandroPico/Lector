@@ -39,6 +39,12 @@ describe('presentation and localization', () => {
     expect(selectBrowserVoice(voices,'','es').voiceURI).toBe('google')
     expect(selectBrowserVoice(voices,'system','es').voiceURI).toBe('system')
     expect(selectBrowserVoice(voices,'','en-US').voiceURI).toBe('english')
+    expect(selectBrowserVoice(voices,'voice-from-another-browser','es')).toBeNull()
+  })
+  it('prefers the requested country before selecting a natural voice from another region',()=>{
+    const voices=[{voiceURI:'latin',name:'Google español',lang:'es-MX'},{voiceURI:'spain',name:'Microsoft Helena',lang:'es-ES'}]
+    expect(selectBrowserVoice(voices,'','es-ES').voiceURI).toBe('spain')
+    expect(selectBrowserVoice(voices,'latin','es-ES').voiceURI).toBe('latin')
   })
 })
 

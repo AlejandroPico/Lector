@@ -1,4 +1,5 @@
 import {syncRows} from './i18n-sync.js'
+import {browserVoiceRows} from './i18n-browser-voice.js'
 import {platformRows} from './i18n-platform.js'
 import {narrationRows} from './i18n-narration.js'
 import {voiceEngineRows} from './i18n-voice-engines.js'
@@ -211,7 +212,7 @@ Documento|Document|Document|Document|Dokument|Documento|Documento|文档|文書|
 Más formatos|Més formats|More formats|Autres formats|Weitere Formate|Mais formatos|Altri formati|更多格式|その他の形式|और प्रारूप
 Cerrar ayuda|Tancar ajuda|Dismiss help|Fermer l'aide|Hilfe schließen|Fechar ajuda|Chiudi aiuto|关闭帮助|ヒントを閉じる|सहायता बंद करें
 `
-const catalog = new Map((rows.trim() + '\n' + detailRows.trim() + '\n' + releaseRows.trim() + '\n' + customizationRows.trim()+'\n'+readingRows.trim()+'\n'+libraryRows.trim()+'\n'+refreshRows.trim()+'\n'+notesRows.trim()+'\n'+dictionaryRows.trim()+'\n'+menuRows.trim()+'\n'+contextRows.trim()+'\n'+pdfRows.trim()+'\n'+audioRows.trim()+'\n'+voiceEngineRows.trim()+'\n'+narrationRows.trim()+'\n'+syncRows.trim()+'\n'+platformRows.trim()).split('\n').map(line => {
+const catalog = new Map((rows.trim() + '\n' + detailRows.trim() + '\n' + releaseRows.trim() + '\n' + customizationRows.trim()+'\n'+readingRows.trim()+'\n'+libraryRows.trim()+'\n'+refreshRows.trim()+'\n'+notesRows.trim()+'\n'+dictionaryRows.trim()+'\n'+menuRows.trim()+'\n'+contextRows.trim()+'\n'+pdfRows.trim()+'\n'+audioRows.trim()+'\n'+voiceEngineRows.trim()+'\n'+narrationRows.trim()+'\n'+syncRows.trim()+'\n'+platformRows.trim()+'\n'+browserVoiceRows.trim()).split('\n').map(line => {
   const values = line.split('|')
   if (values.length !== order.length) throw new Error(`Incomplete translation: ${values[0]}`)
   return [values[0], values]

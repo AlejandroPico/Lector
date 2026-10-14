@@ -1,5 +1,11 @@
 # Ampliaciones acordadas y versiones propuestas
 
+## Corrección de voces 1.9.1
+
+Solicitada el 15 de octubre de 2026: prueba de voz sin asignaciones del narrador del libro, idioma exacto y prioridad regional, voz guardada no disponible identificada sin sustitución silenciosa, errores por nombre/código y diez idiomas. Se conservan las voces de personajes durante la narración real y la independencia entre visor y audio.
+
+Verificación local: 88 casos unitarios distintos aprobados (la lectura de sumas de diccionarios se repitió aislada tras agotar tiempo con compilación simultánea), 23 casos de navegador relacionados y compilación. Cinco casos nuevos comprueban idioma, prueba global frente al narrador, errores sin sustitución, URI guardada ausente y prueba de API. En Edge 155.0.4283.45, perfil de prueba independiente, Elvira/Álvaro/Ximena terminaron muestras reales y dos fragmentos de EPUB por voz; los eventos de interrupción corresponden a la detención deliberada de la prueba. No se ha reproducido ni resuelto de forma acreditada el fallo del perfil habitual del autor. La guía de Microsoft explica esa distinción, comprobación InPrivate y la vía Azure, sin activar cuentas ni añadir un proveedor no comprobado.
+
 Base actual: versión 1.8.0. Esta hoja recoge la selección del autor del 13 de octubre de 2026. El autor autorizó 1.2 y 1.3 en orden, con publicación y comprobación independiente. 1.6 y 1.7 autorizadas en orden, con comprobaciones y publicaciones independientes.
 
 ## Reglas comunes
