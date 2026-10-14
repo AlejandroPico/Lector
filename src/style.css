@@ -186,6 +186,12 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 84%, transparent)
 .selection-menu button:hover:not(:disabled) { background: var(--hover); }
 .selection-menu button { border:0; min-width:0; }
 #close-selection {grid-column:1 / -1;grid-row:3;border-top:1px solid var(--line);color:var(--muted);}
+.narration-dialog {width:min(620px,calc(100vw - 24px));max-height:calc(100dvh - 24px);overflow:auto;}
+.narration-assignment {display:flex;align-items:flex-start;gap:10px;border-bottom:1px solid var(--line);padding:10px 0;}
+.narration-assignment span {flex:1;min-width:0;overflow-wrap:anywhere;font-size:12px;}
+.narration-proposal {padding:12px 0;border-bottom:1px solid var(--line);}
+.narration-proposal p {font-size:13px;max-height:120px;overflow:auto;}
+.narration-proposal input {width:100%;}
 .primary-button { background: var(--accent); color: var(--paper); padding: 11px 18px; font-size: 12px; }
 .primary-button:hover { filter: brightness(.92); }
 #note-quote { margin: 0 0 24px; padding: 0 0 0 15px; border-left: 1px solid var(--line); font-family: Georgia, serif; font-size: 16px; line-height: 1.65; max-height: 180px; overflow: auto; }

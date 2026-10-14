@@ -2,6 +2,7 @@ import { selectBrowserVoice } from './presentation.js'
 import { ContinuousFollower } from './reading.js'
 import {spokenSegment,AudioBudget,SleepTimer} from './audio-policy.js'
 import {voiceRequest} from './voice-providers.js'
+import {castSegments,narrationSettings} from './narration.js'
 export function splitSentences(text, limit = 1600, language = 'es',protectedTerms=[]) {
   const segmenter = new Intl.Segmenter(language, { granularity: 'sentence' })
   const segments = []
@@ -131,12 +132,13 @@ export function validateEndpoint(value) {
 }
 
 export class SpeechController {
-  constructor({ view, settings, getKey, onState, onError, onHighlight,onActivity=()=>{},waitForView=()=>Promise.resolve() }) {
+  constructor({ view, settings, getKey, onState, onError, onHighlight,onActivity=()=>{},waitForView=()=>Promise.resolve(),getCast=()=>({}) }) {
     Object.assign(this, { view, settings, getKey, onState, onError, onHighlight })
     this.cache = new Map(); this.run = 0; this.state = 'stopped'; this.pending = new Set()
     this.follower=new ContinuousFollower(view,settings)
     this.onActivity=onActivity;this.history=[]
     this.waitForView=waitForView;this.documents=new WeakMap()
+    this.getCast=getCast
     view.addEventListener('load',({detail:{doc,index}})=>this.documents.set(doc,index))
     this.budget=new AudioBudget(settings,()=>this.onActivity())
     this.timer=new SleepTimer(()=>{this.stop();this.onError('El temporizador ha detenido la lectura.')},()=>this.onActivity())
@@ -177,6 +179,7 @@ export class SpeechController {
     if(this.historyBook!==this.view.book){this.historyBook=this.view.book;this.history=[]}
     const run = this.run
     await this.waitForView()
+    await this.view.renderer.whenNavigationIdle?.()
     if(run!==this.run)return
     const visible = startRange ?? this.view.lastLocation?.range
     this.setState('playing')
@@ -212,6 +215,7 @@ export class SpeechController {
     this.restoring=true
     try {
       await this.waitForView()
+      await this.view.renderer.whenNavigationIdle?.()
       if(run!==this.run)return
       const target=this.cursorCFI,resolved=this.view.resolveNavigation(target),current=this.view.renderer.getContents()[0]
       if(current?.index===resolved?.index&&this.documents.get(current.doc)===resolved.index)return
@@ -234,8 +238,11 @@ export class SpeechController {
       if(run!==this.run)return
       const point=origin?this.view.resolveNavigation(origin)?.anchor?.(doc):null
       const settings = this.settings()
-      let segments = speechFrom(documentSpeech(doc,settings.language,settings.pronunciationsEnabled?settings.pronunciations.map(rule=>rule.from).filter(term=>term.includes('.')):[]),point,exact).map(segment=>this.mappedSegment(segment,index))
-      if (settings.followSpeech && ready) segments = speechPages(segments,this.view.renderer,settings.language)
+      const sentences = speechFrom(documentSpeech(doc,settings.language,settings.pronunciationsEnabled?settings.pronunciations.map(rule=>rule.from).filter(term=>term.includes('.')):[]),point,exact)
+      for(const sentence of sentences){
+      let segments=castSegments(sentence,index,this.getCast(),this.view,this.settings().narrationEnabled).map(segment=>this.mappedSegment(segment,index))
+      const active=this.view.renderer.getContents()[0]
+      if(this.settings().followSpeech&&active?.index===index&&this.documents.get(active.doc)===index)segments=speechPages(segments,this.view.renderer,this.settings().language)
       for (let i = 0; i < segments.length; i++) {
         if (run !== this.run) return
         const segment = segments[i]
@@ -249,6 +256,7 @@ export class SpeechController {
         if (this.settings().provider !== 'browser') await this.speakAPI(segment, run)
         else await this.speakBrowser(segment, run)
       }
+      }
       if (run !== this.run) return
       let next = index + 1
       while (this.view.book.sections[next]?.linear === 'no') next++
@@ -261,7 +269,7 @@ export class SpeechController {
   }
   speakBrowser(segment, run) {
     return new Promise((resolve, reject) => {
-      const settings = this.settings()
+      const settings = narrationSettings(this.settings(),this.getCast(),segment.characterId)
       segment=spokenSegment(segment,settings)
       const utterance = new SpeechSynthesisUtterance(segment.text)
       const startFollowing=()=>{if(segment.range && this.view.renderer?.scrolled && this.settings().followSpeech && run===this.run && this.follower.segment!==segment){this.follower.begin(segment,settings.rate);this.follower.setState(this.state)}}
@@ -330,9 +338,9 @@ export class SpeechController {
     return navigator.locks?navigator.locks.request('lector-audio-budget',{...(signal?{signal}:{})},request):request()
   }
   async speakAPI(segment, run) {
-    const settings=this.settings();segment=spokenSegment(segment,settings)
+    const settings=narrationSettings(this.settings(),this.getCast(),segment.characterId);segment=spokenSegment(segment,settings)
     this.setState('loading');this.abort=new AbortController()
-    const blob=await this.generateAudio(segment.text,{signal:this.abort.signal})
+    const blob=await this.generateAudio(segment.text,{signal:this.abort.signal,settings})
     if (run !== this.run) return
     if(this.state==='paused')await new Promise(resolve=>{const finish=()=>{this.pending.delete(finish);this.readyResume=null;resolve()};this.pending.add(finish);this.readyResume=finish})
     if(run!==this.run)return

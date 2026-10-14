@@ -18,6 +18,7 @@ guardRendererRender(Paginator)
 // or disappear while the native page animation holds its lock.
 export function serializeRendererNavigation(Renderer) {
   const queues=new WeakMap()
+  Renderer.prototype.whenNavigationIdle=function(){return queues.get(this)??Promise.resolve()}
   for(const method of ['goTo','next','prev']) {
     const original=Renderer.prototype[method]
     if(!original)continue

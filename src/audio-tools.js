@@ -4,7 +4,8 @@ import {pronunciationRules,pronounce,audioEstimate,waveHeader,pcmMono} from './a
 import {readableParagraphs} from './context-core.js'
 import {sanitizeBookHTML} from './books.js'
 import {allAudioChapters,saveAudioChapter,removeAudioChapter} from './storage.js'
-import {splitSentences} from './speech.js'
+import {documentSpeech} from './speech.js'
+import {safeCast,castSegments,narrationSettings} from './narration.js'
 export function addAudioMenus(settings){
  const body=document.querySelector('#voice-panel .shared-settings')
  const check=(key,label)=>`<label class="check-field"><input type="checkbox" data-setting="${key}" ${settings[key]?'checked':''}>${label}</label>`
@@ -40,15 +41,18 @@ export function createAudioTools({speech,view,getBook,getRecord,getSettings,save
  dialog.addEventListener('close',()=>{sequence++;cancel();source=null;text='';parts=[];for(const url of urls)URL.revokeObjectURL(url);urls=[];$('audio-saved-list').replaceChildren()})
  async function loadChapter(){
    const job=++sequence,snapshot=source,chapter=chapters[Number($('audio-chapter').value)];text='';parts=[];$('audio-generate').disabled=true;$('audio-text-preview').textContent='';if(!chapter)return
-   const sections=[]
+   const sections=[],settings={...getSettings()},cast=safeCast(getRecord().narration)
    for(let index=chapter.start;index<chapter.end;index++){
      if(snapshot.sections[index].linear==='no')continue
      const section=snapshot.sections[index],doc=section.createDocument?await section.createDocument():new DOMParser().parseFromString(sanitizeBookHTML(await(await fetch(await section.load())).text()),'text/html')
      sections.push(readableParagraphs(doc).map(part=>part.text).join('\n\n'))
+     for(const sentence of documentSpeech(doc,settings.language,settings.pronunciationsEnabled?settings.pronunciations.map(rule=>rule.from).filter(term=>term.includes('.')):[])){
+       for(const segment of castSegments(sentence,index,cast,view,settings.narrationEnabled))parts.push({text:pronounce(segment.text,settings.pronunciations,settings.pronunciationsEnabled).text,characterId:segment.characterId})
+     }
      if(job!==sequence||source!==snapshot)return
    }
-   text=sections.join('\n\n').trim();parts=splitSentences(text,1600,getSettings().language,getSettings().pronunciationsEnabled?getSettings().pronunciations.map(rule=>rule.from).filter(term=>term.includes('.')):[]).map(segment=>pronounce(segment.text,getSettings().pronunciations,getSettings().pronunciationsEnabled).text)
-   const actual=parts.join(' '),estimate=audioEstimate(actual,getSettings());$('audio-text-preview').textContent=actual.slice(0,3000)+(actual.length>3000?'…':'');$('audio-chapter-estimate').textContent=`${estimate.characters} ${t('caracteres')} · ${Math.ceil(estimate.minutes)} ${t('min')} · ${getSettings().provider==='piper'?t('Sin coste de API'):getSettings().voicePrice>0?money(estimate.cost):t('Tarifa sin configurar')}`
+   text=sections.join('\n\n').trim()
+   const actual=parts.map(part=>part.text).join(' '),estimate=audioEstimate(actual,getSettings());$('audio-text-preview').textContent=actual.slice(0,3000)+(actual.length>3000?'…':'');$('audio-chapter-estimate').textContent=`${estimate.characters} ${t('caracteres')} · ${Math.ceil(estimate.minutes)} ${t('min')} · ${getSettings().provider==='piper'?t('Sin coste de API'):getSettings().voicePrice>0?money(estimate.cost):t('Tarifa sin configurar')}`
    $('audio-generate').disabled=!text||getSettings().provider==='browser';$('audio-export-error').textContent=''
  }
  async function renderSaved(){
@@ -76,7 +80,7 @@ export function createAudioTools({speech,view,getBook,getRecord,getSettings,save
  $('audio-chapter').onchange=safe(loadChapter)
  $('audio-generate').onclick=async()=>{
    if(working||!parts.length)return
-   const snapshot=source,id=recordID,chapter=chapters[Number($('audio-chapter').value)],settings={...getSettings()},segments=[...parts],bookTitle=getRecord().title,remember=$('audio-remember').checked
+   const snapshot=source,id=recordID,chapter=chapters[Number($('audio-chapter').value)],settings={...getSettings()},cast=safeCast(getRecord().narration),segments=[...parts],bookTitle=getRecord().title,remember=$('audio-remember').checked
    if(settings.provider==='browser')return
    working=true;const abort=controller=new AbortController();$('audio-export-error').textContent='';$('audio-export-progress').hidden=false;$('audio-export-cancel').hidden=false;$('audio-generate').disabled=true;$('audio-chapter').disabled=true
    let decoder
@@ -85,7 +89,8 @@ export function createAudioTools({speech,view,getBook,getRecord,getSettings,save
      for(const [index,segment]of segments.entries()){
        abort.signal.throwIfAborted();if(getBook()!==snapshot)throw new DOMException('Canceled','AbortError')
        $('audio-export-progress').textContent=`${t('Generando audio…')} ${index+1} / ${segments.length}`
-       const blob=await speech.generateAudio(segment,{signal:abort.signal,settings});const decoded=await decoder.decodeAudioData(await blob.arrayBuffer());abort.signal.throwIfAborted()
+       const voiceSettings=narrationSettings(settings,cast,segment.characterId)
+       const blob=await speech.generateAudio(segment.text,{signal:abort.signal,settings:voiceSettings});const decoded=await decoder.decodeAudioData(await blob.arrayBuffer());abort.signal.throwIfAborted()
        const pcm=pcmMono(decoded);samples+=pcm.byteLength/2;if(44+samples*2>settings.audioExportLimitMB*1024*1024)throw new Error(t('El capítulo supera el límite de tamaño configurado.'));chunks.push(pcm)
      }
      abort.signal.throwIfAborted();const blob=new Blob([waveHeader(samples),...chunks],{type:'audio/wav'}),item={id:crypto.randomUUID(),bookId:id,bookTitle,label:chapter.label,blob,createdAt:Date.now(),voice:settings.apiVoice,model:settings.model}

@@ -22,3 +22,5 @@
 
 - El autor autorizó 1.4 y 1.5: publicar y comprobar 1.4 antes de iniciar 1.5. La voz debe continuar al modificar la vista o navegar; separar su documento y posición del visor. El menú seleccionado incluye cierre explícito, seis acciones en dos filas y no inicia lectura al descartarse.
 - Las voces locales son opcionales y no reservan presupuesto de nube. No descargar ni iniciar motores por abrir menús; mostrar dependencias y licencias reales. Las credenciales de todos los servicios externos son de sesión.
+
+- 1.4 publicada y verificada antes de iniciar 1.5 (57 pruebas unitarias, 93 de navegador, Piper real en CPU y en la web publicada). 1.5 conserva reparto y correcciones por libro mediante anclas; no editar texto original ni detener voz al modificar el reparto. Los análisis proponen interlocutores, requieren revisión y usan solo el fragmento confirmado de hasta 3000 caracteres; nunca inferir género ni enviar un libro completo automáticamente.

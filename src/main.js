@@ -1,3 +1,4 @@
+import {addNarrationMenus,createNarrationTools} from './narration-tools.js'
 import {addLocalVoiceMenus,createLocalVoiceTools} from './local-voice-tools.js'
 import './style.css'
 import '@fontsource/atkinson-hyperlegible/400.css'
@@ -48,7 +49,7 @@ setUILanguage(settings.uiLanguage)
 let book, record, selection, apiKey = '', busy = false, saveTimer, loadSequence = 0, searchSequence = 0
 let storageWarning = false, focusBeforePanel
 let folderSources = [], localBooks = [], libraryLimit = 60, folderScan, libraryCoverURLs = []
-let zenHintTimer, narratedRange, themeDraft, localVoiceTools
+let zenHintTimer, narratedRange, themeDraft, localVoiceTools, narrationTools
 let openingCoverURL
 let navigationTrail=new NavigationTrail(),preservingAnchor=false,wheelTurning=false
 let layoutSequence=0
@@ -199,7 +200,7 @@ $('#app').innerHTML = `
       <label class="field">Voz<input data-setting="apiVoice" spellcheck="false" list="api-voices"></label>
       <datalist id="api-voices">${['alloy', 'ash', 'ballad', 'coral', 'echo', 'fable', 'nova', 'onyx', 'sage', 'shimmer', 'verse', 'marin', 'cedar'].map(value => `<option value="${value}"></option>`).join('')}</datalist>
       <label class="field">Indicaciones de narración<textarea data-setting="instructions" rows="3"></textarea></label>
-      <p class="small muted">Esta versión usa una voz por lectura. El reparto automático de personajes queda para una versión posterior. El resaltado de API sigue la frase, sin sincronización palabra a palabra.</p>
+      <p class="small muted">Configura el reparto en Personajes y narración. El resaltado de API sigue la frase, sin sincronización palabra a palabra.</p>
     </div>
     ${rangeControl('rate', 'Velocidad', 0.5, 2, 0.05, ' ×')}${check('highlight', 'Resaltar el texto narrado')}
     <label class="field">Resaltado<select data-setting="highlightMode"><option value="word">Palabra</option><option value="sentence">Frase</option></select></label>
@@ -247,7 +248,7 @@ $('#app').innerHTML = `
           <div><dt>Autor</dt><dd>Alejandro Pico</dd></div>
           <div><dt>Carácter</dt><dd>Proyecto personal</dd></div>
           <div><dt>Propósito</dt><dd>Lectura y escucha</dd></div>
-          <div><dt>Edición</dt><dd>Versión 1.4</dd></div>
+          <div><dt>Edición</dt><dd>Versión 1.5</dd></div>
         </dl>
       </aside>
       <div class="about-body">
@@ -278,6 +279,7 @@ addLanguageMenus()
 addPDFMenus()
 addAudioMenus(settings)
 addLocalVoiceMenus()
+addNarrationMenus()
 initializeI18n($('#app'), settings.uiLanguage)
 $('#speech-language').value = settings.speechLanguage
 
@@ -298,7 +300,7 @@ const coverQueue=new VisibleCoverQueue({load:loadLibraryCover,done:()=>updateLib
 }})
 const speech = new SpeechController({
   view, settings: () => settings, getKey: () => apiKey,
-  waitForView:()=>Promise.all([layoutNavigation,pageNavigation]),
+  waitForView:()=>Promise.all([layoutNavigation,pageNavigation]),getCast:()=>record?.narration,
   onState(state) {
     audioTools?.refresh()
     $('#voice-preview').disabled=state!=='stopped'
@@ -870,7 +872,7 @@ async function openFile(file, saved) {
   selection=undefined
   busy = true; const sequence = ++loadSequence
   layoutSequence++;preservingAnchor=false
-  $('#file-error').hidden = true; closePanels(); speech.stop();clearOpeningCover();$('#audio-toggle').disabled=true
+  $('#file-error').hidden = true; closePanels(); narrationTools?.close();dismissSelection(); speech.stop();clearOpeningCover();$('#audio-toggle').disabled=true
   $('#loading').hidden = false; $('#loading-text').textContent = 'Abriendo libro…'
   let imported
   try {
@@ -882,7 +884,7 @@ async function openFile(file, saved) {
     const title = saved?.catalogTitle || metadataText(imported.metadata?.title) || file.name
     const nextRecord = { id, title, filename: file.name, file: saved?.fileHandle ? undefined : $('#remember-file').checked ? file : undefined,
       fileHandle: saved?.fileHandle, folderId: saved?.folderId, entryKey: saved?.entryKey, catalogTitle: saved?.catalogTitle, author: saved?.author ?? metadataText(imported.metadata?.author), coverBlob: saved?.coverBlob,
-      notes: saved?.notes ?? [], pdfText:saved?.pdfText,pdfOptions:saved?.pdfOptions,cfi: saved?.cfi,anchorCFI:saved?.anchorCFI,readingStats:saved?.readingStats??{},navigationTrail:saved?.navigationTrail,
+      notes: saved?.notes ?? [], narration:saved?.narration, pdfText:saved?.pdfText,pdfOptions:saved?.pdfOptions,cfi: saved?.cfi,anchorCFI:saved?.anchorCFI,readingStats:saved?.readingStats??{},navigationTrail:saved?.navigationTrail,
       coverSeen:saved?.coverSeen??Boolean(saved?.cfi), lastReadAt:Date.now(), fraction: Number.isFinite(saved?.fraction) ? saved.fraction : 0, updatedAt: Date.now() }
     clearTimeout(saveTimer)
     view.close(); book?.destroy?.(); book = null; record = null
@@ -965,7 +967,7 @@ view.addEventListener('load', ({ detail: { doc, index } }) => {
       const selected = doc.defaultView.getSelection()
       if (!selected?.rangeCount || !selected.toString().trim()) return
       const range = selected.getRangeAt(0).cloneRange()
-      selection = { quote: selected.toString().trim(), cfi: view.getCFI(index, range), range,index }
+      selection = { bookId:record?.id, quote: selected.toString().trim(), cfi: view.getCFI(index, range), range,index }
       showSelectionMenu(range, doc)
     }, 0)
   })
@@ -1314,6 +1316,7 @@ document.querySelectorAll('[data-setting]').forEach(input => {
     if(['preloadCovers','preloadEmbeddedCovers'].includes(input.dataset.setting)){coverQueuePaused=false;coverQueue.cancel();coverQueue.retry()}
     Object.assign(settings, safeSettings(settings)); applySettings()
     audioTools?.refresh()
+    if(['sleepEnabled','sleepMinutes'].includes(input.dataset.setting)){speech.timer.clear();if(settings.sleepEnabled&&speech.state!=='stopped')speech.timer.arm(settings.sleepMinutes)}
     if(origin){await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));if(sequence===layoutSequence&&record?.id===id){layoutNavigation=view.goTo(origin);await layoutNavigation;if(sequence!==layoutSequence||record?.id!==id)return;record.anchorCFI=origin;preservingAnchor=false;updateReadingInformation();saveRecord()}}
   })
 })
@@ -1547,3 +1550,5 @@ updateLibrary().catch(() => toast('El almacenamiento local no está disponible. 
 $('#file-dialog').showModal()
 
 localVoiceTools=createLocalVoiceTools({settings,save:()=>{writeJSON('lector-settings',settings);applySettings()},onError:handleError})
+
+narrationTools=createNarrationTools({view,getRecord:()=>record,getSettings:()=>settings,getSelection:()=>selection,save:saveRecord,closePanels,onError:handleError})

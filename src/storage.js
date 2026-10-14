@@ -1,3 +1,4 @@
+import {narrationProfiles} from './narration.js'
 import { fonts, themes, validateTheme } from './presentation.js'
 const DB_NAME = 'lector-zen'
 let connection
@@ -130,6 +131,7 @@ export const defaults = Object.freeze({
   elevenEndpoint:'https://api.elevenlabs.io/v1/text-to-speech',elevenModel:'eleven_multilingual_v2',elevenVoice:'',elevenStability:.5,
   model: 'gpt-4o-mini-tts', apiVoice: 'coral',
   instructions: 'Narra el texto íntegro en español de España, con entonación natural y expresiva. Respeta las pausas y no añadas ni omitas palabras.',
+  narrationEnabled:false,narrationProfile:'neutral',narrationPrompt:'',
   sleepEnabled:false,sleepMinutes:30,rewindMode:'sentence',rewindSeconds:10,
   pronunciationsEnabled:false,pronunciations:[],
   voicePrice:0,voicePriceUnit:'characters',voiceCurrency:'EUR',costMargin:1.25,
@@ -148,6 +150,8 @@ export function safeSettings(input = {}) {
     const number = Number(value[key])
     value[key] = Math.min(max, Math.max(min, Number.isFinite(number) ? number : defaults[key]))
   }
+  if(!narrationProfiles.some(item=>item.id===value.narrationProfile))value.narrationProfile='neutral'
+  value.narrationPrompt=String(value.narrationPrompt??'').slice(0,1000)
   clamp('localSpeaker',0,999);value.localSpeaker=Math.round(value.localSpeaker);clamp('localNoise',0,2);clamp('localWidth',0,2);clamp('elevenStability',0,1)
   clamp('fontSize', 14, 36); clamp('lineHeight', 1.2, 2.4)
   clamp('paragraphGap', 0, 2); clamp('columns', 1, 3); value.columns = Math.round(value.columns)
