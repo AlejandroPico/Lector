@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="es">
+<head>
+ <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+ <meta name="referrer" content="no-referrer">
+ <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https: http:; media-src 'self' https: http:; img-src 'self' data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'">
+ <title>Lector · receptor</title><link rel="icon" href="./favicon.svg" type="image/svg+xml">
+</head>
+<body><main>
+ <header><span>Lector</span><button id="fullscreen" aria-label="Pantalla completa">⛶</button></header>
+ <section aria-live="polite"><h1 id="title"></h1><p id="chapter"></p><p id="author"></p><p id="passage"></p></section>
+ <footer><p id="status" role="status"></p><audio id="audio" controls preload="metadata"></audio><div id="cast-progress" hidden><progress id="progress" max="1" value="0"></progress><span id="time"></span></div></footer>
+ </main><script type="module" src="/src/receiver.js"></script></body>
+</html>

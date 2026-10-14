@@ -1,6 +1,6 @@
 # Ampliaciones acordadas y versiones propuestas
 
-Base actual: versión 1.3.0. Esta hoja recoge la selección del autor del 13 de octubre de 2026. El autor autorizó 1.2 y 1.3 en orden, con publicación y comprobación independiente. Las versiones posteriores requieren autorización.
+Base actual: versión 1.6.0. Esta hoja recoge la selección del autor del 13 de octubre de 2026. El autor autorizó 1.2 y 1.3 en orden, con publicación y comprobación independiente. 1.6 y 1.7 autorizadas en orden, con comprobaciones y publicaciones independientes.
 
 ## Reglas comunes
 
@@ -79,4 +79,7 @@ Si un bloque excede una entrega razonable, se subdividirá antes de comenzar y s
 - Orden acordado para próximas entregas: emisión con receptor propio antes de los instalables; sincronización voluntaria, preparación sin conexión y distribución final para escritorio y móviles se mantienen pendientes. No se ha implementado emisión ni sincronización en 1.4.
 
 - 1.4 completada y comprobada en main antes de iniciar 1.5: Piper local, adaptador ElevenLabs, voz independiente del visor y menú de selección con cierre. 57 unitarias, 93 pruebas de navegador y generación real Piper en la web publicada.
-- 1.5: reparto persistente, correcciones precisas, seis perfiles, propuestas locales y análisis de fragmentos confirmado con revisión; 64 pruebas unitarias y 100 casos de navegador. La exportación utiliza las voces asignadas. No implementa clonación ni identificación automática garantizada de personajes.
+- 1.5 completada: reparto persistente, correcciones precisas, seis perfiles, propuestas locales y análisis de fragmentos confirmado con revisión; 64 pruebas unitarias y 100 casos de navegador. La exportación utiliza las voces asignadas. No implementa clonación ni identificación automática garantizada de personajes.
+
+- 1.6: emisión explícita de audio con servicio local, receptor propio web y adaptador Google Cast estándar/personalizado. Texto opcional por fragmentos temporizados. Registro del receptor propio y prueba física en dispositivos pendientes de sus requisitos externos; Matter Casting no integrado.
+`n- Verificación local de 1.6: 69 pruebas unitarias y 104 de navegador, compilación de ambas páginas y favicon raíz. Receptor LAN probado con WAV real, pausa, búsqueda temporal y revocación; adaptador Cast comprobado con SDK simulado.

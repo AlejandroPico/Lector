@@ -1,5 +1,9 @@
 # Lector
 
+## Versión 1.6
+
+**Ajustes → Dispositivos → Emitir lectura**: capítulos guardados o archivo de audio, receptor web propio, Google Cast de audio y configuración de receptor Cast personalizado. Texto por fragmentos temporizados opcional, controles de reproducción y enlaces que caducan. Requiere iniciar el puente local; el receptor Google con interfaz propia requiere registro. Consulta la [guía de emisión](emision-local/README.md). La apertura del menú no inicia generación ni interrumpe la voz. Matter Casting se reserva para una integración nativa compatible.
+
 Un lector de libros a toda pantalla, sin cabeceras decorativas ni tarjetas alrededor del texto. Dos columnas por defecto, controles discretos en la esquina superior derecha y un índice lateral que se puede ocultar.
 
 ## Versión 1.1
@@ -46,7 +50,7 @@ La fuente es colaborativa, de cobertura variable y con posibles errores de extra
 
 La carpeta raíz [diccionarios](diccionarios/README.md) documenta las fuentes, transformaciones y licencia CC BY-SA 4.0. Detecta paquetes y JSON propios al desarrollar/compilar; los archivos personales también se pueden importar desde la interfaz, hasta 64 MB y un millón de palabras. Se admite un objeto simple palabra→definición o una cabecera con idioma, nombre y `entries`. Los JSON antiguos guardados en localStorage siguen disponibles, mientras que las nuevas importaciones se guardan por bloques en IndexedDB.
 
-«Guardar palabra» añade la definición consultada al vocabulario personal, junto con procedencia y ubicación del libro cuando corresponde. Allí puedes buscar, añadir una nota y marcar «Aprendida». Quitar un diccionario conserva las palabras guardadas. Nada se descarga en la carpeta Descargas para instalar o guardar vocabulario. Las consultas funcionan sin red con la aplicación abierta y el paquete instalado; el arranque completamente desconectado de la aplicación queda para 1.6.
+«Guardar palabra» añade la definición consultada al vocabulario personal, junto con procedencia y ubicación del libro cuando corresponde. Allí puedes buscar, añadir una nota y marcar «Aprendida». Quitar un diccionario conserva las palabras guardadas. Nada se descarga en la carpeta Descargas para instalar o guardar vocabulario. Las consultas funcionan sin red con la aplicación abierta y el paquete instalado; el arranque completamente desconectado de la aplicación queda para 1.8.
 
 ## Notas de la versión 0.9
 

@@ -1,5 +1,8 @@
 # Convenciones del proyecto
 
+- El autor autorizó 1.6 (emisión) y 1.7 (sincronización voluntaria), en ese orden. Publicar y verificar 1.6 antes de iniciar 1.7. Las instalaciones se reservan para las versiones finales; no activar registros de proveedores ni gastos ajenos.
+- La emisión comparte únicamente el audio seleccionado y texto opcional. Los enlaces son temporales y revocables; no persistir tokens ni exponer el repositorio desde el puente local. Abrir o cerrar sus ajustes no interrumpe la narración.
+
 - Trabajar directamente en `main` y subir allí los cambios autorizados. No crear ramas, pull requests ni hilos o agentes secundarios salvo petición explícita del usuario.
 - Mantener `favicon.svg` en la raíz del repositorio y en la raíz del resultado compilado. La pestaña del navegador y «Acerca de» deben utilizar ese mismo icono.
 - Basar «Acerca de» en la estructura de Nucleidos: icono, presentación, ficha del proyecto, principios y enlaces al portfolio de Alejandro Pico y al código del proyecto. Adaptar el contenido a Lector y conservar su estética minimalista.

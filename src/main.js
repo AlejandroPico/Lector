@@ -1,3 +1,4 @@
+import {addCastingMenus,createCastingTools} from './casting-tools.js'
 import {addNarrationMenus,createNarrationTools} from './narration-tools.js'
 import {addLocalVoiceMenus,createLocalVoiceTools} from './local-voice-tools.js'
 import './style.css'
@@ -248,7 +249,7 @@ $('#app').innerHTML = `
           <div><dt>Autor</dt><dd>Alejandro Pico</dd></div>
           <div><dt>Carácter</dt><dd>Proyecto personal</dd></div>
           <div><dt>Propósito</dt><dd>Lectura y escucha</dd></div>
-          <div><dt>Edición</dt><dd>Versión 1.5</dd></div>
+          <div><dt>Edición</dt><dd>Versión 1.6</dd></div>
         </dl>
       </aside>
       <div class="about-body">
@@ -280,6 +281,7 @@ addPDFMenus()
 addAudioMenus(settings)
 addLocalVoiceMenus()
 addNarrationMenus()
+addCastingMenus()
 initializeI18n($('#app'), settings.uiLanguage)
 $('#speech-language').value = settings.speechLanguage
 
@@ -1552,3 +1554,4 @@ $('#file-dialog').showModal()
 localVoiceTools=createLocalVoiceTools({settings,save:()=>{writeJSON('lector-settings',settings);applySettings()},onError:handleError})
 
 narrationTools=createNarrationTools({view,getRecord:()=>record,getSettings:()=>settings,getSelection:()=>selection,save:saveRecord,closePanels,onError:handleError})
+createCastingTools({closePanels,onError:handleError})
