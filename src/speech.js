@@ -131,11 +131,13 @@ export function validateEndpoint(value) {
 }
 
 export class SpeechController {
-  constructor({ view, settings, getKey, onState, onError, onHighlight,onActivity=()=>{} }) {
+  constructor({ view, settings, getKey, onState, onError, onHighlight,onActivity=()=>{},waitForView=()=>Promise.resolve() }) {
     Object.assign(this, { view, settings, getKey, onState, onError, onHighlight })
     this.cache = new Map(); this.run = 0; this.state = 'stopped'; this.pending = new Set()
     this.follower=new ContinuousFollower(view,settings)
     this.onActivity=onActivity;this.history=[]
+    this.waitForView=waitForView;this.documents=new WeakMap()
+    view.addEventListener('load',({detail:{doc,index}})=>this.documents.set(doc,index))
     this.budget=new AudioBudget(settings,()=>this.onActivity())
     this.timer=new SleepTimer(()=>{this.stop();this.onError('El temporizador ha detenido la lectura.')},()=>this.onActivity())
   }
@@ -174,6 +176,8 @@ export class SpeechController {
     const keepTimer=Boolean(this.rewinding);this.stop({keepTimer})
     if(this.historyBook!==this.view.book){this.historyBook=this.view.book;this.history=[]}
     const run = this.run
+    await this.waitForView()
+    if(run!==this.run)return
     const visible = startRange ?? this.view.lastLocation?.range
     this.setState('playing')
     await this.readSection(run, visible, exact)
@@ -196,7 +200,7 @@ export class SpeechController {
       const cfi = this.view.getCFI(index, range)
       if(cursor)this.cursorCFI = cfi
       const current = this.view.renderer.getContents()[0]
-      if (current?.index !== index) return null
+      if (current?.index !== index || this.documents.get(current.doc)!==index) return null
       return this.view.resolveNavigation(cfi)?.anchor?.(current.doc) ?? null
     }
     return {...segment, cfi:this.view.getCFI(index,segment.range),
@@ -205,11 +209,12 @@ export class SpeechController {
   }
   async restoreCursor(run) {
     if (!this.cursorCFI || run !== this.run || !this.settings().followSpeech || this.restoring) return
-    const target=this.cursorCFI
-    const resolved=this.view.resolveNavigation(target),current=this.view.renderer.getContents()[0]
-    if(current?.index===resolved?.index)return
     this.restoring=true
     try {
+      await this.waitForView()
+      if(run!==this.run)return
+      const target=this.cursorCFI,resolved=this.view.resolveNavigation(target),current=this.view.renderer.getContents()[0]
+      if(current?.index===resolved?.index&&this.documents.get(current.doc)===resolved.index)return
       await this.view.goTo(target)
       if(run!==this.run)return
       const active=this.view.renderer.getContents()[0],position=this.view.resolveNavigation(this.cursorCFI)
@@ -222,14 +227,15 @@ export class SpeechController {
       const current = this.view.renderer.getContents()[0]
       const index=sectionIndex??current.index, source=this.view.book.sections[index]
       const origin=visible&&this.view.getCFI(index,visible)
-      const doc = current?.index===index ? current.doc.cloneNode(true)
+      const ready=current?.index===index&&this.documents.get(current.doc)===index
+      const doc = ready ? current.doc.cloneNode(true)
         : source.createDocument ? await source.createDocument()
         : new DOMParser().parseFromString(await(await fetch(await source.load())).text(),'text/html')
       if(run!==this.run)return
       const point=origin?this.view.resolveNavigation(origin)?.anchor?.(doc):null
       const settings = this.settings()
       let segments = speechFrom(documentSpeech(doc,settings.language,settings.pronunciationsEnabled?settings.pronunciations.map(rule=>rule.from).filter(term=>term.includes('.')):[]),point,exact).map(segment=>this.mappedSegment(segment,index))
-      if (settings.followSpeech && current?.index===index) segments = speechPages(segments,this.view.renderer,settings.language)
+      if (settings.followSpeech && ready) segments = speechPages(segments,this.view.renderer,settings.language)
       for (let i = 0; i < segments.length; i++) {
         if (run !== this.run) return
         const segment = segments[i]

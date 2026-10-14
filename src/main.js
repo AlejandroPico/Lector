@@ -298,6 +298,7 @@ const coverQueue=new VisibleCoverQueue({load:loadLibraryCover,done:()=>updateLib
 }})
 const speech = new SpeechController({
   view, settings: () => settings, getKey: () => apiKey,
+  waitForView:()=>Promise.all([layoutNavigation,pageNavigation]),
   onState(state) {
     audioTools?.refresh()
     $('#voice-preview').disabled=state!=='stopped'
@@ -316,7 +317,7 @@ const speech = new SpeechController({
     narratedRange = range
     languageTools?.follow(range)
     if(range && record){record.anchorCFI=anchorCFI(range);if(speech.state==='playing')record.lastReadAt=Date.now();updateReadingInformation();if(performance.now()-lastSpeechSave>3000){lastSpeechSave=performance.now();saveRecord()}}
-    for (const { doc } of view.renderer?.getContents() ?? []) doc.defaultView.CSS?.highlights?.delete('spoken')
+    for (const { doc } of view.renderer?.getContents() ?? []) doc.defaultView?.CSS?.highlights?.delete('spoken')
     if (!range || !settings.highlight) return
     const win = range.startContainer.ownerDocument.defaultView
     if (win.Highlight && win.CSS.highlights) win.CSS.highlights.set('spoken', new win.Highlight(range))

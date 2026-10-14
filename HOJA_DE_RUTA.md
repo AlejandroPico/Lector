@@ -76,6 +76,6 @@ Si un bloque excede una entrega razonable, se subdividirá antes de comenzar y s
 - 1.2 completada: OCR local real, diez modelos bajo demanda, revisión de texto y orden de PDF; 49 comprobaciones unitarias y 78 de navegador. Publicación, OCR real en producción y comprobaciones de GitHub confirmadas antes de finalizar 1.3.
 - 1.3: temporizador, retroceso, pronunciaciones, presupuestos estimados y generación deliberada de capítulos WAV; 54 comprobaciones unitarias y 86 de navegador. Las versiones posteriores siguen pendientes de autorización.
 
-- 1.4: primera voz local Piper, adaptador ElevenLabs, narración independiente del visor y menú de selección con cierre explícito. 56 pruebas unitarias y 92 casos de navegador; evaluación real de síntesis española en Windows CPU. Se publica y se comprueba antes de iniciar 1.5.
+- 1.4: primera voz local Piper, adaptador ElevenLabs, narración independiente del visor y menú de selección con cierre explícito. 57 pruebas unitarias y 93 casos de navegador; evaluación real de síntesis española en Windows CPU. Se publica y se comprueba antes de iniciar 1.5.
 - 1.5 autorizada para después de comprobar la publicación de 1.4.
 - Orden acordado para próximas entregas: emisión con receptor propio antes de los instalables; sincronización voluntaria, preparación sin conexión y distribución final para escritorio y móviles se mantienen pendientes. No se ha implementado emisión ni sincronización en 1.4.

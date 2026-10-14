@@ -12,3 +12,20 @@ export function guardRendererRender(Renderer) {
   }
 }
 guardRendererRender(Paginator)
+
+// The paginator changes its index before the new iframe finishes loading.
+// Serialize navigation so word events and UI commands cannot cross documents
+// or disappear while the native page animation holds its lock.
+export function serializeRendererNavigation(Renderer) {
+  const queues=new WeakMap()
+  for(const method of ['goTo','next','prev']) {
+    const original=Renderer.prototype[method]
+    if(!original)continue
+    Renderer.prototype[method]=function(...args){
+      const task=(queues.get(this)??Promise.resolve()).catch(()=>{}).then(()=>original.apply(this,args))
+      queues.set(this,task)
+      return task
+    }
+  }
+}
+serializeRendererNavigation(Paginator)
