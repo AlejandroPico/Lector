@@ -126,6 +126,8 @@ export const defaults = Object.freeze({
   dictionaryLanguage:'auto',
   voice: '', rate: 1, pitch: 1, language: 'es-ES', speechLanguage: 'auto',
   endpoint: 'https://api.openai.com/v1/audio/speech',
+  localEndpoint:'http://127.0.0.1:5055',localVoice:'es_ES-sharvard-medium',localSpeaker:0,localNoise:.667,localWidth:.8,
+  elevenEndpoint:'https://api.elevenlabs.io/v1/text-to-speech',elevenModel:'eleven_multilingual_v2',elevenVoice:'',elevenStability:.5,
   model: 'gpt-4o-mini-tts', apiVoice: 'coral',
   instructions: 'Narra el texto íntegro en español de España, con entonación natural y expresiva. Respeta las pausas y no añadas ni omitas palabras.',
   sleepEnabled:false,sleepMinutes:30,rewindMode:'sentence',rewindSeconds:10,
@@ -146,6 +148,7 @@ export function safeSettings(input = {}) {
     const number = Number(value[key])
     value[key] = Math.min(max, Math.max(min, Number.isFinite(number) ? number : defaults[key]))
   }
+  clamp('localSpeaker',0,999);value.localSpeaker=Math.round(value.localSpeaker);clamp('localNoise',0,2);clamp('localWidth',0,2);clamp('elevenStability',0,1)
   clamp('fontSize', 14, 36); clamp('lineHeight', 1.2, 2.4)
   clamp('paragraphGap', 0, 2); clamp('columns', 1, 3); value.columns = Math.round(value.columns)
   clamp('width', 640, 3840); clamp('gutter', 1, 12)
@@ -167,7 +170,7 @@ export function safeSettings(input = {}) {
   if (!['auto','es','ca','en','fr','de','pt','it','zh','ja','hi'].includes(value.dictionaryLanguage)) value.dictionaryLanguage='auto'
   if (!['list','covers'].includes(value.libraryView)) value.libraryView = 'list'
   if (!['list','covers'].includes(value.libraryDialogView)) value.libraryDialogView = 'covers'
-  if (!['browser', 'openai'].includes(value.provider)) value.provider = 'browser'
+  if (!['browser', 'openai','piper','elevenlabs'].includes(value.provider)) value.provider = 'browser'
   if (!['word','sentence'].includes(value.highlightMode)) value.highlightMode = 'word'
   return value
 }

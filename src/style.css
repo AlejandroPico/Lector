@@ -181,10 +181,11 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 84%, transparent)
 .loading-line:after { content: ''; width: 35px; height: 1px; background: var(--accent); position: absolute; animation: loading 1.5s ease-in-out infinite; }
 @keyframes loading { from { left: -35px; } to { left: 90px; } }
 .toast { position: fixed; z-index: 120; bottom: 74px; left: 50%; transform: translateX(-50%); max-width: min(640px, calc(100vw - 36px)); background: var(--surface); border: 1px solid var(--line); color: var(--ink); padding: 13px 18px; font-size: 12px; line-height: 1.6; box-shadow: var(--shadow); }
-.selection-menu { display: flex; position: fixed; z-index: 50; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); padding: 3px; }
+.selection-menu { display: grid; grid-template-columns:repeat(3,minmax(0,1fr)); width:min(360px,calc(100vw - 16px)); position: fixed; z-index: 50; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); padding: 3px; }
 .selection-menu button { padding: 9px 11px; font-size: 11px; color: var(--accent); }
 .selection-menu button:hover:not(:disabled) { background: var(--hover); }
-.selection-menu button + button { border-left: 1px solid var(--line); }
+.selection-menu button { border:0; min-width:0; }
+#close-selection {grid-column:1 / -1;grid-row:3;border-top:1px solid var(--line);color:var(--muted);}
 .primary-button { background: var(--accent); color: var(--paper); padding: 11px 18px; font-size: 12px; }
 .primary-button:hover { filter: brightness(.92); }
 #note-quote { margin: 0 0 24px; padding: 0 0 0 15px; border-left: 1px solid var(--line); font-family: Georgia, serif; font-size: 16px; line-height: 1.65; max-height: 180px; overflow: auto; }

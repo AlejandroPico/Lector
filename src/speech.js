@@ -1,6 +1,7 @@
 import { selectBrowserVoice } from './presentation.js'
 import { ContinuousFollower } from './reading.js'
 import {spokenSegment,AudioBudget,SleepTimer} from './audio-policy.js'
+import {voiceRequest} from './voice-providers.js'
 export function splitSentences(text, limit = 1600, language = 'es',protectedTerms=[]) {
   const segmenter = new Intl.Segmenter(language, { granularity: 'sentence' })
   const segments = []
@@ -115,7 +116,7 @@ export function speechPages(segments, renderer, language) {
     cuts.push(segment.text.length)
     return cuts.slice(0,-1).map((offset,index) => {
       const text = segment.text.slice(offset,cuts[index+1]).trimEnd()
-      return { ...segment,sentenceRange:segment.range,text,range:segment.wordRange(offset,text.length),wordRange:(start,length)=>segment.wordRange(offset+start,length) }
+      return { ...segment,sentenceRange:segment.range,text,get range(){return segment.wordRange(offset,text.length)},wordRange:(start,length)=>segment.wordRange(offset+start,length) }
     }).filter(item=>item.text && item.range)
   })
 }
@@ -157,16 +158,17 @@ export class SpeechController {
       this.setState('paused'); return
     }
     if (this.state === 'paused') {
+      this.readyResume?.()
       if (this.audio) await this.audio.play()
       else globalThis.speechSynthesis?.resume()
       this.setState('playing'); return
     }
-    if (this.state === 'loading') return
+    if (this.state === 'loading') {this.setState('paused');return}
     const settings = this.settings()
     if (settings.provider === 'browser' && !globalThis.speechSynthesis) {
       this.onError('Este navegador no dispone de lectura en voz alta.'); return
     }
-    if (settings.provider === 'openai' && !this.getKey()) {
+    if (['openai','elevenlabs'].includes(settings.provider) && !this.getKey()) {
       this.onError('Introduce tu clave en los ajustes de voz antes de usar el servicio externo.'); return
     }
     const keepTimer=Boolean(this.rewinding);this.stop({keepTimer})
@@ -177,7 +179,8 @@ export class SpeechController {
     await this.readSection(run, visible, exact)
   }
   follow(range, run = this.run) {
-    if (!range || run !== this.run || !this.settings().followSpeech) return
+    if (run !== this.run || !this.settings().followSpeech) return
+    if(!range){this.restoreCursor(run).catch(error=>{if(run===this.run)this.onError(error.message)});return}
     if(this.view.renderer?.scrolled){this.follower.word(range);return}
     const visible = this.view.lastLocation?.range
     if (visible && visible.startContainer.ownerDocument === range.startContainer.ownerDocument
@@ -185,31 +188,66 @@ export class SpeechController {
       && range.compareBoundaryPoints(Range.END_TO_END,visible)<=0) return
     this.view.renderer.scrollToAnchor(range,true).catch(error=>{ if (run===this.run) this.onError(error.message) })
   }
-  async readSection(run, visible, exact = false) {
+  // Speech owns its document. The renderer may replace its iframe while the
+  // same utterance is speaking; CFIs resolve into whichever page is visible.
+  mappedSegment(segment, index) {
+    const resolve = (range, cursor=true) => {
+      if (!range) return null
+      const cfi = this.view.getCFI(index, range)
+      if(cursor)this.cursorCFI = cfi
+      const current = this.view.renderer.getContents()[0]
+      if (current?.index !== index) return null
+      return this.view.resolveNavigation(cfi)?.anchor?.(current.doc) ?? null
+    }
+    return {...segment, cfi:this.view.getCFI(index,segment.range),
+      get range(){return resolve(segment.range,false)},
+      wordRange:(start,length)=>resolve(segment.wordRange(start,length))}
+  }
+  async restoreCursor(run) {
+    if (!this.cursorCFI || run !== this.run || !this.settings().followSpeech || this.restoring) return
+    const target=this.cursorCFI
+    const resolved=this.view.resolveNavigation(target),current=this.view.renderer.getContents()[0]
+    if(current?.index===resolved?.index)return
+    this.restoring=true
+    try {
+      await this.view.goTo(target)
+      if(run!==this.run)return
+      const active=this.view.renderer.getContents()[0],position=this.view.resolveNavigation(this.cursorCFI)
+      if(active?.index===position?.index){const range=position.anchor?.(active.doc);this.onHighlight(range);this.follower.word(range)}
+    } finally {this.restoring=false}
+  }
+  async readSection(run, visible, exact = false, sectionIndex) {
     if (run !== this.run) return
     try {
-      const { doc, index } = this.view.renderer.getContents()[0]
+      const current = this.view.renderer.getContents()[0]
+      const index=sectionIndex??current.index, source=this.view.book.sections[index]
+      const origin=visible&&this.view.getCFI(index,visible)
+      const doc = current?.index===index ? current.doc.cloneNode(true)
+        : source.createDocument ? await source.createDocument()
+        : new DOMParser().parseFromString(await(await fetch(await source.load())).text(),'text/html')
+      if(run!==this.run)return
+      const point=origin?this.view.resolveNavigation(origin)?.anchor?.(doc):null
       const settings = this.settings()
-      let segments = speechFrom(documentSpeech(doc,settings.language,settings.pronunciationsEnabled?settings.pronunciations.map(rule=>rule.from).filter(term=>term.includes('.')):[]),visible,exact)
-      if (settings.followSpeech) segments = speechPages(segments,this.view.renderer,settings.language)
-      if (!segments.length) { this.stop(); this.onError('Esta sección no contiene texto para narrar.'); return }
+      let segments = speechFrom(documentSpeech(doc,settings.language,settings.pronunciationsEnabled?settings.pronunciations.map(rule=>rule.from).filter(term=>term.includes('.')):[]),point,exact).map(segment=>this.mappedSegment(segment,index))
+      if (settings.followSpeech && current?.index===index) segments = speechPages(segments,this.view.renderer,settings.language)
       for (let i = 0; i < segments.length; i++) {
         if (run !== this.run) return
         const segment = segments[i]
-        const reference=this.view.getCFI?.(index,segment.sentenceRange??segment.range)
+        const reference=segment.cfi
         if(reference&&this.history.at(-1)?.cfi!==reference){this.history.push({cfi:reference,seconds:segment.text.split(/\s+/).length/(this.settings().narrationWpm||170)*60/this.settings().rate});this.history=this.history.slice(-150);this.onActivity()}
-        if (this.settings().followSpeech && !this.view.renderer.scrolled) await this.view.renderer.scrollToAnchor(segment.range,true)
+        this.cursorCFI=reference
+        await this.restoreCursor(run)
+        if (this.settings().followSpeech && !this.view.renderer.scrolled && segment.range) await this.view.renderer.scrollToAnchor(segment.range,true)
         if (run !== this.run) return
         this.onHighlight(segment.range)
-        if (this.settings().provider === 'openai') await this.speakAPI(segment, run)
+        if (this.settings().provider !== 'browser') await this.speakAPI(segment, run)
         else await this.speakBrowser(segment, run)
       }
       if (run !== this.run) return
       let next = index + 1
       while (this.view.book.sections[next]?.linear === 'no') next++
       if (next < this.view.book.sections.length) {
-        await this.view.goTo(next)
-        await this.readSection(run)
+        await this.readSection(run,undefined,false,next)
       } else this.stop()
     } catch (error) {
       if (run === this.run) { this.stop(); this.onError(error.message || 'No se pudo reproducir la voz.') }
@@ -230,7 +268,7 @@ export class SpeechController {
         if(this.view.renderer?.scrolled&&this.follower.segment!==segment)startFollowing()
         const tail = segment.text.slice(event.charIndex)
         const length = event.charLength || tail.match(/^\S+/)?.[0].length || 1
-        const word = segment.wordRange?.(event.charIndex,length) ?? segment.range
+        const word = segment.wordRange ? segment.wordRange(event.charIndex,length) : segment.range
         this.follow(word,run)
         this.onHighlight(this.settings().highlightMode==='sentence' ? segment.range : word)
       }
@@ -256,20 +294,17 @@ export class SpeechController {
     this.stop({keepTimer:true})
     try{await this.view.goTo(target.cfi);const current=this.view.renderer.getContents()[0],resolved=this.view.resolveNavigation(target.cfi),reading=this.toggle(resolved.anchor?.(current.doc),true);this.rewinding=false;await reading}finally{this.rewinding=false}
   }
-  cacheKey(text,settings=this.settings()){return JSON.stringify([validateEndpoint(settings.endpoint),settings.model,settings.apiVoice,settings.instructions,text])}
+  cacheKey(text,settings=this.settings()){const request=voiceRequest(text,settings,'cache');return JSON.stringify([settings.provider,request.url,request.body])}
   async generateAudio(text,{signal,settings={...this.settings()}}={}){
     if(!text.trim()||text.length>4096)throw new Error('La pronunciación ampliada supera el límite del fragmento. Acorta las reglas.')
-    if(!this.getKey())throw new Error('Introduce tu clave en los ajustes de voz antes de usar el servicio externo.')
-    const endpoint = validateEndpoint(settings.endpoint)
+    const requestData=voiceRequest(text,settings,this.getKey())
     const cacheKey=this.cacheKey(text,settings)
     if(this.cache.has(cacheKey))return this.cache.get(cacheKey)
     const request=async()=>{
-      signal?.throwIfAborted();if(this.cache.has(cacheKey))return this.cache.get(cacheKey);this.budget.reserve(text)
-      const response = await fetch(endpoint, {
+      signal?.throwIfAborted();if(this.cache.has(cacheKey))return this.cache.get(cacheKey);if(settings.provider!=='piper')this.budget.reserve(text)
+      const response = await fetch(requestData.url, {
         method: 'POST', signal: AbortSignal.any([...(signal?[signal]:[]),AbortSignal.timeout(120000)]), redirect: 'error',credentials:'omit',referrerPolicy:'no-referrer',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.getKey()}` },
-        body: JSON.stringify({ model: settings.model, voice: settings.apiVoice, input:text,
-          ...(/^tts-1(?:-hd)?$/.test(settings.model)?{}:{instructions:settings.instructions}), response_format: 'mp3' }),
+        headers: requestData.headers,body:JSON.stringify(requestData.body),
       })
       if (!response.ok) {
         const message = response.status === 401 ? 'La clave de API no es válida.' : response.status === 429
@@ -293,6 +328,8 @@ export class SpeechController {
     this.setState('loading');this.abort=new AbortController()
     const blob=await this.generateAudio(segment.text,{signal:this.abort.signal})
     if (run !== this.run) return
+    if(this.state==='paused')await new Promise(resolve=>{const finish=()=>{this.pending.delete(finish);this.readyResume=null;resolve()};this.pending.add(finish);this.readyResume=finish})
+    if(run!==this.run)return
     const url = URL.createObjectURL(blob)
     const audio = this.audio = new Audio(url)
     audio.playbackRate = settings.rate

@@ -1,3 +1,4 @@
+import {addLocalVoiceMenus,createLocalVoiceTools} from './local-voice-tools.js'
 import './style.css'
 import '@fontsource/atkinson-hyperlegible/400.css'
 import '@fontsource/atkinson-hyperlegible/700.css'
@@ -47,10 +48,11 @@ setUILanguage(settings.uiLanguage)
 let book, record, selection, apiKey = '', busy = false, saveTimer, loadSequence = 0, searchSequence = 0
 let storageWarning = false, focusBeforePanel
 let folderSources = [], localBooks = [], libraryLimit = 60, folderScan, libraryCoverURLs = []
-let zenHintTimer, narratedRange, themeDraft
+let zenHintTimer, narratedRange, themeDraft, localVoiceTools
 let openingCoverURL
 let navigationTrail=new NavigationTrail(),preservingAnchor=false,wheelTurning=false
 let layoutSequence=0
+let layoutNavigation=Promise.resolve()
 let chapterStarts=[]
 const metricsCache=new WeakMap()
 let catalogRecords=[],collections=[],catalogItems=[],duplicateClusters=[],duplicateIDs=new Set(),duplicateFocus,organizingItem,metadataBatch
@@ -205,7 +207,7 @@ $('#app').innerHTML = `
     <p class="small muted">En lectura vertical, sin marcas de palabra el seguimiento es aproximado. El audio externo usa el progreso de reproducción.</p>
     <div class="voice-actions"><button id="voice-preview" class="text-button">${icon('play')}Probar voz</button><button id="audio-stop" class="text-button">${icon('stop')}Detener</button></div>
   </aside>
-  <div id="selection-menu" class="selection-menu" role="toolbar" aria-label="Texto seleccionado" hidden><button id="define-selection">Consultar</button><button id="annotate-selection">Anotar</button><button id="highlight-selection">Subrayar</button><button id="copy-selection">Copiar cita</button><button id="speak-selection">Leer desde aquí</button></div>
+  <div id="selection-menu" class="selection-menu" role="toolbar" aria-label="Texto seleccionado" hidden><button id="define-selection">Consultar</button><button id="annotate-selection">Anotar</button><button id="highlight-selection">Subrayar</button><button id="copy-selection">Copiar cita</button><button id="speak-selection">Leer desde aquí</button><button id="close-selection" aria-label="Cerrar selección">Cerrar</button></div>
   <dialog id="file-dialog" class="file-dialog" aria-label="Abrir documento">
     <form method="dialog" class="dialog-dismiss">${iconButton('dismiss-file', 'close', 'Cerrar selector')}</form>
     <button id="choose-file" class="choose-file">${icon('open')}<span>Abrir un libro</span></button>
@@ -244,7 +246,7 @@ $('#app').innerHTML = `
           <div><dt>Autor</dt><dd>Alejandro Pico</dd></div>
           <div><dt>Carácter</dt><dd>Proyecto personal</dd></div>
           <div><dt>Propósito</dt><dd>Lectura y escucha</dd></div>
-          <div><dt>Edición</dt><dd>Versión 1.3</dd></div>
+          <div><dt>Edición</dt><dd>Versión 1.4</dd></div>
         </dl>
       </aside>
       <div class="about-body">
@@ -274,6 +276,7 @@ const menuLayout = organizeMenus()
 addLanguageMenus()
 addPDFMenus()
 addAudioMenus(settings)
+addLocalVoiceMenus()
 initializeI18n($('#app'), settings.uiLanguage)
 $('#speech-language').value = settings.speechLanguage
 
@@ -296,6 +299,7 @@ const speech = new SpeechController({
   view, settings: () => settings, getKey: () => apiKey,
   onState(state) {
     audioTools?.refresh()
+    $('#voice-preview').disabled=state!=='stopped'
     $('#audio-toggle').innerHTML = icon(state === 'playing' ? 'pause' : 'play')
     $('#audio-toggle').classList.toggle('active', ['playing', 'paused', 'loading'].includes(state))
     const label = ({ playing: 'Pausar lectura', paused: 'Continuar lectura', loading: 'Generando audio…', stopped: 'Leer en voz alta' })[state]
@@ -307,6 +311,7 @@ const speech = new SpeechController({
   onError: message => { toast(message, 8000); if (settings.provider === 'openai' && !apiKey) togglePanel('voice') },
   onActivity:()=>audioTools?.refresh(),
   onHighlight(range) {
+    if(range&&!view.renderer?.getContents().some(({doc})=>doc===range.startContainer.ownerDocument&&doc.defaultView))range=null
     narratedRange = range
     languageTools?.follow(range)
     if(range && record){record.anchorCFI=anchorCFI(range);if(speech.state==='playing')record.lastReadAt=Date.now();updateReadingInformation();if(performance.now()-lastSpeechSave>3000){lastSpeechSave=performance.now();saveRecord()}}
@@ -384,6 +389,7 @@ function applySettings() {
   document.querySelectorAll('button[data-theme]').forEach(button => button.setAttribute('aria-pressed', button.dataset.theme === settings.theme))
   $('#api-voice-settings').hidden = settings.provider !== 'openai'
   $('#browser-voice-settings').hidden = settings.provider !== 'browser'
+  localVoiceTools?.refresh()
   speech.onHighlight(narratedRange)
   document.querySelector('[data-setting="columns"]').disabled=settings.readingFlow==='scrolled'
   gamepad.update();updateHistoryControls();updateReadingInformation()
@@ -424,7 +430,7 @@ async function preserveLayout(change) {
   if(!origin||busy||speech.state==='playing'){change();return}
   const sequence=++layoutSequence;preservingAnchor=true;change()
   await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))
-  if(sequence===layoutSequence&&record?.id===id){await view.goTo(origin);record.anchorCFI=origin;preservingAnchor=false;updateReadingInformation();saveRecord()}
+  if(sequence===layoutSequence&&record?.id===id){layoutNavigation=view.goTo(origin);await layoutNavigation;if(sequence!==layoutSequence||record?.id!==id)return;record.anchorCFI=origin;preservingAnchor=false;updateReadingInformation();saveRecord()}
 }
 function setZen(active) {
   document.body.classList.toggle('zen', active)
@@ -503,7 +509,8 @@ function updateReadingInformation() {
 async function navigateTo(target,fraction=false) {
   if(!book||busy)return
   layoutSequence++;preservingAnchor=false
-  const origin=anchorCFI();speech.stop();await finishOpeningCover(false)
+  await layoutNavigation.catch(()=>{})
+  const origin=anchorCFI();await finishOpeningCover(false)
   if(fraction)await view.goToFraction(target);else await view.goTo(target)
   const destination=anchorCFI();navigationTrail.visit(origin,destination)
   record.navigationTrail=navigationTrail.snapshot();record.anchorCFI=destination;saveRecord();updateHistoryControls();updateReadingInformation()
@@ -513,7 +520,8 @@ async function navigateHistory(direction) {
   const target=direction<0?navigationTrail.back(anchorCFI()):navigationTrail.forward(anchorCFI())
   if(!target)return
   layoutSequence++;preservingAnchor=false
-  speech.stop();await finishOpeningCover(false);await view.goTo(target)
+  await layoutNavigation.catch(()=>{})
+  await finishOpeningCover(false);await view.goTo(target)
   record.anchorCFI=target;record.navigationTrail=navigationTrail.snapshot();saveRecord();updateHistoryControls();updateReadingInformation()
 }
 $('#history-back').onclick=attempt(()=>navigateHistory(-1))
@@ -946,8 +954,8 @@ view.addEventListener('load', ({ detail: { doc, index } }) => {
   doc.querySelectorAll('[data-no-speech]').forEach(el => { if (!el.querySelector('button')) el.textContent = t(el.textContent.trim()) })
   doc.querySelectorAll('.pdf-original').forEach(button => button.textContent = t('Ver página original'))
   doc.addEventListener('keydown', onKey)
-  let press
-  doc.addEventListener('pointerdown', event => { press={x:event.clientX,y:event.clientY}; closePanels(); $('#selection-menu').hidden = true })
+  let press, dismissClick=false
+  doc.addEventListener('pointerdown', event => { press={x:event.clientX,y:event.clientY}; dismissClick=!$('#selection-menu').hidden; closePanels(); if(dismissClick)dismissSelection() })
   doc.addEventListener('pointerup', () => {
     setTimeout(() => {
       const selected = doc.defaultView.getSelection()
@@ -958,6 +966,7 @@ view.addEventListener('load', ({ detail: { doc, index } }) => {
     }, 0)
   })
   doc.addEventListener('click', attempt(async event => {
+    if(dismissClick){dismissClick=false;event.preventDefault();return}
     const image = event.target.closest('img,svg')
     if (image) {
       event.preventDefault()
@@ -1011,12 +1020,17 @@ view.addEventListener('show-annotation', ({ detail }) => {
   if (note) openNoteEditor(record,note)
 })
 
+function dismissSelection() {
+  $('#selection-menu').hidden=true;selection=null
+  for(const {doc} of view.renderer?.getContents()??[])doc.defaultView?.getSelection()?.removeAllRanges()
+}
+$('#close-selection').onclick=dismissSelection
 function showSelectionMenu(range, doc) {
   const rect = range.getBoundingClientRect(), frame = doc.defaultView.frameElement.getBoundingClientRect()
   const menu = $('#selection-menu'); menu.hidden = false
   const width = menu.getBoundingClientRect().width
   menu.style.left = `${Math.max(8, Math.min(innerWidth - width - 8, frame.left + rect.left + rect.width / 2 - width / 2))}px`
-  menu.style.top = `${Math.max(56, Math.min(innerHeight - 70, frame.top + rect.top - 44))}px`
+  menu.style.top = `${Math.max(56, Math.min(innerHeight - menu.offsetHeight - 8, frame.top + rect.top - menu.offsetHeight - 8))}px`
   $('#define-selection').disabled = selection.quote.split(/\s+/).length > 1
 }
 
@@ -1216,8 +1230,9 @@ $('#opening-cover-zoom').onclick=()=>{if(openingCoverURL) showImage(openingCover
 async function changePage(direction) {
   if (!book || busy || document.querySelector('dialog[open]')) return
   layoutSequence++;preservingAnchor=false
+  await layoutNavigation.catch(()=>{})
   if(!$('#opening-cover').hidden) {if(direction>0) await finishOpeningCover();return}
-  speech.stop(); $('#selection-menu').hidden = true
+  dismissSelection()
   await (direction > 0 ? view.next() : view.prev())
 }
 
@@ -1229,7 +1244,7 @@ function onKey(event) {
   if(event.altKey&&['ArrowLeft','ArrowRight'].includes(event.key)){event.preventDefault();attempt(()=>navigateHistory(event.key==='ArrowLeft'?-1:1))();return}
   if(settings.tvMode && ['Backspace','BrowserBack'].includes(event.key)&&!target.closest?.('input,textarea')){event.preventDefault();const dialog=target.closest?.('dialog[open]')??document.querySelector('dialog:modal');if(dialog)dialog.close();else if(document.querySelector('.panel:not([hidden])'))closePanels();else attempt(()=>navigateHistory(-1))();return}
   if (event.key === 'Escape') {
-    closePanels(); $('#selection-menu').hidden = true
+    closePanels(); dismissSelection()
     if (document.body.classList.contains('zen')) setZen(false)
     if(settings.tvMode)$('#preferences-toggle').focus({preventScroll:true})
     return
@@ -1281,10 +1296,10 @@ document.querySelectorAll('[data-setting]').forEach(input => {
   input.addEventListener(['range', 'checkbox'].includes(input.type) || input.tagName === 'SELECT' ? 'input' : 'change', async () => {
     const layout=['readingFlow','font','fontSize','lineHeight','paragraphGap','columns','width','gutter','fullWidth','marginOuter','marginInner','hyphenate','tvMode','tvScale'].includes(input.dataset.setting)
     const origin=layout&&book?(preservingAnchor?record.anchorCFI:anchorCFI()):null,sequence=layout?++layoutSequence:layoutSequence,id=record?.id
-    if(layout){speech.stop();preservingAnchor=Boolean(origin)}
-    if (['provider', 'voice', 'rate', 'pitch', 'endpoint', 'model', 'apiVoice', 'instructions','sleepEnabled','sleepMinutes','pronunciationsEnabled','voicePrice','voicePriceUnit','voiceCurrency','costLimitEnabled','costLimit','characterLimitEnabled','characterLimit','costMargin'].includes(input.dataset.setting)) {speech.stop();audioTools?.cancel()}
+    if(layout){preservingAnchor=Boolean(origin)}
+    if (['provider', 'voice', 'rate', 'pitch', 'endpoint', 'model', 'apiVoice', 'instructions','sleepEnabled','sleepMinutes','pronunciationsEnabled','voicePrice','voicePriceUnit','voiceCurrency','costLimitEnabled','costLimit','characterLimitEnabled','characterLimit','costMargin'].includes(input.dataset.setting)) {audioTools?.cancel()}
     settings[input.dataset.setting] = input.type === 'checkbox' ? input.checked : input.type === 'range' || input.dataset.setting === 'columns' ? Number(input.value) : input.value
-    if(input.dataset.setting==='endpoint'){apiKey='';$('#api-key').value=''}
+    if(['endpoint','elevenEndpoint','provider'].includes(input.dataset.setting)){apiKey='';$('#api-key').value=''}
     if (input.dataset.setting === 'uiLanguage') {
       setUILanguage(settings.uiLanguage)
       renderLibraryFilters();renderLibrary(); syncVoices()
@@ -1294,10 +1309,10 @@ document.querySelectorAll('[data-setting]').forEach(input => {
     if(['preloadCovers','preloadEmbeddedCovers'].includes(input.dataset.setting)){coverQueuePaused=false;coverQueue.cancel();coverQueue.retry()}
     Object.assign(settings, safeSettings(settings)); applySettings()
     audioTools?.refresh()
-    if(origin){await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));if(sequence===layoutSequence&&record?.id===id){await view.goTo(origin);record.anchorCFI=origin;preservingAnchor=false;updateReadingInformation();saveRecord()}}
+    if(origin){await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));if(sequence===layoutSequence&&record?.id===id){layoutNavigation=view.goTo(origin);await layoutNavigation;if(sequence!==layoutSequence||record?.id!==id)return;record.anchorCFI=origin;preservingAnchor=false;updateReadingInformation();saveRecord()}}
   })
 })
-$('#api-key').oninput = event => { speech.stop(); apiKey = event.target.value.trim() }
+$('#api-key').oninput = event => { apiKey = event.target.value.trim() }
 document.querySelectorAll('[data-settings-panel]').forEach(button=>button.onclick=()=>togglePanel(button.dataset.settingsPanel))
 document.querySelectorAll('[data-settings-tab]').forEach(button=>button.onclick=()=>{
   if(button.dataset.settingsTab==='library') {openLibraryDialog();return}
@@ -1388,9 +1403,8 @@ $('#reset-appearance').onclick = () => { for (const key of ['font', 'fontSize', 
 $('#voice-preview').onclick = attempt(async () => {
   speech.stop()
   const sample = { text: 'La tarde caía despacio. Por un momento, todo quedó en silencio.' }
-  if (settings.provider === 'openai') {
-    validateEndpoint(settings.endpoint)
-    if (!apiKey) { toast('Introduce una clave de API para probar esta voz.'); return }
+  if (settings.provider !== 'browser') {
+    if (settings.provider!=='piper'&&!apiKey) { toast('Introduce una clave de API para probar esta voz.'); return }
     try { await speech.speakAPI(sample, speech.run) } finally { speech.stop() }
   } else {
     if (!globalThis.speechSynthesis) { toast('Este navegador no dispone de lectura en voz alta.'); return }
@@ -1470,7 +1484,6 @@ $('#organize-form').onsubmit=attempt(saveOrganization)
 $('#organize-collection-create').onclick=attempt(async()=>{const selected=[...$('#organize-collections').querySelectorAll('input:checked')].map(input=>input.value);const collection=await createCollection($('#organize-collection-name'));renderCollectionChoices([...selected,collection.id]);renderLibraryFilters()})
 $('#library-more').onclick = () => { libraryLimit += 60; renderLibrary() }
 $('#speech-language').onchange = () => {
-  speech.stop()
   settings.speechLanguage = $('#speech-language').value
   settings.language = $('#speech-language').value === 'auto' ? metadataText(book?.metadata?.language) || currentLanguage() : $('#speech-language').value
   syncVoices(); applySettings()
@@ -1527,3 +1540,5 @@ audioTools=createAudioTools({speech,view,getBook:()=>book,getRecord:()=>record,g
 applySettings(); syncVoices(); translateUI()
 updateLibrary().catch(() => toast('El almacenamiento local no está disponible. Puedes abrir un libro, pero no se guardará al cerrar.'))
 $('#file-dialog').showModal()
+
+localVoiceTools=createLocalVoiceTools({settings,save:()=>{writeJSON('lector-settings',settings);applySettings()},onError:handleError})

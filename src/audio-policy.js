@@ -19,7 +19,7 @@ export function pronounce(text,rules=[],enabled=false){
 }
 export function spokenSegment(segment,settings){
   const converted=pronounce(segment.text,settings.pronunciations,settings.pronunciationsEnabled)
-  return {...segment,text:converted.text,wordRange:(index,length)=>segment.wordRange?.(converted.source(index),Math.max(1,converted.source(index+length)-converted.source(index)))??segment.range}
+  return {...segment,text:converted.text,get range(){return segment.range},wordRange:(index,length)=>segment.wordRange?segment.wordRange(converted.source(index),Math.max(1,converted.source(index+length)-converted.source(index))):segment.range}
 }
 export function audioEstimate(text,settings){
   const characters=[...text].length,words=[...new Intl.Segmenter(settings.language||'es',{granularity:'word'}).segment(text)].filter(item=>item.isWordLike).length

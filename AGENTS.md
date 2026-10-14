@@ -19,3 +19,6 @@
 - El autor autorizó 1.2 y 1.3 en orden: comprobar y publicar cada una por separado antes de iniciar la siguiente. Mantener las posteriores pendientes.
 - OCR local, activado expresamente; revisión previa, cancelación y conservación del PDF original. Modelos de idioma bajo demanda desde el propio proyecto. Mantener atribución y licencia de Tesseract y Tessdata.
 - Los límites de voz se reservan antes del envío y son estimados según la tarifa configurada, sin afirmar que garantizan la factura del proveedor. Contabilizar intentos cancelados; ninguna generación externa se inicia por abrir menús. Exportar capítulos completos solo con motores que produzcan audio, conservar los resultados locales y ofrecer guardado explícito.
+
+- El autor autorizó 1.4 y 1.5: publicar y comprobar 1.4 antes de iniciar 1.5. La voz debe continuar al modificar la vista o navegar; separar su documento y posición del visor. El menú seleccionado incluye cierre explícito, seis acciones en dos filas y no inicia lectura al descartarse.
+- Las voces locales son opcionales y no reservan presupuesto de nube. No descargar ni iniciar motores por abrir menús; mostrar dependencias y licencias reales. Las credenciales de todos los servicios externos son de sesión.

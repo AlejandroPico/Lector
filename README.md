@@ -223,3 +223,11 @@ Los límites de gasto estimado y caracteres se comprueban **antes de enviar el s
 El resultado se guarda en IndexedDB si marcas la opción, o permanece durante la sesión. Si el navegador no tiene espacio, el archivo completo sigue disponible en memoria para guardarlo. Puedes reproducir, borrar o **Guardar archivo de audio**; se ofrece destino si existe File System Access y una descarga explícita en los demás navegadores. Nunca se descarga al generar. Las voces del navegador carecen de un archivo de audio y no se simula su exportación. La clave no se guarda y se borra al cambiar de dirección de servicio.
 
 Referencia de API: [Create speech](https://developers.openai.com/api/reference/resources/audio/subresources/speech/methods/create). La generación externa se ha comprobado con respuestas de audio válidas simuladas; no se han consumido servicios de pago como parte de las pruebas. La calidad y facturación reales dependen del modelo y proveedor que configure el usuario. La integración de voces de IA locales queda para 1.4.
+
+## Voz local y continuidad (1.4)
+
+La narración conserva su propio documento y anclas: ajustar fuente, columnas, márgenes, tema, modo continuo o navegar no cancela la voz. Con seguimiento activado, el visor vuelve al texto narrado al siguiente avance; desactívalo para consultar otra página mientras escuchas. Pausa, Detener, Leer desde aquí, retroceso y abrir otro libro son acciones explícitas sobre el audio. El fin del libro, temporizador y errores reales también pueden detenerlo; un navegador o sistema suspendido no puede garantizar audio continuo. Los cambios de voz se aplican al siguiente fragmento; probar una voz queda disponible al detener la lectura para evitar solapar dos narraciones.
+
+El menú de selección dispone de seis acciones en dos filas y Cerrar debajo. Cerrar, Escape o pulsar fuera para descartarlo no cambia el punto narrado.
+
+Piper local produce audio sin clave ni factura de API. Preparación, modelos, recursos, resultados medidos y licencias en [voz-local](voz-local/README.md). ElevenLabs cuenta con su adaptador propio además de OpenAI/compatibles; las APIs externas requieren sus credenciales y soporte CORS. Las pruebas externas usan respuestas simuladas, sin gasto real. La síntesis Piper en CPU español se ha probado con audio real.
