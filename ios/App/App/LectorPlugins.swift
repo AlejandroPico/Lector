@@ -24,7 +24,7 @@ enum LectorBookInbox {
 class LectorDevicePlugin: CAPPlugin, CAPBridgedPlugin, UIDocumentPickerDelegate {
     let identifier = "LectorDevicePlugin"
     let jsName = "LectorDevice"
-    let pluginMethods = ["info", "initialBook", "releaseBook", "chooseFolder", "permission", "listDirectory", "readFile", "saveFile", "printHTML"].map { CAPPluginMethod(name: $0, returnType: CAPPluginReturnPromise) }
+    let pluginMethods: [CAPPluginMethod] = ["info", "initialBook", "releaseBook", "chooseFolder", "permission", "listDirectory", "readFile", "saveFile", "printHTML"].compactMap { CAPPluginMethod(name: $0, returnType: CAPPluginReturnPromise) }
     private var scopes: [String: URL] = [:]
     private var pickerCall: CAPPluginCall?
     private var pickerPurpose = ""
@@ -151,7 +151,7 @@ class LectorDevicePlugin: CAPPlugin, CAPBridgedPlugin, UIDocumentPickerDelegate 
 class LectorSpeechPlugin: CAPPlugin, CAPBridgedPlugin, AVSpeechSynthesizerDelegate {
     let identifier = "LectorSpeechPlugin"
     let jsName = "LectorSpeech"
-    let pluginMethods = ["voices", "speak", "pause", "resume", "cancel", "metadata"].map { CAPPluginMethod(name: $0, returnType: CAPPluginReturnPromise) }
+    let pluginMethods: [CAPPluginMethod] = ["voices", "speak", "pause", "resume", "cancel", "metadata"].compactMap { CAPPluginMethod(name: $0, returnType: CAPPluginReturnPromise) }
     private let synth = AVSpeechSynthesizer()
     private var current: AVSpeechUtterance?
     private var request = "", held = false

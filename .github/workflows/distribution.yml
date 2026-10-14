@@ -98,6 +98,8 @@ jobs:
           distribution: temurin
           java-version: 21
       - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
       - run: sdkmanager 'platforms;android-36' 'build-tools;35.0.0'
       - run: npm ci
       - run: npm run build && npm run native:sync
@@ -160,7 +162,6 @@ jobs:
         with:
           path: release
           merge-multiple: true
-          pattern: '!pruebas-instaladores'
       - name: Publicar descargas verificadas
         env:
           GH_TOKEN: ${{ github.token }}
