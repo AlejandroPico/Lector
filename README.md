@@ -1,5 +1,11 @@
 # Lector
 
+## Versión 1.8
+
+Navegar a una posición, capítulo, nota o página mientras suena el libro deja la vista donde la sitúas, sin detener la voz. El seguimiento queda suspendido durante esa exploración. «Volver al punto de lectura» aparece discretamente encima de la posición del libro y regresa al pasaje narrado; respeta la preferencia de seguimiento automático. También funciona con la lectura continua y la voz pausada, sin cambiar el tamaño de las páginas.
+
+El anterior bloque de copias y preparación sin conexión de 1.8 se cancela por indicación del autor. La emisión queda aplazada. La distribución multiplataforma y preparación de tiendas se realizará en 1.9, tras publicar y verificar esta corrección.
+
 ## Versión 1.7.1
 
 Retirado el sistema de emisión de 1.6: puente local, receptor, SDK de Cast y configuración de IP. No ofrecía la integración sencilla solicitada.

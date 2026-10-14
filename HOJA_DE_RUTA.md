@@ -1,11 +1,11 @@
 # Ampliaciones acordadas y versiones propuestas
 
-Base actual: versión 1.7.1. Esta hoja recoge la selección del autor del 13 de octubre de 2026. El autor autorizó 1.2 y 1.3 en orden, con publicación y comprobación independiente. 1.6 y 1.7 autorizadas en orden, con comprobaciones y publicaciones independientes.
+Base actual: versión 1.8.0. Esta hoja recoge la selección del autor del 13 de octubre de 2026. El autor autorizó 1.2 y 1.3 en orden, con publicación y comprobación independiente. 1.6 y 1.7 autorizadas en orden, con comprobaciones y publicaciones independientes.
 
 ## Reglas comunes
 
 - Trabajar en main, sin ramas, PR ni agentes secundarios. Conservar favicon.svg y Acerca de.
-- Entregar un bloque por vez: implementación, comprobaciones, publicación y resumen para probarlo. No iniciar automáticamente el siguiente.
+- Entregar un bloque por vez: implementación, comprobaciones y publicación. El autor autoriza 1.8 y 1.9 en orden; verificar 1.8 antes de iniciar 1.9.
 - Mantener la lectura limpia en ordenador, móvil, tableta y televisión; conservar los diez idiomas de interfaz.
 - Organizar la rueda dentada en Lectura, Apariencia, Voz, Biblioteca, Notas y vocabulario, Datos y Dispositivos. Mostrar controles avanzados solo cuando proceda.
 - Las nuevas funciones de presentación, seguimiento y narración tienen controles para activarlas o desactivarlas. Separar resaltado, seguimiento automático y salto al pulsar una palabra.
@@ -35,7 +35,7 @@ Base actual: versión 1.7.1. Esta hoja recoge la selección del autor del 13 de 
 | 1.5 | Voces persistentes de personajes, corrección de interlocutores y perfiles de narración. | Consistencia entre capítulos y controles manuales; entonación según las capacidades reales del motor seleccionado. |
 | 1.6 | Emisión: solución inicial retirada en 1.7.1; integración nativa pendiente. | Audio real accesible al receptor, interfaz propia y prueba en dispositivos. No espejo de pestaña ni promesa de compatibilidad universal. |
 | 1.7 | Sincronización voluntaria de posiciones, notas y preferencias entre dispositivos. | Resolver conflictos y elegir destino/cuenta; no subir libros por defecto. Concretar servicio, autenticación y posibles costes antes de integrarlos. |
-| 1.8 | Preparación de funcionamiento sin conexión y copias internas con restauración. | Recursos opcionales con tamaño visible y arranque desconectado. Una copia interna no protege frente a borrar todo el almacenamiento del navegador. |
+| 1.8 | Corrección de navegación durante narración; se cancela el anterior bloque de copias y preparación sin conexión. | Explorar sin salto automático ni corte de voz; volver al punto narrado con un botón temporal, sin cambiar dimensiones. |
 | 1.9 | Distribución final: web instalable, Windows, macOS, Linux, Android y iPhone/iPad; integración de carpetas y proveedores según sus capacidades. | Producto validado antes de empaquetar. Firmas, tiendas, arquitectura, cuentas y credenciales se concretan por plataforma. |
 
 Si un bloque excede una entrega razonable, se subdividirá antes de comenzar y se presentará el alcance de su primera parte al autor.
@@ -96,3 +96,9 @@ La emisión de 1.6 se retira a petición del autor: eliminados puente local, rec
 Media Session integra únicamente audio real de API/Piper y capítulos guardados: título, autor, cubierta y controles. No transmite audio ni configura dispositivos. La voz del navegador no entrega un flujo utilizable a la aplicación.
 
 Verificación local de 1.7.1: 81 pruebas unitarias y 114 casos de navegador aprobados. Compilación de lector y callback, favicon raíz y ausencia del receptor anterior. Integración comprobada con audio WAV real y API simulada, sin facturación ni pruebas físicas de emisión.
+
+## Orden autorizado el 14 de octubre de 2026
+
+1.8: navegación independiente de la voz y retorno al punto narrado. 1.9: distribución PWA, Windows, macOS, Linux, Android (incluido Android TV/Chromecast con Google TV), iOS/iPadOS y preparación de tiendas. Publicar y verificar cada entrega en main por separado. La retransmisión queda para el futuro; no se registra ni publica en tiendas sin cuentas y firmas propias.
+
+Verificación local de 1.8: 81 pruebas unitarias y 118 casos de navegador aprobados, compilación y favicon raíz. Incluye navegación durante voz del navegador y audio WAV real de API simulada, retorno explícito con voz pausada, lectura continua, móvil e inglés, modo zen y ausencia de cambios de dimensiones. No se realizaron llamadas de pago.

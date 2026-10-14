@@ -139,6 +139,7 @@ $('#app').innerHTML = `
     <div id="reading-information" class="reading-information" hidden><span id="stable-reference" hidden></span><span id="remaining-times" hidden></span></div>
     <div id="progress-line" aria-hidden="true"></div>
   </footer>
+  <button id="return-reading" class="return-reading" hidden>${icon('undo')}<span>Volver al punto de lectura</span></button>
   <div class="zen-exit"><button id="zen-exit" class="icon-button" title="Salir del modo zen" aria-label="Salir del modo zen">${icon('zen')}</button></div>
   <div id="zen-hint" class="zen-hint" role="status" hidden><p>Aquí puedes volver a la apariencia anterior. También puedes pulsar Esc.</p><button id="dismiss-zen-hint" class="text-button">Entendido</button></div>
   <aside id="preferences-panel" class="panel" role="dialog" aria-labelledby="preferences-title" hidden>
@@ -251,7 +252,7 @@ $('#app').innerHTML = `
           <div><dt>Autor</dt><dd>Alejandro Pico</dd></div>
           <div><dt>Carácter</dt><dd>Proyecto personal</dd></div>
           <div><dt>Propósito</dt><dd>Lectura y escucha</dd></div>
-          <div><dt>Edición</dt><dd>Versión 1.7.1</dd></div>
+          <div><dt>Edición</dt><dd>Versión 1.8</dd></div>
         </dl>
       </aside>
       <div class="about-body">
@@ -308,6 +309,7 @@ const speech = new SpeechController({
   view, settings: () => settings, getKey: () => apiKey,
   waitForView:()=>Promise.all([layoutNavigation,pageNavigation]),getCast:()=>record?.narration,
   onState(state) {
+    updateReadingReturn()
     if(state==='stopped')mediaControls.release('narration')
     else mediaControls.state('narration',state)
     audioTools?.refresh()
@@ -320,8 +322,9 @@ const speech = new SpeechController({
     updateReadingInformation()
     languageTools?.audioState(state)
   },
+  onBrowseChange:updateReadingReturn,
   onAudio(audio,segment){
-    if(!segment.range||!record)return
+    if(!segment.cfi||!record)return
     mediaControls.claim('narration',{title:record.title,artist:record.author,album:'',coverBlob:record.coverBlob},{
       play:()=>{if(speech.state==='paused')return speech.toggle()},
       pause:()=>{if(['playing','loading'].includes(speech.state))return speech.toggle()},
@@ -334,7 +337,8 @@ const speech = new SpeechController({
     if(range&&!view.renderer?.getContents().some(({doc})=>doc===range.startContainer.ownerDocument&&doc.defaultView))range=null
     narratedRange = range
     languageTools?.follow(range)
-    if(range && record){const next=anchorCFI(range);if(next!==record.anchorCFI)record.positionUpdatedAt=Date.now();record.anchorCFI=next;if(speech.state==='playing')record.lastReadAt=Date.now();updateReadingInformation();if(performance.now()-lastSpeechSave>3000){lastSpeechSave=performance.now();saveRecord()}}
+    updateReadingReturn()
+    if(range && record){if(!speech.browsing){const next=anchorCFI(range);if(next!==record.anchorCFI)record.positionUpdatedAt=Date.now();record.anchorCFI=next}if(speech.state==='playing')record.lastReadAt=Date.now();updateReadingInformation();if(performance.now()-lastSpeechSave>3000){lastSpeechSave=performance.now();saveRecord()}}
     for (const { doc } of view.renderer?.getContents() ?? []) doc.defaultView?.CSS?.highlights?.delete('spoken')
     if (!range || !settings.highlight) return
     const win = range.startContainer.ownerDocument.defaultView
@@ -486,7 +490,7 @@ function saveRecord() {
 
 function anchorCFI(range) {
   const current=view.renderer?.getContents()[0]
-  range??=narratedRange??view.lastLocation?.range
+  range??=(!speech.browsing?narratedRange:null)??view.lastLocation?.range
   if(!range||!current||range.startContainer.ownerDocument!==current.doc)return record?.anchorCFI??record?.cfi
   const point=range.cloneRange();point.collapse(true)
   // A wrapped space can have a rectangle on the previous page. Anchor a real
@@ -499,7 +503,7 @@ function anchorCFI(range) {
 function positionRange() {
   const current=view.renderer?.getContents()[0]
   if(!current?.doc?.body)return null
-  if(narratedRange?.startContainer.ownerDocument===current.doc)return narratedRange
+  if(!speech.browsing&&narratedRange?.startContainer.ownerDocument===current.doc)return narratedRange
   const target=record?.anchorCFI&&view.resolveNavigation(record.anchorCFI)
   return target?.index===current.index&&typeof target.anchor==='function'?target.anchor(current.doc):view.lastLocation?.range
 }
@@ -507,6 +511,8 @@ function updateHistoryControls() {
   $('#history-back').hidden=!settings.historyControls||!navigationTrail.past.length
   $('#history-forward').hidden=!settings.historyControls||!navigationTrail.future.length
 }
+function updateReadingReturn(){$('#return-reading').hidden=!speech.browsing||!speech.cursorCFI||speech.state==='stopped'}
+$('#return-reading').onclick=attempt(()=>speech.returnToReading())
 function updateReadingInformation() {
   const current=view.renderer?.getContents()[0],range=positionRange()
   const info=$('#reading-information');info.hidden=!record||!(settings.showReference||settings.showChapterTime||settings.showBookTime)
@@ -528,9 +534,11 @@ function updateReadingInformation() {
 }
 async function navigateTo(target,fraction=false) {
   if(!book||busy)return
+  speech.browse()
   layoutSequence++;preservingAnchor=false
   await layoutNavigation.catch(()=>{})
   await pageNavigation.catch(()=>{})
+  await view.renderer.whenNavigationIdle?.()
   const origin=anchorCFI();await finishOpeningCover(false)
   if(fraction)await view.goToFraction(target);else await view.goTo(target)
   const destination=anchorCFI();navigationTrail.visit(origin,destination)
@@ -540,9 +548,11 @@ async function navigateHistory(direction) {
   if(!book||busy)return
   const target=direction<0?navigationTrail.back(anchorCFI()):navigationTrail.forward(anchorCFI())
   if(!target)return
+  speech.browse()
   layoutSequence++;preservingAnchor=false
   await layoutNavigation.catch(()=>{})
   await pageNavigation.catch(()=>{})
+  await view.renderer.whenNavigationIdle?.()
   await finishOpeningCover(false);await view.goTo(target)
   record.anchorCFI=target;record.navigationTrail=navigationTrail.snapshot();saveRecord();updateHistoryControls();updateReadingInformation()
 }
@@ -950,7 +960,7 @@ view.addEventListener('relocate', ({ detail }) => {
   if(record.cfi!==detail.cfi&&!busy&&!preservingAnchor)record.positionUpdatedAt=Date.now()
   record.cfi = detail.cfi; record.fraction = Number.isFinite(detail.fraction) ? detail.fraction : record.fraction
   if(!busy&&!preservingAnchor&&detail.reason==='navigation')record.lastReadAt=Date.now()
-  if(!preservingAnchor)record.anchorCFI=anchorCFI(narratedRange??detail.range)
+  if(!preservingAnchor)record.anchorCFI=anchorCFI((!speech.browsing?narratedRange:null)??detail.range)
   $('#chapter-name').textContent = detail.tocItem?.label ?? ''
   $('#progress-text').textContent = `${Math.round(record.fraction * 100)} %`
   $('#progress-line').style.width = `${Math.max(0, Math.min(100, record.fraction * 100))}%`
@@ -969,12 +979,14 @@ view.addEventListener('load', ({ detail: { doc, index } }) => {
   const metrics=readingMetrics(doc,settings.language);metricsCache.set(doc,metrics)
   if(record)record.readingStats[index]={words:doc.body.classList.contains('reader-cover')?0:metrics.total}
   doc.addEventListener('wheel',event=>{
+    if(event.isTrusted&&!event.ctrlKey&&(event.deltaY||event.deltaX))speech.browse()
     const renderer=view.renderer
     if(!renderer.scrolled||event.ctrlKey||!event.deltaY||busy||wheelTurning||document.querySelector('dialog[open]'))return
     if(event.deltaY>0&&renderer.end>=renderer.viewSize-2 || event.deltaY<0&&renderer.start<=1){
       event.preventDefault();wheelTurning=true;attempt(()=>changePage(Math.sign(event.deltaY)))().finally(()=>{wheelTurning=false})
     }
   },{passive:false})
+  doc.addEventListener('touchmove',event=>{if(event.isTrusted)speech.browse()},{passive:true})
   doc.querySelectorAll('[data-no-speech]').forEach(el => { if (!el.querySelector('button')) el.textContent = t(el.textContent.trim()) })
   doc.querySelectorAll('.pdf-original').forEach(button => button.textContent = t('Ver página original'))
   doc.addEventListener('keydown', onKey)
@@ -1254,8 +1266,10 @@ $('#opening-cover-zoom').onclick=()=>{if(openingCoverURL) showImage(openingCover
 
 async function changePage(direction) {
   if (!book || busy || document.querySelector('dialog[open]')) return
+  speech.browse()
   layoutSequence++;preservingAnchor=false
   await layoutNavigation.catch(()=>{})
+  await view.renderer.whenNavigationIdle?.()
   if(!$('#opening-cover').hidden) {if(direction>0) await finishOpeningCover();return}
   dismissSelection()
   pageNavigation=pageNavigation.catch(()=>{}).then(()=>direction > 0 ? view.next() : view.prev())

@@ -132,10 +132,11 @@ export function validateEndpoint(value) {
 }
 
 export class SpeechController {
-  constructor({ view, settings, getKey, onState, onError, onHighlight,onAudio=()=>{},onActivity=()=>{},waitForView=()=>Promise.resolve(),getCast=()=>({}) }) {
+  constructor({ view, settings, getKey, onState, onError, onHighlight,onAudio=()=>{},onBrowseChange=()=>{},onActivity=()=>{},waitForView=()=>Promise.resolve(),getCast=()=>({}) }) {
     Object.assign(this, { view, settings, getKey, onState, onError, onHighlight })
     this.cache = new Map(); this.run = 0; this.state = 'stopped'; this.pending = new Set()
-    this.follower=new ContinuousFollower(view,settings)
+    this.browsing=false;this.onBrowseChange=onBrowseChange
+    this.follower=new ContinuousFollower(view,()=>({...settings(),followSpeech:this.canFollow()}))
     this.onActivity=onActivity;this.history=[]
     this.waitForView=waitForView;this.documents=new WeakMap()
     this.getCast=getCast
@@ -145,9 +146,25 @@ export class SpeechController {
     this.timer=new SleepTimer(()=>{this.stop();this.onError('El temporizador ha detenido la lectura.')},()=>this.onActivity())
   }
   setState(state) { this.state = state;this.follower.setState(state);if(state==='playing'&&this.settings().sleepEnabled)this.timer.arm(this.settings().sleepMinutes);this.onState(state) }
+  canFollow(){return this.settings().followSpeech&&!this.browsing}
+  browse(){if(this.state==='stopped'||this.browsing)return;this.browsing=true;this.follower.stop();this.onBrowseChange()}
+  async returnToReading(){
+    const run=this.run
+    if(!this.cursorCFI||this.state==='stopped')return
+    await this.waitForView();await this.view.renderer.whenNavigationIdle?.()
+    if(run!==this.run)return
+    await this.view.goTo(this.cursorCFI)
+    if(run!==this.run)return
+    this.browsing=false;this.onBrowseChange()
+    await this.restoreCursor(run)
+    if(run!==this.run)return
+    const current=this.view.renderer.getContents()[0],target=this.view.resolveNavigation(this.cursorCFI)
+    if(current?.index===target?.index){const range=target.anchor?.(current.doc);this.onHighlight(range);if(range)await this.view.renderer.scrollToAnchor(range,true)}
+  }
   stop({keepTimer=false}={}) {
     this.run++; this.abort?.abort(); this.abort = null
     this.follower.stop()
+    this.browsing=false;this.cursorCFI=null;this.onBrowseChange()
     if(!keepTimer)this.timer.clear()
     globalThis.speechSynthesis?.cancel()
     this.audio?.pause(); this.audio = null
@@ -187,7 +204,7 @@ export class SpeechController {
     await this.readSection(run, visible, exact)
   }
   follow(range, run = this.run) {
-    if (run !== this.run || !this.settings().followSpeech) return
+    if (run !== this.run || !this.canFollow()) return
     if(!range){this.restoreCursor(run).catch(error=>{if(run===this.run)this.onError(error.message)});return}
     if(this.view.renderer?.scrolled){this.follower.word(range);return}
     const visible = this.view.lastLocation?.range
@@ -212,16 +229,16 @@ export class SpeechController {
       wordRange:(start,length)=>resolve(segment.wordRange(start,length))}
   }
   async restoreCursor(run) {
-    if (!this.cursorCFI || run !== this.run || !this.settings().followSpeech || this.restoring) return
+    if (!this.cursorCFI || run !== this.run || !this.canFollow() || this.restoring) return
     this.restoring=true
     try {
       await this.waitForView()
       await this.view.renderer.whenNavigationIdle?.()
-      if(run!==this.run)return
+      if(run!==this.run||!this.canFollow())return
       const target=this.cursorCFI,resolved=this.view.resolveNavigation(target),current=this.view.renderer.getContents()[0]
       if(current?.index===resolved?.index&&this.documents.get(current.doc)===resolved.index)return
       await this.view.goTo(target)
-      if(run!==this.run)return
+      if(run!==this.run||!this.canFollow())return
       const active=this.view.renderer.getContents()[0],position=this.view.resolveNavigation(this.cursorCFI)
       if(active?.index===position?.index){const range=position.anchor?.(active.doc);this.onHighlight(range);this.follower.word(range)}
     } finally {this.restoring=false}
@@ -243,7 +260,7 @@ export class SpeechController {
       for(const sentence of sentences){
       let segments=castSegments(sentence,index,this.getCast(),this.view,this.settings().narrationEnabled).map(segment=>this.mappedSegment(segment,index))
       const active=this.view.renderer.getContents()[0]
-      if(this.settings().followSpeech&&active?.index===index&&this.documents.get(active.doc)===index)segments=speechPages(segments,this.view.renderer,this.settings().language)
+      if(this.canFollow()&&active?.index===index&&this.documents.get(active.doc)===index)segments=speechPages(segments,this.view.renderer,this.settings().language)
       for (let i = 0; i < segments.length; i++) {
         if (run !== this.run) return
         const segment = segments[i]
@@ -251,7 +268,7 @@ export class SpeechController {
         if(reference&&this.history.at(-1)?.cfi!==reference){this.history.push({cfi:reference,seconds:segment.text.split(/\s+/).length/(this.settings().narrationWpm||170)*60/this.settings().rate});this.history=this.history.slice(-150);this.onActivity()}
         this.cursorCFI=reference
         await this.restoreCursor(run)
-        if (this.settings().followSpeech && !this.view.renderer.scrolled && segment.range) await this.view.renderer.scrollToAnchor(segment.range,true)
+        if (this.canFollow() && !this.view.renderer.scrolled && segment.range) await this.view.renderer.scrollToAnchor(segment.range,true)
         if (run !== this.run) return
         this.onHighlight(segment.range)
         if (this.settings().provider !== 'browser') await this.speakAPI(segment, run)
@@ -273,7 +290,7 @@ export class SpeechController {
       const settings = narrationSettings(this.settings(),this.getCast(),segment.characterId)
       segment=spokenSegment(segment,settings)
       const utterance = new SpeechSynthesisUtterance(segment.text)
-      const startFollowing=()=>{if(segment.range && this.view.renderer?.scrolled && this.settings().followSpeech && run===this.run && this.follower.segment!==segment){this.follower.begin(segment,settings.rate);this.follower.setState(this.state)}}
+      const startFollowing=()=>{if(segment.range && this.view.renderer?.scrolled && this.canFollow() && run===this.run && this.follower.segment!==segment){this.follower.begin(segment,settings.rate);this.follower.setState(this.state)}}
       utterance.onstart=startFollowing
       const voices = speechSynthesis.getVoices()
       utterance.voice = selectBrowserVoice(voices, settings.voice, settings.language)
@@ -348,7 +365,7 @@ export class SpeechController {
     const url = URL.createObjectURL(blob)
     const audio = this.audio = new Audio(url)
     audio.playbackRate = settings.rate
-    audio.onplaying=()=>{if(run!==this.run)return;this.onAudio(audio,segment);if(segment.range && this.view.renderer?.scrolled && this.settings().followSpeech){if(this.follower.segment!==segment)this.follower.begin(segment,settings.rate,true);this.follower.setState(this.state)}}
+    audio.onplaying=()=>{if(run!==this.run)return;this.onAudio(audio,segment);if(segment.range && this.view.renderer?.scrolled && this.canFollow()){if(this.follower.segment!==segment)this.follower.begin(segment,settings.rate,true);this.follower.setState(this.state)}}
     audio.ontimeupdate=()=>{if(Number.isFinite(audio.duration)&&audio.duration>0)this.follower.progress(audio.currentTime/audio.duration)}
     this.setState('playing')
     try {

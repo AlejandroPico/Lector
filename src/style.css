@@ -68,6 +68,9 @@ foliate-view { display: block; height: 100%; width: 100%; }
 foliate-view, foliate-view::part(filter), foliate-view::part(container) { border: 0 !important; outline: 0 !important; box-shadow: none !important; background: var(--paper) !important; }
 foliate-view::part(head), foliate-view::part(foot) { display: none; }
 .reading-footer { position: fixed; inset: auto 0 0; height: 58px; z-index: 5; display: flex; align-items: center; justify-content: center; gap: 25px; background: var(--paper); }
+.return-reading { position: fixed; z-index: 6; bottom: 62px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 7px; max-width: calc(100vw - 24px); min-height: 36px; padding: 6px 12px; background: var(--surface); color: var(--accent); border: 1px solid var(--line); font-size: 12px; }
+.return-reading svg { width: 16px; height: 16px; flex-shrink: 0; }
+.zen .return-reading { bottom: 14px; }
 .reading-information { flex-basis:100%;display:flex;justify-content:center;flex-wrap:wrap;gap:5px 18px;font-size:10px;color:var(--muted);padding:0 10px 9px; }
 .reading-info-visible .reading-footer {height:86px;flex-wrap:wrap;gap:0 16px;padding-top:6px;}
 .reading-info-visible #reading-area {bottom:88px;}
