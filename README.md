@@ -1,5 +1,9 @@
 # Lector
 
+## Versión 1.9
+
+Distribución web instalable y aplicaciones Windows, macOS, Linux, Android/Android TV e iPhone/iPad. [Descargas en GitHub](https://github.com/AlejandroPico/Lector/releases/latest) y [guía de instalación y tiendas](DISTRIBUCION.md). El APK firmado también sirve para Chromecast con Google TV; no implementa transmisión ni funciona en Chromecast clásicos, LG webOS o Samsung Tizen. iOS requiere firma propia de Apple para instalarlo fuera del simulador; Windows/macOS se ofrecen sin certificados comerciales. Las tiendas quedan preparadas, sin publicación ni cuentas ajenas.
+
 ## Versión 1.8
 
 Navegar a una posición, capítulo, nota o página mientras suena el libro deja la vista donde la sitúas, sin detener la voz. El seguimiento queda suspendido durante esa exploración. «Volver al punto de lectura» aparece discretamente encima de la posición del libro y regresa al pasaje narrado; respeta la preferencia de seguimiento automático. También funciona con la lectura continua y la voz pausada, sin cambiar el tamaño de las páginas.

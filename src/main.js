@@ -1,4 +1,5 @@
 import {addSyncMenus,createSyncTools,restoreSyncedBook} from './sync-tools.js'
+import {platform,initializePlatform,openPlatformBooks,platformMetadata,printPlatformHTML} from './platform.js'
 import {applyPortable} from './sync-core.js'
 import {createMediaControls} from './media-session.js'
 import {addNarrationMenus,createNarrationTools} from './narration-tools.js'
@@ -39,12 +40,14 @@ import {addPDFMenus,createPDFTools} from './pdf-tools.js'
 import {addAudioMenus,createAudioTools} from './audio-tools.js'
 
 const $ = selector => document.querySelector(selector)
+await initializePlatform()
 let userFonts = await allFonts().catch(()=>[])
 for (const resource of [...projectFonts,...userFonts]) {
   try { await registerFont(resource); if (!resource.project) fonts.push([resource.id,`"${resource.id}", serif`]) }
   catch { userFonts=userFonts.filter(font=>font.id!==resource.id) }
 }
 const storedSettings = readJSON('lector-settings', {})
+if(platform.tv&&storedSettings.tvMode===undefined)storedSettings.tvMode=true
 if (!storedSettings.presentationVersion) storedSettings.animated = true
 const settings = safeSettings(storedSettings)
 settings.presentationVersion = 2
@@ -192,7 +195,7 @@ $('#app').innerHTML = `
   </aside>
   <aside id="voice-panel" class="panel" role="dialog" aria-labelledby="voice-title" hidden>
     <div class="panel-heading"><h2 id="voice-title">Lectura en voz alta</h2><button class="icon-button panel-close" aria-label="Cerrar">${icon('close')}</button></div>
-    <label class="field">Servicio<select data-setting="provider"><option value="browser">Voces del navegador</option><option value="openai">OpenAI / API compatible</option></select></label>
+    <label class="field">Servicio<select data-setting="provider"><option value="browser">${platform.native||platform.desktop?'Voces del sistema (sin coste)':'Voces del navegador'}</option><option value="openai">OpenAI / API compatible</option></select></label>
     <label class="field">Idioma del libro<select id="speech-language"><option value="auto">Detectar del libro</option>${Object.entries(languages).map(([code,label])=>`<option value="${code}">${label}</option>`).join('')}</select></label>
     <div id="browser-voice-settings"><label class="field">Voz<select id="browser-voices" data-setting="voice"><option value="">Automática · idioma del libro</option></select></label><p id="voice-availability" class="small muted"></p>${rangeControl('pitch', 'Tono', 0.5, 1.5, 0.1)}</div>
     <div id="api-voice-settings" hidden>
@@ -252,7 +255,7 @@ $('#app').innerHTML = `
           <div><dt>Autor</dt><dd>Alejandro Pico</dd></div>
           <div><dt>Carácter</dt><dd>Proyecto personal</dd></div>
           <div><dt>Propósito</dt><dd>Lectura y escucha</dd></div>
-          <div><dt>Edición</dt><dd>Versión 1.8</dd></div>
+          <div><dt>Edición</dt><dd>Versión 1.9</dd></div>
         </dl>
       </aside>
       <div class="about-body">
@@ -270,6 +273,8 @@ $('#app').innerHTML = `
     <nav class="about-links" aria-label="Enlaces del proyecto">
       <a href="https://alejandropico.github.io/Portfolio/" target="_blank" rel="noopener noreferrer"><span>01 · Autor</span><strong>Portfolio de Alejandro Pico</strong><b aria-hidden="true">↗</b></a>
       <a href="https://github.com/AlejandroPico/Lector" target="_blank" rel="noopener noreferrer"><span>02 · Proyecto</span><strong>Código y documentación</strong><b aria-hidden="true">↗</b></a>
+      <a href="https://github.com/AlejandroPico/Lector/releases/latest" target="_blank" rel="noopener noreferrer"><strong>Descargar aplicaciones</strong><b aria-hidden="true">↗</b></a>
+      <a href="https://alejandropico.github.io/Lector/privacidad.html" target="_blank" rel="noopener noreferrer"><strong>Privacidad</strong><b aria-hidden="true">↗</b></a>
     </nav>
     <div class="about-spectrum" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
   </dialog>
@@ -285,6 +290,8 @@ addAudioMenus(settings)
 addLocalVoiceMenus()
 addNarrationMenus()
 addSyncMenus()
+if(platform.native||platform.desktop){$('#sync-provider option[value="onedrive"]').disabled=true;$('#sync-provider').insertAdjacentHTML('afterend','<p class="small muted">OneDrive se conecta desde la versión web.</p>')}
+if(!platform.printing)$('#notes-export-pdf').hidden=true
 initializeI18n($('#app'), settings.uiLanguage)
 $('#speech-language').value = settings.speechLanguage
 
@@ -309,6 +316,7 @@ const speech = new SpeechController({
   view, settings: () => settings, getKey: () => apiKey,
   waitForView:()=>Promise.all([layoutNavigation,pageNavigation]),getCast:()=>record?.narration,
   onState(state) {
+    if(platform.native&&['playing','loading'].includes(state))platformMetadata(record).catch(()=>{})
     updateReadingReturn()
     if(state==='stopped')mediaControls.release('narration')
     else mediaControls.state('narration',state)
@@ -345,6 +353,8 @@ const speech = new SpeechController({
     if (win.Highlight && win.CSS.highlights) win.CSS.highlights.set('spoken', new win.Highlight(range))
   },
 })
+window.addEventListener('lector-media-action',event=>attempt(async()=>{if(event.detail==='stop')speech.stop();else if(event.detail==='pause'&&['playing','loading'].includes(speech.state))await speech.toggle();else if(event.detail==='play'&&speech.state==='paused')await speech.toggle()})())
+document.addEventListener('visibilitychange',()=>speech.setBackground(document.hidden))
 const gamepad=attachGamepad(()=>settings.tvMode,key=>{
   const target=document.activeElement??document.body
   if(key==='Enter'){if(target===view||target.tagName==='IFRAME')$('#audio-toggle').click();else target.click?.()}
@@ -1495,7 +1505,7 @@ $('#notes-export-format').onchange=renderNotesExport
 $('#notes-export-save').onclick=attempt(saveNotesExport)
 $('#notes-export-copy').onclick=attempt(async()=>{await navigator.clipboard.writeText($('#notes-export-preview').value);toast('Exportación copiada')})
 $('#notes-export-download').onclick=()=>{const url=URL.createObjectURL(exportBlob()),anchor=document.createElement('a');anchor.href=url;anchor.download=`lector-notas.${$('#notes-export-format').value}`;anchor.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
-$('#notes-export-pdf').onclick=()=>{const popup=window.open('','_blank');if(!popup){toast('Permite abrir la ventana de impresión.');return}popup.opener=null;popup.document.write(notesHTML(exportEntries,t('Notas y citas')));popup.document.close();popup.focus();popup.print()}
+$('#notes-export-pdf').onclick=attempt(async()=>{const html=notesHTML(exportEntries,t('Notas y citas'));if(await printPlatformHTML(html))return;const popup=window.open('','lector-print');if(!popup){toast('Permite abrir la ventana de impresión.');return}popup.opener=null;popup.document.write(html);popup.document.close();popup.focus();popup.print()})
 $('#zoom-in').onclick = () => imageViewer.step(.25)
 $('#zoom-out').onclick = () => imageViewer.step(-.25)
 $('#zoom-fit').onclick = fitImage
@@ -1581,6 +1591,7 @@ audioTools=createAudioTools({speech,view,mediaControls,getBook:()=>book,getRecor
 applySettings(); syncVoices(); translateUI()
 updateLibrary().catch(() => toast('El almacenamiento local no está disponible. Puedes abrir un libro, pero no se guardará al cerrar.'))
 $('#file-dialog').showModal()
+openPlatformBooks(async file=>{if($('#file-dialog').open)$('#file-dialog').close();await openFile(file)},handleError).catch(handleError)
 
 localVoiceTools=createLocalVoiceTools({settings,save:()=>{writeJSON('lector-settings',settings);applySettings()},onError:handleError})
 

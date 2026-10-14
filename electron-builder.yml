@@ -1,0 +1,59 @@
+appId: io.github.alejandropico.lector
+productName: Lector
+asar: true
+npmRebuild: false
+directories:
+  output: release
+  buildResources: distribution/icons
+files:
+  - desktop/**/*
+  - dist/**/*
+  - package.json
+  - '!node_modules/**/*'
+artifactName: Lector-${version}-${os}-${arch}.${ext}
+fileAssociations:
+  - ext: epub
+    name: EPUB
+    role: Viewer
+    mimeType: application/epub+zip
+  - ext: mobi
+    name: MOBI
+    role: Viewer
+  - ext: azw3
+    name: AZW3
+    role: Viewer
+  - ext: pdf
+    name: PDF
+    role: Viewer
+    mimeType: application/pdf
+  - ext: docx
+    name: DOCX
+    role: Viewer
+  - ext: txt
+    name: TXT
+    role: Viewer
+    mimeType: text/plain
+win:
+  target: [nsis, zip]
+  icon: icon.png
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  shortcutName: Lector
+  artifactName: Lector-${version}-Windows-${arch}-Setup.exe
+mac:
+  target: [dmg, zip]
+  icon: icon.png
+  category: public.app-category.books
+  hardenedRuntime: true
+  entitlements: distribution/apple/entitlements.mac.plist
+  entitlementsInherit: distribution/apple/entitlements.mac.plist
+linux:
+  maintainer: Alejandro Pico
+  target: [AppImage, deb]
+  icon: icon.png
+  category: Education
+  synopsis: Libros y lectura en voz alta
+deb:
+  depends: [libgtk-3-0, libnss3, libxss1, libasound2]

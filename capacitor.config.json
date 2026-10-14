@@ -1,0 +1,9 @@
+{
+  "appId": "io.github.alejandropico.lector",
+  "appName": "Lector",
+  "webDir": "dist",
+  "loggingBehavior": "none",
+  "server": { "hostname": "localhost", "androidScheme": "https" },
+  "android": { "allowMixedContent": false, "webContentsDebuggingEnabled": false, "adjustMarginsForEdgeToEdge": "auto" },
+  "ios": { "contentInset": "never", "allowsLinkPreview": false }
+}

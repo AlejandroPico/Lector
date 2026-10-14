@@ -1,0 +1,5 @@
+import {readFile,writeFile,mkdir,readdir} from 'node:fs/promises'
+const packages=['foliate-js','dompurify','mammoth','pdfjs-dist','tesseract.js','@fontsource/atkinson-hyperlegible','@fontsource/lexend','@capacitor/core','@capacitor/android','@capacitor/ios']
+let output='Lector · Componentes de terceros\n\nEl proyecto no cambia su licencia general en esta distribución. Se conservan las licencias de los componentes incluidos. Electron y Chromium incluyen sus avisos en los paquetes de escritorio. Los diccionarios descargables muestran su atribución y CC BY-SA 4.0 en la aplicación.\n'
+for(const name of packages){const root=`node_modules/${name}`,pkg=JSON.parse(await readFile(`${root}/package.json`,'utf8'));output+=`\n${name} ${pkg.version} · ${pkg.license??'Consultar licencia'}\n`;for(const file of await readdir(root))if(/^(LICENSE|LICENCE|COPYING|OFL)(\.|$)/i.test(file))try{output+='\n'+await readFile(`${root}/${file}`,'utf8')+'\n'}catch{}}
+await mkdir('public',{recursive:true});await writeFile('public/avisos.txt',output)

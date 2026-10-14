@@ -1,4 +1,5 @@
 import {narrationProfiles} from './narration.js'
+import {reviveNativeHandles} from './native-directory.js'
 import { fonts, themes, validateTheme } from './presentation.js'
 const DB_NAME = 'lector-zen'
 let connection
@@ -34,7 +35,7 @@ async function transact(mode, action, storeName = 'books') {
   return new Promise((resolve, reject) => {
     const tx = database.transaction(storeName, mode)
     const request = action(tx.objectStore(storeName))
-    tx.oncomplete = () => resolve(request.result)
+    tx.oncomplete = () => resolve(reviveNativeHandles(request.result))
     tx.onerror = () => reject(tx.error)
     tx.onabort = () => reject(tx.error)
   })

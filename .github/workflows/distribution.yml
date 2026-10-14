@@ -1,0 +1,177 @@
+name: Compilar instaladores
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/distribution.yml'
+      - 'desktop/**'
+      - 'android/**'
+      - 'ios/**'
+      - 'distribution/**'
+      - 'src/**'
+      - 'public/**'
+      - 'scripts/**'
+      - 'package*.json'
+      - 'electron-builder.yml'
+      - 'capacitor.config.json'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: instaladores-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: pruebas-instaladores
+          path: test-results/
+
+  desktop:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-latest
+            platform: win
+            arch: x64
+          - runner: ubuntu-latest
+            platform: linux
+            arch: x64
+          - runner: macos-26
+            platform: mac
+            arch: arm64
+          - runner: macos-26
+            platform: mac
+            arch: x64
+    runs-on: ${{ matrix.runner }}
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run icons
+      - run: npm run build
+      - run: npx electron-builder --${{ matrix.platform }} --${{ matrix.arch }} --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: escritorio-${{ matrix.platform }}-${{ matrix.arch }}
+          path: |
+            release/*.exe
+            release/*.zip
+            release/*.dmg
+            release/*.AppImage
+            release/*.deb
+          if-no-files-found: error
+
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: android-actions/setup-android@v3
+      - run: sdkmanager 'platforms;android-36' 'build-tools;35.0.0'
+      - run: npm ci
+      - run: npm run build && npm run native:sync
+      - name: Compilar y comprobar firma
+        shell: bash
+        env:
+          LECTOR_ANDROID_KEYSTORE: ${{ secrets.LECTOR_ANDROID_KEYSTORE }}
+          LECTOR_KEY_PASSWORD: ${{ secrets.LECTOR_ANDROID_PASSWORD }}
+        run: |
+          test -n "$LECTOR_ANDROID_KEYSTORE"
+          export LECTOR_SIGNING_FILE="$RUNNER_TEMP/lector-release.p12"
+          printf '%s' "$LECTOR_ANDROID_KEYSTORE" | base64 --decode > "$LECTOR_SIGNING_FILE"
+          chmod 600 "$LECTOR_SIGNING_FILE"
+          chmod +x android/gradlew
+          android/gradlew -p android --no-daemon assembleRelease bundleRelease
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs android/app/build/outputs/apk/release/app-release.apk
+          mkdir -p release
+          version=$(node -p 'require("./package.json").version')
+          cp android/app/build/outputs/apk/release/app-release.apk "release/Lector-$version-Android-TV.apk"
+          cp android/app/build/outputs/bundle/release/app-release.aab "release/Lector-$version-Google-Play.aab"
+          rm "$LECTOR_SIGNING_FILE"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-tv
+          path: release/*
+          if-no-files-found: error
+
+  apple:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build && npm run native:sync
+      - name: Comprobar iPhone e iPad
+        run: |
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath "$RUNNER_TEMP/lector-ios" CODE_SIGNING_ALLOWED=NO build > "$RUNNER_TEMP/ios-build.log" 2>&1 || { tail -100 "$RUNNER_TEMP/ios-build.log"; exit 1; }
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/Lector.xcarchive" CODE_SIGNING_ALLOWED=NO archive > "$RUNNER_TEMP/ios-archive.log" 2>&1 || { tail -100 "$RUNNER_TEMP/ios-archive.log"; exit 1; }
+          mkdir -p release
+          version=$(node -p 'require("./package.json").version')
+          ditto -c -k --sequesterRsrc --keepParent "$RUNNER_TEMP/lector-ios/Build/Products/Release-iphonesimulator/App.app" "release/Lector-$version-iOS-Simulator.zip"
+          ditto -c -k --sequesterRsrc --keepParent "$RUNNER_TEMP/Lector.xcarchive" "release/Lector-$version-iOS-Archive-Sin-Firma.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: iphone-ipad
+          path: release/*
+          if-no-files-found: error
+
+  release:
+    needs: [verify, desktop, android, apple]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: release
+          merge-multiple: true
+          pattern: '!pruebas-instaladores'
+      - name: Publicar descargas verificadas
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(node -p 'require("./package.json").version')
+          git archive --format=zip --output="release/Lector-$version-Codigo-Fuente.zip" HEAD
+          cd release
+          sha256sum * > SHA256SUMS.txt
+          cd ..
+          if ! gh release view "v$version" > /dev/null 2>&1; then
+            gh release create "v$version" --target "${{ github.sha }}" --title "Lector $version" --notes-file distribution/RELEASE.md --draft
+          fi
+          gh release upload "v$version" release/* --clobber
+          gh release edit "v$version" --draft=false

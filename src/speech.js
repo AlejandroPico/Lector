@@ -146,7 +146,8 @@ export class SpeechController {
     this.timer=new SleepTimer(()=>{this.stop();this.onError('El temporizador ha detenido la lectura.')},()=>this.onActivity())
   }
   setState(state) { this.state = state;this.follower.setState(state);if(state==='playing'&&this.settings().sleepEnabled)this.timer.arm(this.settings().sleepMinutes);this.onState(state) }
-  canFollow(){return this.settings().followSpeech&&!this.browsing}
+  canFollow(){return this.settings().followSpeech&&!this.browsing&&!this.background}
+  setBackground(value){this.background=value;if(value)this.follower.stop();else if(!this.browsing&&this.state==='playing')this.restoreCursor(this.run).catch(error=>this.onError(error.message))}
   browse(){if(this.state==='stopped'||this.browsing)return;this.browsing=true;this.follower.stop();this.onBrowseChange()}
   async returnToReading(){
     const run=this.run

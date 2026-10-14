@@ -1,0 +1,10 @@
+export const platformRows=`
+Voces del sistema (sin coste)|Veus del sistema (sense cost)|System voices (free)|Voix du système (gratuites)|Systemstimmen (kostenlos)|Vozes do sistema (gratuitas)|Voci di sistema (gratuite)|系统语音（免费）|システム音声（無料）|सिस्टम की आवाज़ें (निःशुल्क)
+Descargar aplicaciones|Descarregar aplicacions|Download applications|Télécharger les applications|Anwendungen herunterladen|Descarregar aplicações|Scarica le applicazioni|下载应用|アプリをダウンロード|ऐप डाउनलोड करें
+Privacidad|Privacitat|Privacy|Confidentialité|Datenschutz|Privacidade|Privacy|隐私|プライバシー|गोपनीयता
+OneDrive se conecta desde la versión web.|OneDrive es connecta des de la versió web.|Connect OneDrive from the web version.|Connectez OneDrive depuis la version web.|Verbinden Sie OneDrive über die Webversion.|Ligue o OneDrive na versão web.|Collega OneDrive dalla versione web.|请从网页版连接 OneDrive。|OneDrive はウェブ版から接続してください。|OneDrive को वेब संस्करण से जोड़ें।
+No hay un selector de carpetas disponible en este dispositivo.|No hi ha un selector de carpetes disponible en aquest dispositiu.|No folder picker is available on this device.|Aucun sélecteur de dossiers n'est disponible sur cet appareil.|Auf diesem Gerät ist keine Ordnerauswahl verfügbar.|Não existe um seletor de pastas neste dispositivo.|Nessun selettore di cartelle disponibile su questo dispositivo.|此设备没有可用的文件夹选择器。|この端末ではフォルダーを選択できません。|इस उपकरण पर फ़ोल्डर चयन उपलब्ध नहीं है।
+No se pudo acceder a la carpeta elegida.|No s'ha pogut accedir a la carpeta triada.|Could not access the selected folder.|Impossible d'accéder au dossier choisi.|Der gewählte Ordner konnte nicht geöffnet werden.|Não foi possível aceder à pasta escolhida.|Impossibile accedere alla cartella scelta.|无法访问所选文件夹。|選択したフォルダーにアクセスできません。|चुने हुए फ़ोल्डर तक पहुँच नहीं हो सकी।
+No se pudo guardar el archivo.|No s'ha pogut desar el fitxer.|Could not save the file.|Impossible d'enregistrer le fichier.|Die Datei konnte nicht gespeichert werden.|Não foi possível guardar o ficheiro.|Impossibile salvare il file.|无法保存文件。|ファイルを保存できません。|फ़ाइल सहेजी नहीं जा सकी।
+Versión 1.9|Versió 1.9|Version 1.9|Version 1.9|Version 1.9|Versão 1.9|Versione 1.9|版本 1.9|バージョン 1.9|संस्करण 1.9
+`

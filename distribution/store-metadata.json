@@ -1,0 +1,27 @@
+{
+  "applicationId": "io.github.alejandropico.lector",
+  "version": "1.9.0",
+  "name": "Lector",
+  "category": "Books / Education",
+  "privacyPolicy": "https://alejandropico.github.io/Lector/privacidad.html",
+  "support": "https://github.com/AlejandroPico/Lector/issues",
+  "website": "https://alejandropico.github.io/Lector/",
+  "localizations": {
+    "es": "Tus libros, una lectura tranquila y voz a tu medida.",
+    "ca": "Els teus llibres, una lectura tranquil·la i veu a la teva mida.",
+    "en": "Your books, comfortable reading and a voice of your choice.",
+    "fr": "Vos livres, une lecture sereine et la voix de votre choix.",
+    "de": "Ihre Bücher, entspanntes Lesen und eine Stimme Ihrer Wahl.",
+    "pt": "Os seus livros, uma leitura tranquila e a voz que preferir.",
+    "it": "I tuoi libri, una lettura tranquilla e la voce che preferisci.",
+    "zh-Hans": "你的书籍，舒适的阅读，以及你选择的声音。",
+    "ja": "あなたの本を、心地よい読書と好みの声で。",
+    "hi": "आपकी किताबें, आरामदायक पठन और आपकी पसंद की आवाज़।"
+  },
+  "description": "Abre EPUB, MOBI, AZW3, PDF, DOCX o TXT. Personaliza columnas, lectura continua, temas y tipografía. Escucha con las voces del sistema o un servicio que configures. Organiza tu biblioteca, consulta diccionarios opcionales y conserva notas. Los servicios externos y voces de pago son opcionales y requieren configuración del usuario.",
+  "containsAds": false,
+  "ownAnalytics": false,
+  "microphoneRequired": false,
+  "purchases": false,
+  "pendingOwnerFields": ["storeAccounts", "publicContact", "ageRating", "publisherIdentity", "storeScreenshots", "privacyDeclarationsReview", "physicalDeviceReview", "appleSigning", "windowsSigning"]
+}

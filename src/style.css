@@ -1,6 +1,8 @@
 @import url('./fonts.css');
 
 :root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
   font-family: "Segoe UI", system-ui, sans-serif;
   color: var(--ink);
   background: var(--paper);
@@ -461,3 +463,15 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 84%, transparent)
 #audio-text-preview{white-space:pre-wrap;max-height:25dvh;overflow:auto;font:inherit}
 #audio-saved-list audio{width:100%;margin:12px 0}
 #audio-export-error:empty{display:none}
+
+@supports (padding: env(safe-area-inset-top)) {
+ .toolbar {top:var(--safe-top);}
+ .reading-footer {bottom:var(--safe-bottom);}
+ #reading-area {top:calc(66px + var(--safe-top));bottom:calc(58px + var(--safe-bottom));}
+ .return-reading {bottom:calc(62px + var(--safe-bottom));}
+ .panel {top:calc(64px + var(--safe-top));max-height:calc(100dvh - 88px - var(--safe-top) - var(--safe-bottom));}
+ .zen-exit {top:calc(12px + var(--safe-top));}
+ .zen #reading-area {inset-block:calc(16px + var(--safe-top)) calc(16px + var(--safe-bottom));}
+ .zen .return-reading {bottom:calc(14px + var(--safe-bottom));}
+ @media(max-width:900px){#reading-area {top:calc(58px + var(--safe-top));bottom:calc(52px + var(--safe-bottom));}}
+}

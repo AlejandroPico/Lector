@@ -1,5 +1,20 @@
 # Historial de versiones
 
+## 1.9.0
+
+- Manifest e iconos para instalación web; sin caché ni copias automáticas.
+- Electron con origen seguro, aislamiento de Node, apertura de ebooks, carpetas de lectura y guardados mediante selectores del sistema. Instaladores Windows, macOS Intel/Apple Silicon y Linux.
+- Android/Android TV firmado, entrada de mando y banner; voz del sistema, controles y servicio multimedia. iPhone/iPad con voz nativa, selectores y audio en segundo plano.
+- Carpetas persistentes enumeradas sin leer libros; lectura del archivo elegido, restauración de referencias y exportación explícita. Datos independientes por instalación.
+- Privacidad, licencias incluidas, metadatos y proyectos para preparar tiendas. No se publican en tiendas ni se simulan certificados Apple/Microsoft.
+- Compilaciones reproducibles en GitHub con APK, AAB, instaladores de escritorio y archivo iOS sin firma; sumas SHA-256. Emisión aplazada.
+
+## 1.8.0
+
+- Navegación manual independiente de la narración: la vista no vuelve sola al terminar un fragmento.
+- Botón temporal para volver al punto narrado, sin detener audio ni cambiar dimensiones; lectura continua, móvil, zen y pausa.
+- Publicada y verificada en main antes de iniciar 1.9: 81 pruebas unitarias, 118 de navegador y comprobación con audio real en producción.
+
 ## 1.3.0
 
 - Temporizador configurable y apagado inicialmente; retroceso a una frase anterior, incluso entre capítulos. El audio de API admite retroceso por segundos; el del navegador usa una aproximación por frases.
