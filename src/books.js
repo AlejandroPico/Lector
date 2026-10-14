@@ -1,5 +1,6 @@
 import DOMPurify from 'dompurify'
 import { makeBook } from 'foliate-js/view.js'
+import {pdfLines,orderedPDFLines,repeatedMargins} from './pdf-layout.js'
 
 export const escapeHTML = text => String(text ?? '').replace(/[&<>"']/g, char =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char])
@@ -76,7 +77,7 @@ export function htmlBook(parts, title, extra = {}) {
     resolveHref: resolve, splitTOCHref: href => href.split('#'),
     getTOCFragment: (doc, id) => id ? doc.getElementById(id) : doc.body,
     isExternal: href => /^https?:|^mailto:/i.test(href),
-    destroy() { for (const url of urls.values()) URL.revokeObjectURL(url); urls.clear(); extra.pdf?.destroy() },
+    destroy() { for (const url of urls.values()) URL.revokeObjectURL(url); urls.clear(); extra.pdfCleanup?.() },
     ...extra,
   }
 }
@@ -100,18 +101,19 @@ function partsFromHTML(html) {
   return parts.length ? parts : [{ label: 'Documento', html: '<p>El documento no contiene texto.</p>' }]
 }
 
-async function importPDF(file, onProgress) {
+async function importPDF(file, onProgress, options={}) {
   const pdfjs = await import('pdfjs-dist')
   const { default: worker } = await import('pdfjs-dist/build/pdf.worker.min.mjs?url')
   pdfjs.GlobalWorkerOptions.workerSrc = worker
   const task = pdfjs.getDocument({ data: await file.arrayBuffer(), isEvalSupported: false })
   const pdf = await task.promise
-  const parts = []
+  const parts = [],pages=[]
   let textPages = 0
   for (let i = 1; i <= pdf.numPages; i++) {
     onProgress(`Leyendo PDF · ${i} / ${pdf.numPages}`)
     const page = await pdf.getPage(i)
     const text = await page.getTextContent()
+    pages.push({height:page.getViewport({scale:1}).height,lines:pdfLines(text.items,page.getViewport({scale:1}).height)})
     const lines = []
     let line = '', lastY
     for (const item of text.items) {
@@ -123,6 +125,7 @@ async function importPDF(file, onProgress) {
       if (item.hasEOL && line.trim()) { lines.push(line.trim()); line = ''; lastY = null }
     }
     if (line.trim()) lines.push(line.trim())
+    pages.at(-1).originalLines=lines.map(text=>({text,y:pages.at(-1).lines.find(line=>text.includes(line.text))?.y??pages.at(-1).height/2}))
     const content = lines.join(' ').trim()
     if (content) textPages++
     parts.push({ label: `Página ${i}`, html:
@@ -130,8 +133,14 @@ async function importPDF(file, onProgress) {
       `<p data-no-speech="true"><button class="pdf-original" data-pdf-page="${i}">Ver página original</button></p>` })
     page.cleanup()
   }
+  const repeated=repeatedMargins(pages)
+  for(let i=0;i<parts.length;i++){
+    const correction=options.pdfText?.[i]
+    const content=typeof correction?.text==='string'?correction.text:orderedPDFLines(pages[i],options.pdfOptions,repeated).map(line=>line.text).join('\n')
+    parts[i].html=(content.trim()?content.split(/\n\s*\n/).map(text=>`<p>${escapeHTML(text).replace(/\n/g,'<br> ')}</p>`).join(''):'<p data-no-speech="true">Esta página no tiene texto seleccionable.</p>')+`<p data-no-speech="true"><button class="pdf-original" data-pdf-page="${i+1}">Ver página original</button></p>`
+  }
   const metadata = await pdf.getMetadata().catch(() => ({}))
-  const book = htmlBook(parts, metadata.info?.Title || file.name.replace(/\.[^.]+$/, ''), { pdf })
+  const book = htmlBook(parts, metadata.info?.Title || file.name.replace(/\.[^.]+$/, ''), { pdf,pdfPages:pages,pdfRepeated:repeated,pdfCleanup:()=>task.destroy().catch(()=>{}) })
   const outline = await pdf.getOutline().catch(() => null)
   if (outline?.length) {
     const map = async items => Promise.all(items.map(async item => {
@@ -142,12 +151,12 @@ async function importPDF(file, onProgress) {
     }))
     book.toc = await map(outline)
   }
-  book.warning = textPages ? 'El PDF se presenta en modo lectura. Las ilustraciones y la maquetación están disponibles en «Ver página original».'
+  book.warning = textPages||Object.values(options.pdfText??{}).some(item=>item.text?.trim()) ? 'El PDF se presenta en modo lectura. Las ilustraciones y la maquetación están disponibles en «Ver página original».'
     : 'Este PDF parece escaneado. Puedes ver sus páginas originales; para narrarlo hace falta reconocimiento de texto (OCR).'
   return book
 }
 
-export async function importBook(file, onProgress = () => {}) {
+export async function importBook(file, onProgress = () => {}, options={}) {
   if (!file.size) throw new Error('El archivo está vacío.')
   if (file.size > 100 * 1024 * 1024) throw new Error('El límite de esta versión es de 100 MB por archivo.')
   const extension = file.name.split('.').pop().toLowerCase()
@@ -166,7 +175,7 @@ export async function importBook(file, onProgress = () => {}) {
       throw new Error('No se pudo abrir el libro. Comprueba que el archivo es válido y no está protegido con DRM.', { cause: error })
     }
   }
-  if (extension === 'pdf') return importPDF(file, onProgress)
+  if (extension === 'pdf') return importPDF(file, onProgress,options)
   if (extension === 'docx') {
     const { default: mammoth } = await import('mammoth/mammoth.browser.js')
     const result = await mammoth.convertToHtml({ arrayBuffer: await file.arrayBuffer() })

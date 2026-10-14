@@ -57,5 +57,5 @@ No se pudo conectar. Revisa el servicio y sus permisos de conexión.|No s'ha pog
 Consulta cancelada|Consulta cancel·lada|Request canceled|Requête annulée|Anfrage abgebrochen|Consulta cancelada|Richiesta annullata|查询已取消|問い合わせをキャンセルしました|अनुरोध रद्द हुआ
 Tiempo de espera agotado.|Temps d'espera esgotat.|Request timed out.|Délai d'attente dépassé.|Zeitüberschreitung.|Tempo de espera esgotado.|Tempo di attesa scaduto.|请求超时。|応答を待つ時間を超えました。|प्रतीक्षा का समय समाप्त हुआ।
 Elige un párrafo válido en ambos textos.|Tria un paràgraf vàlid en ambdós textos.|Choose a valid paragraph in both texts.|Choisissez un paragraphe valide dans les deux textes.|Wähle einen gültigen Absatz in beiden Texten.|Escolha um parágrafo válido nos dois textos.|Scegli un paragrafo valido in entrambi i testi.|请在两个文本中选择有效段落。|両方の文章で有効な段落を選択してください。|दोनों पाठों में मान्य अनुच्छेद चुनें।
-Versión 1.1|Versió 1.1|Version 1.1|Version 1.1|Version 1.1|Versão 1.1|Versione 1.1|版本 1.1|バージョン 1.1|संस्करण 1.1
+Versión 1.2|Versió 1.2|Version 1.2|Version 1.2|Version 1.2|Versão 1.2|Versione 1.2|版本 1.2|バージョン 1.2|संस्करण 1.2
 `

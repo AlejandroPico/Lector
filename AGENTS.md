@@ -16,3 +16,5 @@
 
 - El autor autorizó 1.0 (rediseño de menús) y 1.1 (antes 0.11), en orden y con subidas separadas. La numeración futura es 1.2–1.9, antes 0.12–0.19.
 - El contexto generado requiere petición explícita sobre el fragmento mostrado. Distinguirlo de las definiciones locales; no enviar libros completos ni conservar claves. La vista bilingüe empieza con una traducción aportada, con alineación por posición corregible, sin atribuirle precisión semántica automática.
+- El autor autorizó 1.2 y 1.3 en orden: comprobar y publicar cada una por separado antes de iniciar la siguiente. Mantener las posteriores pendientes.
+- OCR local, activado expresamente; revisión previa, cancelación y conservación del PDF original. Modelos de idioma bajo demanda desde el propio proyecto. Mantener atribución y licencia de Tesseract y Tessdata.

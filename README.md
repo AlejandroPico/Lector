@@ -6,7 +6,7 @@ Un lector de libros a toda pantalla, sin cabeceras decorativas ni tarjetas alred
 
 En **Ajustes → Idiomas y contexto → Lectura bilingüe**, abre una traducción del mismo libro en EPUB, MOBI, AZW3, DOCX, PDF con texto o TXT. Original y traducción se muestran juntos, con la tipografía elegida. La correspondencia inicial se basa en la posición: «Ajustar correspondencia» permite elegir capítulos, desplazar párrafos, vincular un párrafo concreto o dejarlo sin traducción. Los párrafos sin correspondencia siguen disponibles. «Continuar aquí» vuelve al pasaje en el lector; la voz narra el original y puede seguir y resaltar su texto en la vista paralela.
 
-La traducción y sus vinculaciones se guardan en IndexedDB, separadas del libro original, sus notas y sus posiciones. Puedes desactivar el guardado del archivo (seguirá disponible durante la sesión) o quitar únicamente la traducción. No se exportan ni descargan archivos automáticamente. Se aprovecha el texto que ya contiene cada documento: el OCR para PDF escaneados sigue previsto para 1.2.
+La traducción y sus vinculaciones se guardan en IndexedDB, separadas del libro original, sus notas y sus posiciones. Puedes desactivar el guardado del archivo (seguirá disponible durante la sesión) o quitar únicamente la traducción. No se exportan ni descargan archivos automáticamente. El OCR de PDF está disponible desde 1.2 en el apartado específico de ajustes del documento original.
 
 Al seleccionar texto, **«En contexto»** muestra la palabra y la frase que la rodea. Puedes corregir el fragmento, elegir idioma de respuesta y solicitar una explicación contextual o una traducción del fragmento. La definición local de diccionario se identifica aparte, con su procedencia y licencia; la explicación generada aparece solamente tras una petición al motor configurado. Seleccionar una palabra o abrir ajustes no envía el contenido a un servicio.
 
@@ -198,3 +198,12 @@ Motor EPUB/MOBI y paginación: [Foliate JS](https://github.com/johnfactotum/foli
 Las fuentes Atkinson Hyperlegible y Lexend se distribuyen con sus avisos y licencias en `public/font-licenses.txt`, que también se incorpora a la aplicación compilada.
 
 Se conserva el archivo de versiones `package-lock.json`. La dependencia CLI opcional de Mammoth usa una sustitución de `argparse` para evitar una cadena vulnerable de `sprintf-js`; la aplicación importa únicamente el conversor de navegador, y sus conversiones se comprueban con archivos Word reales de prueba.
+## PDF y OCR (1.2)
+
+Con un PDF abierto, entra en **Ajustes → PDF y reconocimiento de texto**. Revisa el orden automático, fuerza una, dos o tres columnas o recupera el orden del archivo. Ocultar encabezados y pies repetidos es opcional y está apagado; compara siempre con la página original, especialmente en tablas, notas y diseños complejos. La detección por coordenadas es una aproximación.
+
+Para un escaneo, despliega **Reconocer páginas escaneadas**, escoge idioma e intervalo e inicia el OCR. Se procesa en un trabajador local; las páginas no se envían a terceros. El motor y el modelo se cargan bajo demanda desde este sitio. Hay modelos de español, catalán, inglés, francés, alemán, portugués, italiano, chino simplificado, japonés e hindi; se pueden almacenar en la caché interna del motor. La primera carga necesita conexión al sitio y varios MB. La calidad depende del escaneo, idioma y orientación: no hay garantía de exactitud ni detección automática de idiomas mezclados.
+
+Cada tanda admite hasta 50 páginas, con progreso y cancelación. Los resultados quedan como borrador: corrige el texto y pulsa **Aplicar a la lectura** para guardarlo en este navegador y narrarlo. Cerrar sin aplicar descarta el borrador. Restaurar una página recupera su texto extraído. El archivo PDF se conserva intacto; las posiciones de anotaciones sobre texto modificado pueden requerir reubicación.
+
+Motor: [Tesseract.js](https://github.com/naptha/tesseract.js), Apache-2.0; núcleo Tesseract.js-core, Apache-2.0. Modelos `4.0.0_best_int`: [Tessdata](https://github.com/naptha/tessdata), Apache-2.0; empaquetado npm `@tesseract.js-data`, MIT. Las licencias y atribuciones acompañan los recursos compilados en `ocr/`. Los modelos son recursos de reconocimiento, no voces.

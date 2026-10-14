@@ -1,7 +1,9 @@
 import { defineConfig } from 'vite'
+import {ocrAssets} from './ocr-assets.js'
 
 export default defineConfig({
   base: './',
+  plugins:[ocrAssets()],
   build: {
     target: 'es2022',
     assetsInlineLimit: 0,

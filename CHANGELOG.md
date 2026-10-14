@@ -1,5 +1,12 @@
 # Historial de versiones
 
+## 1.2.0
+
+- Revisión de PDF desde los ajustes: lectura por coordenadas, columnas automáticas o manuales y omisión opcional de encabezados y pies repetidos.
+- OCR local con Tesseract, diez modelos servidos desde el proyecto y carga solo al iniciar; progreso, cancelación y tandas de hasta 50 páginas.
+- Texto reconocido diferenciado del original, editable antes de aplicarlo y conservado en el navegador; acceso a la imagen original y restauración por página.
+- El PDF original no se modifica. Diseños complejos y errores de reconocimiento requieren revisión; cambiar el texto puede desplazar anotaciones existentes.
+
 ## 1.1.0
 
 - Apartado Idiomas y contexto dentro de los ajustes y su buscador, con interfaz en los diez idiomas.

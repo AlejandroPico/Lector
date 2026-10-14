@@ -30,6 +30,7 @@ import { organizeMenus } from './menu-layout.js'
 import { recentReadingOrder } from './library.js'
 import {addLanguageMenus} from './language-menus.js'
 import {createLanguageTools} from './language-tools.js'
+import {addPDFMenus,createPDFTools} from './pdf-tools.js'
 
 const $ = selector => document.querySelector(selector)
 let userFonts = await allFonts().catch(()=>[])
@@ -58,6 +59,8 @@ let editingNote,notebookBooks=[],notebookShown=[],notebookLimit=100,exportEntrie
 let dictionaryInstall,dictionaryResult,dictionaryQuerySequence=0,vocabularyLimit=100
 let projectDictionaries=[],personalProjectDictionaries=[],dictionaryResourcesPromise
 let languageTools
+let pdfTools
+let readingFile
 
 const rangeControl = (key, label, min, max, step, unit = '') => `<label class="field range-field"><span>${label}<output for="${key}" data-output="${key}">${settings[key]}${unit}</output></span><input id="${key}" type="range" data-setting="${key}" min="${min}" max="${max}" step="${step}" value="${settings[key]}" data-unit="${unit}"></label>`
 const check = (key, label) => `<label class="check-field"><input type="checkbox" data-setting="${key}" ${settings[key] ? 'checked' : ''}>${label}</label>`
@@ -239,7 +242,7 @@ $('#app').innerHTML = `
           <div><dt>Autor</dt><dd>Alejandro Pico</dd></div>
           <div><dt>Carácter</dt><dd>Proyecto personal</dd></div>
           <div><dt>Propósito</dt><dd>Lectura y escucha</dd></div>
-          <div><dt>Edición</dt><dd>Versión 1.1</dd></div>
+          <div><dt>Edición</dt><dd>Versión 1.2</dd></div>
         </dl>
       </aside>
       <div class="about-body">
@@ -267,6 +270,7 @@ $('#app').innerHTML = `
 `
 const menuLayout = organizeMenus()
 addLanguageMenus()
+addPDFMenus()
 initializeI18n($('#app'), settings.uiLanguage)
 $('#speech-language').value = settings.speechLanguage
 
@@ -844,6 +848,7 @@ async function openStored(id) {
 
 async function openFile(file, saved) {
   if (busy) return
+  if($('#pdf-dialog').open)$('#pdf-dialog').close()
   selection=undefined
   busy = true; const sequence = ++loadSequence
   layoutSequence++;preservingAnchor=false
@@ -854,17 +859,18 @@ async function openFile(file, saved) {
     if (file.size > 100 * 1024 * 1024) throw new Error('El límite de esta versión es de 100 MB por archivo.')
     const id = saved?.id ?? await fileId(file)
     ++searchSequence
-    imported = await importBook(file, text => $('#loading-text').textContent = text)
     saved ??= await getBook(id).catch(() => null)
+    imported = await importBook(file, text => $('#loading-text').textContent = text,saved??{})
     const title = saved?.catalogTitle || metadataText(imported.metadata?.title) || file.name
     const nextRecord = { id, title, filename: file.name, file: saved?.fileHandle ? undefined : $('#remember-file').checked ? file : undefined,
       fileHandle: saved?.fileHandle, folderId: saved?.folderId, entryKey: saved?.entryKey, catalogTitle: saved?.catalogTitle, author: saved?.author ?? metadataText(imported.metadata?.author), coverBlob: saved?.coverBlob,
-      notes: saved?.notes ?? [], cfi: saved?.cfi,anchorCFI:saved?.anchorCFI,readingStats:saved?.readingStats??{},navigationTrail:saved?.navigationTrail,
+      notes: saved?.notes ?? [], pdfText:saved?.pdfText,pdfOptions:saved?.pdfOptions,cfi: saved?.cfi,anchorCFI:saved?.anchorCFI,readingStats:saved?.readingStats??{},navigationTrail:saved?.navigationTrail,
       coverSeen:saved?.coverSeen??Boolean(saved?.cfi), lastReadAt:Date.now(), fraction: Number.isFinite(saved?.fraction) ? saved.fraction : 0, updatedAt: Date.now() }
     clearTimeout(saveTimer)
     view.close(); book?.destroy?.(); book = null; record = null
     await view.open(imported)
-    book = imported; record = nextRecord;navigationTrail=new NavigationTrail(record.navigationTrail)
+    book = imported; record = nextRecord;readingFile=file;navigationTrail=new NavigationTrail(record.navigationTrail)
+    pdfTools?.refresh()
     chapterStarts=[...new Set([0,...(book.toc??[]).map(item=>view.resolveNavigation(item.href)?.index).filter(Number.isInteger)])].sort((a,b)=>a-b)
     if ($('#speech-language').value === 'auto') {
       settings.language = metadataText(book.metadata?.language) || currentLanguage()
@@ -1506,6 +1512,9 @@ setInterval(() => { if (settings.theme === 'auto') applySettings() }, 60000)
 languageTools=createLanguageTools({getBook:()=>book,getRecord:()=>record,getSelection:()=>selection,view,
   prepareReading:async()=>{speech.stop();await finishOpeningCover()},navigateTo,
   toggleAudio:()=>speech.toggle(),showSettings:()=>{if($('#preferences-panel').hidden)togglePanel('preferences')},closePanels,getSettings:()=>settings,onError:handleError})
+pdfTools=createPDFTools({getBook:()=>book,getRecord:()=>record,getIndex:()=>view.renderer?.getContents()[0]?.index,closePanels,
+  showOriginal:async number=>showImage(await pdfPageImage(book.pdf,number),`${t('Página')} ${number}`),
+  apply:async(pdfText,pdfOptions,index)=>{const saved={...record,pdfText,pdfOptions,cfi:undefined,anchorCFI:undefined,readingStats:{},navigationTrail:undefined};clearTimeout(saveTimer);await saveBook(saved);await openFile(readingFile,saved);if(book?.pdf)await view.goTo(index)}})
 applySettings(); syncVoices(); translateUI()
 updateLibrary().catch(() => toast('El almacenamiento local no está disponible. Puedes abrir un libro, pero no se guardará al cerrar.'))
 $('#file-dialog').showModal()
