@@ -53,6 +53,7 @@ let openingCoverURL
 let navigationTrail=new NavigationTrail(),preservingAnchor=false,wheelTurning=false
 let layoutSequence=0
 let layoutNavigation=Promise.resolve()
+let pageNavigation=Promise.resolve()
 let chapterStarts=[]
 const metricsCache=new WeakMap()
 let catalogRecords=[],collections=[],catalogItems=[],duplicateClusters=[],duplicateIDs=new Set(),duplicateFocus,organizingItem,metadataBatch
@@ -510,6 +511,7 @@ async function navigateTo(target,fraction=false) {
   if(!book||busy)return
   layoutSequence++;preservingAnchor=false
   await layoutNavigation.catch(()=>{})
+  await pageNavigation.catch(()=>{})
   const origin=anchorCFI();await finishOpeningCover(false)
   if(fraction)await view.goToFraction(target);else await view.goTo(target)
   const destination=anchorCFI();navigationTrail.visit(origin,destination)
@@ -521,6 +523,7 @@ async function navigateHistory(direction) {
   if(!target)return
   layoutSequence++;preservingAnchor=false
   await layoutNavigation.catch(()=>{})
+  await pageNavigation.catch(()=>{})
   await finishOpeningCover(false);await view.goTo(target)
   record.anchorCFI=target;record.navigationTrail=navigationTrail.snapshot();saveRecord();updateHistoryControls();updateReadingInformation()
 }
@@ -1233,7 +1236,8 @@ async function changePage(direction) {
   await layoutNavigation.catch(()=>{})
   if(!$('#opening-cover').hidden) {if(direction>0) await finishOpeningCover();return}
   dismissSelection()
-  await (direction > 0 ? view.next() : view.prev())
+  pageNavigation=pageNavigation.catch(()=>{}).then(()=>direction > 0 ? view.next() : view.prev())
+  await pageNavigation
 }
 
 function onKey(event) {
