@@ -70,7 +70,7 @@
 .appearance-switch button[aria-pressed="true"] {color:var(--ink);border-color:var(--accent);}
 .scene-options {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 12px;margin-bottom:20px;}
 .scene-option {padding:0;text-align:left;color:var(--ink);font-size:11px;}
-.scene-thumbnail {display:block;position:relative;height:70px;background-position:center;background-size:cover;margin-bottom:6px;outline:1px solid var(--line);outline-offset:2px;}
+.scene-thumbnail {display:block;position:relative;height:clamp(28px,calc((100dvh - 480px)/8),44px);background-position:center;background-size:100% 100%;background-repeat:no-repeat;margin-bottom:6px;outline:1px solid var(--line);outline-offset:2px;}
 .scene-option[aria-pressed="true"] .scene-thumbnail {outline:2px solid var(--accent);}
 .scene-thumbnail svg {position:absolute;inset:0;margin:auto;filter:drop-shadow(0 1px 3px #000);color:white;}
 .scene-afternoon::after,.scene-night::after {content:'';position:absolute;inset:0;background:#a8531744;}
@@ -78,3 +78,13 @@
 #theme-panel,.shared-settings:has(.scene-options) {scrollbar-width:none;}
 #theme-panel::-webkit-scrollbar,.shared-settings:has(.scene-options)::-webkit-scrollbar {display:none;}
 @media(max-width:500px){#library-list:not(.cover-grid) .library-entry{display:block;}#library-list:not(.cover-grid) .library-book{display:inline;}#library-list:not(.cover-grid) .library-author{margin-left:5px;}#library-list:not(.cover-grid) .library-row-actions{gap:3px;}}
+
+.physical-book #theme-panel {padding:18px;}
+.physical-book #theme-panel .panel-heading {margin-bottom:14px;}
+.physical-book .shared-settings:has(.scene-options) .appearance-switch {margin-bottom:12px;}
+.scene-options {gap:10px 12px;margin-bottom:14px;}
+.scene-option {font-size:11px;line-height:1.4;min-width:0;}
+.scene-option>span:last-child {display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.scene-thumbnail {margin-bottom:4px;}
+#mobile-book-field {margin-bottom:0;gap:6px;}
+#mobile-book-field select {min-height:36px;padding-block:6px;}

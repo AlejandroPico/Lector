@@ -41,3 +41,8 @@ Use case: photorealistic-natural. Asset: full screen background texture for an i
 Generación integrada de imágenes (sin API externa configurada). Conversión a WebP con Sharp.
 
 Use case: photorealistic-natural. Asset: full screen background texture for an interactive reading application. Antique dark mahogany study desk, deep burgundy brown wood, delicate aged patina and polished grain, warm intimate lamplight. Strictly overhead perpendicular photograph, flat tabletop filling entire landscape frame, no perspective horizon. Center 90 percent completely empty and evenly usable to overlay an interactive book. Real material photography, tactile fine detail, restrained contrast, welcoming peaceful reading mood. No book, no objects, no writing, no labels, no text, no watermark. Landscape 1536x1024.
+
+## olive.webp — 2.0
+Generación integrada de imágenes. Conversión a WebP con Sharp.
+
+Use case: photorealistic-natural. Asset: full screen background for an interactive book reading application. Strictly perpendicular overhead photograph of a beautiful olive wood reading table on a peaceful Mediterranean terrace. Entire landscape frame filled with the flat tabletop, naturally swirling golden honey and muted olive wood grain, satin natural finish, soft diffuse late morning daylight, welcoming calm mood. Center 90 percent empty and usable to overlay an interactive book. Real tactile fine material photography. No objects, no book, no writing, no labels, no text, no watermark, no perspective horizon. Landscape 1536x1024. Keep all edges evenly usable; restrained contrast.

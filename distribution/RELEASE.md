@@ -1,7 +1,7 @@
-Lector 1.11.0 pule biblioteca y lectura sobre la mesa. Unifica la lectura guardada y su entrada de carpeta por identidad del archivo, conserva notas y progreso y retira la papelera de las fichas. Listas más compactas y colecciones con búsqueda y creación mediante Intro.
+Lector 2.0.0 corrige y consolida la lectura sobre la mesa. Al retroceder hasta la portada se muestra únicamente el libro cerrado, sin hojas ni texto del visor detrás. La interfaz nocturna usa texto claro y menús coherentes, con colores del papel independientes para mantener legible el libro.
 
-El botón Tema permite cambiar entre lectura minimalista y libro sobre la mesa, con miniaturas de los entornos. Cerezo de biblioteca, bambú, roble claro y caoba de estudio amplían los acabados. El libro ajusta su tamaño y proporciones a la anchura de lectura; barras transparentes, controles contrastados y navegación desde los cantos. En vertical móvil se muestra una página con acceso al lado contiguo; la vista completa sigue disponible.
+Los escenarios se expanden completos al tamaño de la pantalla, sin recorte. Terraza de olivo completa una selección de doce opciones, contando Automático. Oficina usa un icono de maletín distinto del de tipografía. Selector de entornos más compacto para escritorio, manteniendo desplazamiento en pantallas pequeñas, navegación por teclado y diez idiomas.
 
-Se conserva la continuidad de voz al cambiar la presentación. Las portadas visibles pueden hidratar archivos de nube con permiso concedido; su carga sigue siendo opcional. No incluye emisión a dispositivos.
+Se conservan datos locales, notas, progreso, biblioteca unificada y continuidad de voz. Las sugerencias de IDEAS_2_0.md son propuestas pendientes de elección; no activan nuevos servicios ni transmisión a dispositivos.
 
 APK firmado para Android y Android TV/Chromecast con Google TV, Windows, macOS Intel/Apple Silicon y Linux. iOS incluye archivo sin firma y simulador; necesita firma propia de Apple. Las tiendas siguen preparadas sin publicación.

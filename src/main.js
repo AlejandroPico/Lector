@@ -40,7 +40,7 @@ import {addPDFMenus,createPDFTools} from './pdf-tools.js'
 import {addAudioMenus,createAudioTools} from './audio-tools.js'
 import {addLibraryPolish,createLibraryPolish} from './library-polish.js'
 import {annotationLanes,drawNoteMarks,annotationsOverlap} from './note-marks.js'
-import {createBookScene,sceneTheme} from './book-scene.js'
+import {createBookScene,sceneTheme,scenePaperColors} from './book-scene.js'
 import {addScenePicker,updateScenePicker,focusedBookPage} from './scene-picker.js'
 
 const $ = selector => document.querySelector(selector)
@@ -263,7 +263,7 @@ $('#app').innerHTML = `
           <div><dt>Autor</dt><dd>Alejandro Pico</dd></div>
           <div><dt>Carácter</dt><dd>Proyecto personal</dd></div>
           <div><dt>Propósito</dt><dd>Lectura y escucha</dd></div>
-          <div><dt>Edición</dt><dd>Versión 1.11.0</dd></div>
+          <div><dt>Edición</dt><dd>Versión 2.0.0</dd></div>
         </dl>
       </aside>
       <div class="about-body">
@@ -381,6 +381,7 @@ const gamepad=attachGamepad(()=>settings.tvMode,key=>{
 })
 
 function themeColors() {
+  if(settings.appearance==='book')return scenePaperColors(settings.bookScene)
   const style = getComputedStyle(document.documentElement)
   return { bg: style.getPropertyValue('--paper').trim(), ink: style.getPropertyValue('--ink').trim(), accent: style.getPropertyValue('--accent').trim(), mark: style.getPropertyValue('--highlight').trim() }
 }
@@ -390,7 +391,7 @@ function bookStyles() {
   const font = fonts.find(([name]) => name === settings.font)?.[1] ?? fonts[0][1]
   const bundledFonts = settings.font === 'Atkinson Hyperlegible' || settings.font === 'Lexend'
     ? [...document.styleSheets].flatMap(sheet => { try { return [...sheet.cssRules].filter(rule => rule.type === CSSRule.FONT_FACE_RULE && rule.style.fontFamily.replace(/["']/g,'') === settings.font).map(rule => rule.cssText.replace(/url\(["']?([^"')]+)["']?\)/g, (_,url) => `url("${new URL(url, sheet.href || document.baseURI).href}")`)) } catch { return [] } }).join('\n') : ''
-  return `${bundledFonts}\n${fontCSS(settings.font)}\nhtml { --theme-bg-color: ${colors.bg}; color: ${colors.ink} !important; background: ${settings.appearance==='book'?'transparent':colors.bg} !important; color-scheme: ${document.documentElement.style.colorScheme}; border: 0 !important; outline: 0 !important; box-shadow: none !important; }
+  return `${bundledFonts}\n${fontCSS(settings.font)}\nhtml { --theme-bg-color: ${colors.bg}; color: ${colors.ink} !important; background: ${settings.appearance==='book'?'transparent':colors.bg} !important; color-scheme: ${settings.appearance==='book'?'light':document.documentElement.style.colorScheme}; border: 0 !important; outline: 0 !important; box-shadow: none !important; }
     body { font-family: ${font} !important; font-size: ${settings.fontSize*(settings.tvMode?settings.tvScale:1)}px !important; line-height: ${settings.lineHeight} !important; color: ${colors.ink} !important; background: transparent !important; text-align: ${settings.justify ? 'justify' : 'left'} !important; overflow-wrap: break-word; }
     p, div, li, blockquote { font-family: inherit !important; font-size: inherit !important; line-height: inherit !important; color: inherit !important; }
     p { margin-block: 0 ${settings.paragraphGap}em !important; }
@@ -418,6 +419,7 @@ function applySettings() {
   document.querySelector('.theme-options').hidden=settings.appearance==='book'
   $('#theme-editor').hidden=settings.appearance==='book'
   document.documentElement.dataset.theme = theme.id
+  const paper=scenePaperColors(settings.bookScene);document.documentElement.style.setProperty('--book-paper',paper.bg);document.documentElement.style.setProperty('--book-ink',paper.ink)
   theme.colors.forEach((value,index) => document.documentElement.style.setProperty(`--${themeProperties[index]}`,value))
   document.documentElement.style.colorScheme = theme.dark ? 'dark' : 'light'
   $('#theme-toggle').innerHTML = icon(theme.icon)

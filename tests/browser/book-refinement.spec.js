@@ -25,7 +25,7 @@ test('the collections field filters existing names and creates on Enter or plus'
 test('themes switch appearance in place, show all desk thumbnails and hide the schedule and scrollbar',async({page})=>{
  await open(page);await page.locator('#theme-toggle').click();await expect(page.locator('#theme-panel')).toHaveCSS('scrollbar-width','none');await expect(page.locator('[data-theme="auto"]')).toHaveAttribute('title',/mañana de 7/)
  await expect(page.locator('#theme-panel p').filter({hasText:'Automático: mañana'})).toHaveCount(0)
- await page.locator('[data-appearance="book"]').click();await expect(page.locator('.theme-options')).toBeHidden();await expect(page.locator('[data-scene]')).toHaveCount(11)
+ await page.locator('[data-appearance="book"]').click();await expect(page.locator('.theme-options')).toBeHidden();await expect(page.locator('[data-scene]')).toHaveCount(12)
  for(const scene of ['library','bamboo','garden','study']){await page.locator(`[data-scene="${scene}"]`).click();await expect(page.locator('body')).toHaveAttribute('data-book-scene',scene);await expect(page.locator(`[data-scene="${scene}"]`)).toHaveAttribute('aria-pressed','true');expect(await page.locator(`[data-scene="${scene}"] .scene-thumbnail`).evaluate(el=>getComputedStyle(el).backgroundImage)).toContain(scene+'.webp')}
  await page.screenshot({path:'release/qa/111-theme-picker.png'});await page.locator('[data-appearance="minimal"]').click();await expect(page.locator('.theme-options')).toBeVisible();await expect(page.locator('#scene-options')).toBeHidden()
 })

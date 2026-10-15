@@ -1,5 +1,9 @@
 # Lector
 
+## Versión 2.0 · consolidación visual
+
+Cubierta cerrada sin superposición de hojas o texto. Interfaz nocturna de texto claro con superficies coherentes y colores del papel independientes. Doce opciones de entorno con Terraza de olivo, icono de oficina diferenciado y selector más compacto. Fondos expandidos completos, sin recorte, también en pantallas panorámicas. Mantiene datos, voz, diez idiomas y distribución multiplataforma. Las [propuestas futuras](IDEAS_2_0.md) quedan pendientes de selección.
+
 ## Versión 1.11 · biblioteca y libro adaptable
 
 Biblioteca sin doble ficha para el mismo archivo leído y catalogado; listas compactas, sin papelera, y campo de colecciones que filtra y crea con Intro. Tema incorpora el cambio de apariencia y miniaturas de todos los entornos, con cuatro nuevas maderas. Libro proporcional y redimensionable, barras transparentes y navegación por los cantos; página individual en móvil con selección del lado contiguo y alternativa de libro abierto. Se mantienen notas, progreso, voz y diez idiomas.

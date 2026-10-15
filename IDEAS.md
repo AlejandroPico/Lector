@@ -1,5 +1,7 @@
 # Propuestas para próximas versiones
 
+La revisión posterior a la versión 2.0 está en [IDEAS_2_0.md](IDEAS_2_0.md). Esta lista histórica incluye funciones ya realizadas y propuestas descartadas; no implica autorización nueva.
+
 Estas ideas están pendientes de selección por el autor. No son funciones disponibles ni trabajo aprobado automáticamente. Los números permiten elegir cuáles desarrollar.
 
 1. **Libro realista:** tapa, lomo, grosor y páginas con sombras discretas.

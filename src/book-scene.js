@@ -1,18 +1,8 @@
-import {themeById} from './presentation.js'
+import {effectiveScene} from './scene-palettes.js'
+export {effectiveScene,sceneTheme,scenePaperColors} from './scene-palettes.js'
 import {t} from './i18n.js'
 import {focusedBookPage} from './scene-picker.js'
 import './book-scene.css'
-const sceneNames=['home','afternoon','night','cabin','school','office','library','bamboo','garden','study']
-export function effectiveScene(value,hour=new Date().getHours()){
-  return value==='auto'?(hour>=7&&hour<18?'home':hour>=18&&hour<22?'afternoon':'night'):sceneNames.includes(value)?value:'home'
-}
-export function sceneTheme(value){
-  const scene=effectiveScene(value)
-  const theme=themeById(scene==='night'?'night':scene==='afternoon'?'afternoon':scene==='office'?'winter':'morning')
-  if(scene==='night')return {...theme,icon:'moon',colors:['#d9c5a0','#302b25','#352c23','#988976','#5a4c3d','#705b3e','#c5b17f','#443a2d'],dark:false}
-  return {...theme,icon:({home:'comfort',afternoon:'sunset',cabin:'leaf',school:'book',office:'type',library:'book',bamboo:'leaf',garden:'leaf',study:'book'})[scene]??theme.icon,colors:[scene==='school'?'#fff8e8':'#f7efdc',...theme.colors.slice(1)]}
-}
-
 // The live reader remains the only navigable book. Temporary sandboxed DOM
 // copies preserve its real text and images on both faces of the turning leaf.
 export function createBookScene({view,area,settings,getRecord}){

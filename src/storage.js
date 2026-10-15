@@ -163,7 +163,7 @@ export function safeSettings(input = {}) {
   clamp('coverSize',100,280)
   if(!['page','spread'].includes(value.bookMobileView))value.bookMobileView='page'
   if(!['minimal','book'].includes(value.appearance))value.appearance='minimal'
-  if(!['auto','home','afternoon','night','cabin','school','office','library','bamboo','garden','study'].includes(value.bookScene))value.bookScene='auto'
+  if(!['auto','home','afternoon','night','cabin','school','office','library','bamboo','garden','study','olive'].includes(value.bookScene))value.bookScene='auto'
   clamp('rate', 0.5, 2); clamp('pitch', 0.5, 1.5)
   clamp('marginOuter',0,160); clamp('marginInner',0,100)
   clamp('tvScale',1,2);clamp('visualWpm',80,600);clamp('narrationWpm',80,300)

@@ -60,4 +60,5 @@ Libro abierto|Llibre obert|Open book|Livre ouvert|Aufgeschlagenes Buch|Livro abe
 Página visible|Pàgina visible|Visible page|Page visible|Sichtbare Seite|Página visível|Pagina visibile|当前页|表示ページ|दिखाई देने वाला पृष्ठ
 Página izquierda|Pàgina esquerra|Left page|Page de gauche|Linke Seite|Página esquerda|Pagina sinistra|左页|左ページ|बायाँ पृष्ठ
 Página derecha|Pàgina dreta|Right page|Page de droite|Rechte Seite|Página direita|Pagina destra|右页|右ページ|दायाँ पृष्ठ
+Terraza de olivo|Terrassa d'olivera|Olivewood terrace|Terrasse en olivier|Olivenholz-Terrasse|Terraço de oliveira|Terrazza in ulivo|橄榄木露台|オリーブ材のテラス|जैतून की लकड़ी की छत
 `
