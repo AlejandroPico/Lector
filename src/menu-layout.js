@@ -18,10 +18,11 @@ export function organizeMenus() {
   $('#library-filters').open = true
   $('#library-filters > summary').hidden = true
   filters.append($('#library-filters'))
+  filters.append($('#library-count'))
   filters.insertAdjacentHTML('beforeend','<button id="library-filters-apply" class="primary-button">Aplicar filtros</button>')
   $('#library-filters-apply').onclick=()=>filters.close()
   const sources = dialog('library-sources-dialog', 'Carpetas y catálogo')
-  for (const selector of ['.library-actions', '#folder-list', '.folder-explanation', '#folder-progress', '#folder-summary', '#read-visible-metadata', '#metadata-progress']) sources.append($(selector))
+  for (const selector of ['.library-actions', '#folder-list', '.folder-explanation', '#folder-progress', '#folder-summary', '#read-visible-metadata', '#metadata-progress','#cover-progress']) sources.append($(selector))
   sources.append($('#library-filters .small.muted'))
   const collections = dialog('library-collections-dialog', 'Colecciones')
   collections.append(filters.querySelector('.collection-create'))
@@ -44,7 +45,8 @@ export function organizeMenus() {
   // Keep the heading first, followed by search.
   gear.prepend(gear.querySelector('.panel-heading'))
   const sections = [...gear.children].filter(node=>node.matches('details'))
-  const reading = sections[1], appearance = sections[2], voice = sections[3]
+  const section=name=>sections.find(element=>element.querySelector('summary')?.textContent.trim()===name)
+  const reading=section('Lectura'),appearance=section('Apariencia'),voice=section('Voz')
   const flow = $('[data-setting="readingFlow"]').closest('label')
   flow.firstChild.textContent = 'Formato de lectura'
   flow.querySelector('option[value="scrolled"]').textContent = 'Lectura continua · créditos'
@@ -77,7 +79,8 @@ export function organizeMenus() {
   progress.innerHTML='<summary>Ubicación y tiempo de lectura</summary>'
   progress.append(...[...reading.children].filter(node=>node.tagName!=='SUMMARY')); reading.append(progress)
   // The shared typography body will precede advanced progress controls.
-  reading.open = true
+  // Disclosure state belongs to this page session, never to saved preferences.
+  for(const detail of document.querySelectorAll('.panel details'))detail.open=false
   const moveSettings = central => {
     for (const {body,panel,host} of shared) (central ? host : panel).append(body)
     if (central) reading.insertBefore(shared[0].body,progress)

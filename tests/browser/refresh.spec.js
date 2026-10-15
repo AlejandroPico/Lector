@@ -1,5 +1,6 @@
 import {test,expect} from '@playwright/test'
-async function setup(page,count=3){
+async function setup(page,count=3,automatic=true){
+  await page.addInitScript(automatic=>localStorage.setItem('lector-settings',JSON.stringify({libraryPresentationVersion:1,preloadCovers:automatic,preloadEmbeddedCovers:false,libraryDialogView:'covers'})),automatic)
   await page.goto('/')
   await page.evaluate(async count=>{
     const root=await navigator.storage.getDirectory(),library=await root.getDirectoryHandle('Pruebas08',{create:true})
@@ -17,11 +18,11 @@ async function setup(page,count=3){
 }
 test('refresh reports deltas, retains unchanged covers and metadata and performs zero content reads',async({page})=>{
   await setup(page)
-  await page.locator('.metadata-button').first().click();await page.locator('#dialog-view-covers').click();await page.locator('.catalog-cover').first().click()
-  await expect(page.locator('.catalog-cover img')).toHaveCount(1)
+  await expect(page.locator('.catalog-cover img')).toHaveCount(3);await page.locator('.library-row').first().hover();await page.locator('.metadata-button').first().click();await page.locator('#library-sources-toggle').click();await page.locator('#pause-covers').click();await page.locator('#library-sources-dialog .dialog-close').click()
+  await expect(page.locator('.catalog-cover img')).toHaveCount(3)
   await page.evaluate(()=>window.__reads=[]);await page.locator('#library-sources-toggle').click();await page.locator('#refresh-folders').click();await expect(page.locator('#folder-progress')).toBeHidden()
   await expect(page.locator('#folder-summary')).toHaveText('Añadidos: 0 · Modificados: 0 · Retirados: 0 · Sin cambios: 3')
-  await expect(page.locator('.catalog-cover img')).toHaveCount(1);await page.locator('#library-sources-dialog .dialog-close').click()
+  await expect(page.locator('.catalog-cover img')).toHaveCount(3);await page.locator('#library-sources-dialog .dialog-close').click()
   await page.evaluate(async()=>{
     await window.__library.removeEntry('Libro 2 (2)',{recursive:true})
     const folder=await window.__library.getDirectoryHandle('Nuevo (4)',{create:true});await folder.getFileHandle('Nuevo.epub',{create:true})
@@ -31,14 +32,14 @@ test('refresh reports deltas, retains unchanged covers and metadata and performs
   await expect(page.locator('#folder-summary')).toHaveText('Añadidos: 1 · Modificados: 1 · Retirados: 1 · Sin cambios: 1')
   expect(await page.evaluate(()=>window.__reads)).toEqual([])
 })
-test('visible-cover queue is opt-in, cancellable and does not open ebooks or offscreen covers',async({page})=>{
-  await setup(page,20);await page.locator('#dialog-view-covers').click();expect(await page.evaluate(()=>window.__reads)).toEqual([])
+test('visible-cover queue can be disabled and canceled and does not open ebooks or offscreen covers',async({page})=>{
+  await setup(page,20,false);await page.locator('#dialog-view-covers').click();expect(await page.evaluate(()=>window.__reads)).toEqual([])
   await page.evaluate(()=>window.__delay=600)
   await page.locator('#library-dialog-close').click();await page.locator('#preferences-toggle').click();await page.locator('#preferences-panel summary').filter({hasText:'Biblioteca'}).click()
   await page.locator('[data-setting="preloadCovers"]').check();await page.keyboard.press('Escape');await page.locator('#library-expand').click();await expect.poll(()=>page.evaluate(()=>window.__reads.length)).toBe(1)
-  await page.locator('#pause-covers').click();await page.waitForTimeout(750)
+  await page.locator('#library-sources-toggle').click();await page.locator('#pause-covers').click();await page.waitForTimeout(750)
   expect(await page.evaluate(()=>window.__reads)).toEqual(['cover.svg']);await expect(page.locator('.catalog-cover img')).toHaveCount(0)
-  await page.evaluate(()=>window.__delay=0);await page.locator('#resume-covers').click();await expect.poll(()=>page.locator('.catalog-cover img').count()).toBeGreaterThan(0)
+  await page.evaluate(()=>window.__delay=0);await page.locator('#resume-covers').click();await page.locator('#library-sources-dialog .dialog-close').click();await expect.poll(()=>page.locator('.catalog-cover img').count()).toBeGreaterThan(0)
   await page.waitForTimeout(300)
   const reads=await page.evaluate(()=>window.__reads);expect(reads.every(name=>name==='cover.svg')).toBe(true);expect(reads.length).toBeLessThan(20)
   await page.locator('#library-search').fill('Libro 19');await expect(page.locator('.catalog-cover img')).toHaveCount(1)

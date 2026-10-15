@@ -30,6 +30,10 @@ export const themes = [
   { id: 'rain', label: 'Lluvia', icon: 'rain', dark: true, colors: ['#1c2630','#24323e','#c5d4df','#98b0c1','#3b5061','#9ebfd6','#35566e','#2d4050'] },
 ]
 themes.push(
+  {id:'haven',label:'Refugio',icon:'comfort',colors:['#eee8df','#e5dccf','#4b453d','#7a7062','#d5c9b9','#85684c','#dfcba8','#e5d9c6']},
+  {id:'blossom',label:'Florecer',icon:'flower',colors:['#faf0f5','#f0e2ec','#554252','#8c7386','#dfccda','#956281','#ebcede','#f0deea']},
+  {id:'serenity',label:'Serenidad',icon:'calm',colors:['#eeedf8','#e3e1f1','#44415e','#797594','#d1cce5','#746798','#dcd3ef','#e5dff3']},
+  {id:'gratitude',label:'Gratitud',icon:'heart',colors:['#faf0e4','#f0e3d2','#574638','#8c7863','#dfceb9','#967047','#ead6b7','#f0e0c9']},
   { id:'sunny',label:'Soleado',icon:'sun',colors:['#fff8e6','#fff0c9','#4e422c','#8a754c','#e8d9b5','#a47923','#f0dea8','#f7e8bf'] },
   { id:'snowy',label:'Nevado',icon:'snow',colors:['#f7fafc','#edf4f8','#364b59','#758b9b','#dbe6ec','#527f9c','#daeaf5','#e7f0f6'] },
   { id:'windy',label:'Ventoso',icon:'wind',colors:['#edf4ef','#dfece5','#334d49','#6c8580','#cbded5','#477d70','#c9e4d8','#deeee5'] },

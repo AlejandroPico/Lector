@@ -11,7 +11,7 @@ async function openBook(page) {
 test('theme background stays uniform through resizing, animation and columns', async ({page}) => {
   await openBook(page)
   await page.locator('#theme-toggle').click()
-  await expect(page.locator('button[data-theme]')).toHaveCount(20)
+  await expect(page.locator('button[data-theme]')).toHaveCount(24)
   await page.locator('button[data-theme="contrast"]').click()
   await expect(page.locator('html')).toHaveCSS('background-color','rgb(0, 0, 0)')
   await page.locator('#appearance-toggle').click();await page.getByText('Espaciado, márgenes y fuentes',{exact:true}).click()
@@ -92,6 +92,7 @@ for (const [locale,expected] of [['ca-ES','Obrir un llibre'],['en-US','Open a bo
 test('language switch persists and does not translate book titles or text',async ({page})=>{
   await openBook(page)
   await page.locator('#preferences-toggle').click()
+  await page.getByText('General',{exact:true}).click()
   await page.locator('[data-setting="uiLanguage"]').selectOption('en')
   await expect(page.locator('#preferences-title')).toHaveText('Settings')
   await expect(page.locator('#appearance-toggle')).toHaveAttribute('aria-label','Typography and page')
@@ -101,7 +102,8 @@ test('language switch persists and does not translate book titles or text',async
   await page.reload(); await expect(page.getByRole('button',{name:'本を開く',exact:true})).toBeVisible()
 })
 
-test('Calibre folder enumeration does not read books, covers or metadata until selected',async ({page})=>{
+test('Calibre enumeration keeps contents unread when automatic covers are disabled',async ({page})=>{
+  await page.addInitScript(()=>{if(!localStorage.getItem('lector-settings'))localStorage.setItem('lector-settings',JSON.stringify({libraryPresentationVersion:1,preloadCovers:false,preloadEmbeddedCovers:false}))})
   await page.goto('/')
   const payload=(await epub()).toString('base64')
   const mobiPayload=mobi().toString('base64')
@@ -130,15 +132,12 @@ test('Calibre folder enumeration does not read books, covers or metadata until s
   await expect(page.locator('.library-book')).toHaveCount(2)
   await page.locator('#dialog-view-covers').click()
   expect(await page.evaluate(()=>window.__fileReads)).toEqual([])
-  await page.getByRole('button',{name:'Leer metadatos',exact:true}).first().click()
-  await expect(page.locator('#library-dialog').getByRole('button',{name:'Título personalizado 1',exact:true})).toBeVisible()
+  await page.locator('.library-row').first().hover();await page.getByRole('button',{name:'Leer metadatos',exact:true}).first().click()
+  await page.locator('.library-row').filter({hasText:'Título personalizado 1'}).hover();await expect(page.locator('#library-dialog').getByRole('button',{name:'Título personalizado 1',exact:true})).toBeVisible()
   expect(await page.evaluate(()=>window.__fileReads)).toEqual(['metadata.opf'])
-  await page.getByRole('button',{name:'Cargar portada: Título personalizado 1',exact:true}).click()
-  await expect(page.getByRole('button',{name:'Abrir libro: Título personalizado 1',exact:true}).locator('img')).toBeVisible()
-  expect(await page.evaluate(()=>window.__fileReads)).toEqual(['metadata.opf','cover.svg'])
   await page.locator('#library-dialog').getByRole('button',{name:'Título personalizado 1',exact:true}).click()
   await expect(page.locator('#audio-toggle')).toBeEnabled()
-  expect(await page.evaluate(()=>window.__fileReads)).toEqual(['metadata.opf','cover.svg','Jardín.epub'])
+  expect(await page.evaluate(()=>window.__fileReads)).toEqual(['metadata.opf','Jardín.epub','cover.svg'])
   await page.reload(); await expect(page.locator('.resume-button')).toHaveCount(1)
   await page.locator('#dismiss-file').click();await page.locator('#index-toggle').click();await page.getByRole('tab',{name:'Libros',exact:true}).click()
   await expect(page.locator('#library-count')).toContainText('2 libros')

@@ -1,11 +1,12 @@
+import {annotationColors} from './notes.js'
 // Only portable reading data crosses the device boundary. No files or credentials.
-export const preferenceKeys=['uiLanguage','theme','customThemes','font','fontSize','lineHeight','paragraphGap','columns','width','gutter','fullWidth','marginOuter','marginInner','justify','animated','hyphenate','readingFlow','showOpeningCover','highlight','highlightMode','followSpeech','clickToRead','showAnnotations','showReference','showChapterTime','showBookTime']
+export const preferenceKeys=['appearance','bookScene','coverSize','uiLanguage','theme','customThemes','font','fontSize','lineHeight','paragraphGap','columns','width','gutter','fullWidth','marginOuter','marginInner','justify','animated','hyphenate','readingFlow','showOpeningCover','highlight','highlightMode','followSpeech','clickToRead','showAnnotations','showReference','showChapterTime','showBookTime']
 const string=(value,max=200)=>typeof value==='string'?value.slice(0,max):''
 const stamp=value=>Number.isSafeInteger(value)&&value>=0&&value<=Date.now()+86400000?value:0
 const idPattern=/^[a-f\d]{64}$/i
 function note(value){
  if(!value||typeof value!=='object'||!string(value.id)||!['note','highlight','bookmark'].includes(value.kind)||!string(value.cfi,2000).startsWith('epubcfi('))return null
- return {id:string(value.id),kind:value.kind,cfi:string(value.cfi,2000),quote:string(value.quote,10000),text:string(value.text,10000),label:string(value.label),reference:string(value.reference,500),color:['gold','green','blue','pink','orange'].includes(value.color)?value.color:'gold',style:value.style==='highlight'?'highlight':'underline',fraction:Number.isFinite(value.fraction)?Math.max(0,Math.min(1,value.fraction)):0,createdAt:stamp(value.createdAt),updatedAt:stamp(value.updatedAt??value.createdAt)}
+ return {id:string(value.id),kind:value.kind,cfi:string(value.cfi,2000),quote:string(value.quote,10000),text:string(value.text,10000),label:string(value.label),reference:string(value.reference,500),color:Object.hasOwn(annotationColors,value.color)?value.color:'gold',style:value.style==='highlight'?'highlight':'underline',fraction:Number.isFinite(value.fraction)?Math.max(0,Math.min(1,value.fraction)):0,createdAt:stamp(value.createdAt),updatedAt:stamp(value.updatedAt??value.createdAt)}
 }
 export function portablePreferences(input={}){
  const result={}

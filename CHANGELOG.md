@@ -1,5 +1,16 @@
 # Historial de versiones
 
+## 1.10.0
+
+- Portadas completas y carga automática de las visibles con permisos ya concedidos; cola y preferencia desactivable. La enumeración de carpetas sigue sin leer contenidos.
+- Fichas de cubierta con persiana accesible para ratón, teclado y tacto, tamaño ajustable y desplazamiento sin barra. Recuento trasladado a Filtros.
+- Gestor completo de colecciones y referencia de ubicación por carpeta. Ruta absoluta en escritorio; referencia editable en web por límites del navegador.
+- Lateral más compacto y separador entre recientes y libros sin leer, manteniendo su orden.
+- 24 colores de notas con muestras. Anotaciones coincidentes y anidadas independientes, líneas diferenciadas y selección de nota al pulsar un solapamiento. Sincronización conserva todos los colores.
+- Cuatro temas positivos nuevos. Ajustes replegados al cargar y estado de expansión conservado durante la sesión.
+- Apariencia opcional de libro físico, cubierta, tapa final, escenarios fotográficos, lomo, cantos según progreso y hojas animadas con contenido real. Una página móvil y dos en escritorio, respeto por movimiento reducido y continuidad de voz.
+- Interfaz en diez idiomas y versiones coherentes de todas las plataformas.
+
 ## 1.9.1
 
 - Prueba de voz independiente de las asignaciones del narrador guardadas por libro, tanto para navegador como para API. La narración real conserva el reparto.

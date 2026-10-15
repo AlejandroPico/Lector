@@ -1,5 +1,17 @@
 # Lector
 
+## Versión 1.10 · biblioteca y libro sobre la mesa
+
+Biblioteca de portadas completas, detalles como persiana al pasar el ratón o enfocar con teclado, primer toque para mostrar información y segundo para abrir en pantallas táctiles. Tamaño ajustable desde el icono de portadas; recuento en Filtros y desplazamiento sin barra visible. Portadas visibles automáticas, también las incrustadas en EPUB, con cola secuencial, pausa y caché. Leer una cubierta incrustada puede descargar el ebook de OneDrive; se puede desactivar en Ajustes → Biblioteca. No se solicitan permisos automáticamente.
+
+Colecciones con consulta, edición de nombre, selección de libros y eliminación de la agrupación sin borrar libros. Rutas reales en escritorio; el navegador solo entrega el nombre de carpeta, por lo que permite guardar una ruta o etiqueta escrita como referencia. Separador discreto entre libros recientes y pendientes en el lateral.
+
+24 colores con muestras y anotaciones independientes, incluso sobre el mismo fragmento. Las coincidencias se dibujan en líneas distintas y al pulsarlas se pueden consultar sus notas. Refugio, Florecer, Serenidad y Gratitud amplían las paletas. Ajustes comienza replegado en cada nueva carga, conservando los desplegables abiertos durante esa sesión.
+
+Ajustes → General → Apariencia → **Libro sobre la mesa** ofrece papel, lomo y cantos con grosor según el avance, cubierta del ebook y giro de hojas con texto e imágenes reales. En casa, luz de tarde, noche, cabaña, pupitre y oficina; automático sigue la hora local. En móvil se usa una página, en pantallas amplias dos. Se respeta movimiento reducido y se conserva la lectura minimalista y su configuración de columnas. La contracubierta usa una imagen reconocida como página de cubierta final cuando existe; en otro caso se muestra una tapa sobria, sin inventar contenido editorial.
+
+[Escenarios generados y prompts](public/scenes/README.md). La emisión a otros dispositivos sigue aplazada.
+
 ## Corrección 1.9.1 · voces
 
 «Probar voz» respeta la voz elegida, sin aplicar el narrador guardado del libro. La voz utiliza su idioma completo; no se sustituye silenciosamente una voz guardada que ya no esté disponible. Selección automática por región y errores identificados por voz. [Comprobación de Edge y disponibilidad de voces Microsoft en otras plataformas](VOCES_MICROSOFT.md).

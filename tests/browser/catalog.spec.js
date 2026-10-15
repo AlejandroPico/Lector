@@ -5,6 +5,7 @@ async function filters(page){if(await page.locator('#library-filter-dialog').isV
 async function sources(page){if(await page.locator('#library-sources-dialog').isVisible())return;await closeTools(page);await page.locator('#library-sources-toggle').click()}
 
 async function folderCatalog(page){
+  await page.addInitScript(()=>localStorage.setItem('lector-settings',JSON.stringify({libraryPresentationVersion:1,preloadCovers:false,preloadEmbeddedCovers:false,libraryDialogView:'list'})))
   await page.goto('/')
   await page.evaluate(async()=>{
     const root=await navigator.storage.getDirectory(),library=await root.getDirectoryHandle('Catálogo',{create:true}),author=await library.getDirectoryHandle('Autor',{create:true})
@@ -61,7 +62,7 @@ test('states, metadata overrides and virtual collections survive refresh, change
   await page.reload();await page.locator('#dismiss-file').click();await page.locator('#index-toggle').click();await page.getByRole('tab',{name:'Libros',exact:true}).click()
   await expect(page.locator('.library-book')).toHaveCount(4);await filters(page)
   await filters(page);await page.locator('#filter-status').selectOption('finished');await filters(page);await page.locator('#filter-collection').selectOption({label:'Favoritos'});await expect(page.locator('.library-book')).toHaveText(['Diez'])
-  await closeTools(page);await page.locator('#library-collections-toggle').click();await page.locator('#collection-delete').click();await expect(page.locator('#filter-collection option')).toHaveCount(1)
+  await closeTools(page);await page.locator('#library-collections-toggle').click();await page.getByRole('button',{name:'Editar colección: Favoritos'}).click();await page.locator('#collection-remove').click();await expect(page.locator('#filter-collection option')).toHaveCount(1)
   await filters(page);await page.locator('#clear-library-filters').click();await expect(page.locator('.library-book')).toHaveCount(4)
 })
 test('duplicate review retains all books and can restrict the library to one candidate group',async({page})=>{

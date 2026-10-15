@@ -118,7 +118,7 @@ export const defaults = Object.freeze({
   theme: 'auto', font: 'Georgia', fontSize: 21, lineHeight: 1.75,
   paragraphGap: 0.8, columns: 2, width: 1320, gutter: 7,
   justify: false, animated: true, highlight: true, provider: 'browser', uiLanguage: 'auto',
-  appearance: 'minimal', libraryView: 'list', fullWidth: false,
+  appearance: 'minimal', bookScene:'auto', coverSize:165, libraryView: 'list', fullWidth: false,
   followSpeech: true, clickToRead: true, highlightMode: 'word',
   marginOuter: 10, marginInner: 28, hyphenate: false, customThemes: [],
   showOpeningCover: true,
@@ -126,7 +126,7 @@ export const defaults = Object.freeze({
   readingFlow:'paginated',tvMode:false,tvScale:1.35,historyControls:true,
   showReference:false,showChapterTime:false,showBookTime:false,estimateMode:'reading',visualWpm:220,narrationWpm:170,
   libraryDetails:false,
-  preloadCovers:false,preloadEmbeddedCovers:false,
+  preloadCovers:true,preloadEmbeddedCovers:true,
   showAnnotations:true,
   dictionaryLanguage:'auto',
   voice: '', rate: 1, pitch: 1, language: 'es-ES', speechLanguage: 'auto',
@@ -160,6 +160,9 @@ export function safeSettings(input = {}) {
   clamp('fontSize', 14, 36); clamp('lineHeight', 1.2, 2.4)
   clamp('paragraphGap', 0, 2); clamp('columns', 1, 3); value.columns = Math.round(value.columns)
   clamp('width', 640, 3840); clamp('gutter', 1, 12)
+  clamp('coverSize',100,280)
+  if(!['minimal','book'].includes(value.appearance))value.appearance='minimal'
+  if(!['auto','home','afternoon','night','cabin','school','office'].includes(value.bookScene))value.bookScene='auto'
   clamp('rate', 0.5, 2); clamp('pitch', 0.5, 1.5)
   clamp('marginOuter',0,160); clamp('marginInner',0,100)
   clamp('tvScale',1,2);clamp('visualWpm',80,600);clamp('narrationWpm',80,300)

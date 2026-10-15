@@ -186,6 +186,7 @@ test('small screens use one readable column and retain accessible controls', asy
   await page.screenshot({ path: 'test-results/movil.png', fullPage: true })
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390)
   await page.locator('#preferences-toggle').click()
+  await page.locator('#preferences-panel summary').filter({hasText:/^Lectura$/}).click()
   await expect(page.locator('#preferences-panel [data-setting="font"]')).toBeVisible()
   await page.locator('#preferences-panel [data-setting="readingFlow"]').selectOption('scrolled')
   await expect.poll(()=>page.evaluate(()=>document.querySelector('#reader').renderer.scrolled)).toBe(true)

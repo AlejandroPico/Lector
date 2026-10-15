@@ -19,7 +19,7 @@ test('colored marks retain their anchor, edit without duplicating and can be hid
   await expect.poll(()=>notes(page).then(items=>items.length)).toBe(1)
   const first=(await notes(page))[0];expect(first.kind).toBe('highlight');expect(first.color).toBe('green')
   await expect.poll(()=>overlayColor(page)).toContain('#3b8e68')
-  await select(page);await page.locator('#annotate-selection').click();await page.locator('#note-text').fill('Texto editado.');await page.locator('#note-color').selectOption('blue');await page.locator('#note-style').selectOption('highlight');await page.locator('#save-note').click()
+  await page.locator('#index-toggle').click();await page.getByRole('tab',{name:'Notas',exact:true}).click();await page.locator('.note-row').getByRole('button',{name:'Editar nota'}).click();await page.locator('#note-text').fill('Texto editado.');await page.locator('#note-color').selectOption('blue');await page.locator('#note-style').selectOption('highlight');await page.locator('#save-note').click()
   await expect.poll(()=>notes(page).then(items=>items[0].text)).toBe('Texto editado.')
   expect((await notes(page))[0]).toMatchObject({id:first.id,cfi:first.cfi,kind:'note',color:'blue',style:'highlight'})
   await expect.poll(()=>overlayColor(page)).toContain('#438acc')

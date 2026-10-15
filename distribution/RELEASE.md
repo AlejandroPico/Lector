@@ -1,11 +1,5 @@
-Lector 1.9.1 corrige la selección y prueba de voces: la muestra usa la voz elegida y no la asignación guardada para el narrador del libro. Se utiliza el idioma exacto de la voz y se prioriza la región. Las voces no disponibles se identifican y no se reemplazan silenciosamente. Elvira, Álvaro y Ximena se comprobaron con síntesis real en un perfil independiente de Edge; la disponibilidad de cada perfil y servicio sigue dependiendo del navegador.
+Lector 1.10.0 amplía la biblioteca y añade la apariencia opcional Libro sobre la mesa. Portadas completas con detalles al pasar el ratón, enfocar o tocar, tamaño ajustable, gestor de colecciones y notas independientes con 24 colores. Nuevos temas y ajustes replegados por sesión. Escenarios fotográficos, cubierta del ebook, hojas animadas con texto e imágenes y cantos que reflejan el progreso. La lectura minimalista sigue disponible y conserva sus preferencias.
 
-Incluye distribución web instalable, Windows, macOS (Intel y Apple Silicon), Linux, Android/Android TV y proyectos iPhone/iPad compilados. La guía VOCES_MICROSOFT.md explica las comprobaciones y la vía oficial Azure para otras plataformas; esta corrección no añade Azure ni cuentas de pago.
+Las portadas visibles se cargan automáticamente con permisos ya concedidos, también desde EPUB; puede desactivarse en Ajustes → Biblioteca. Leerlas puede descargar el ebook correspondiente desde la nube. El navegador no expone rutas absolutas: permite guardar una referencia escrita; escritorio muestra la ruta real. No incluye emisión a dispositivos.
 
-Android-TV.apk es el instalador firmado para móvil, tableta y Android TV/Chromecast con Google TV. Google-Play.aab es el bundle para preparar Google Play. No transmite a Chromecast ni funciona en LG webOS/Samsung Tizen.
-
-Windows y macOS aún no tienen certificados comerciales del titular. iOS ofrece un archivo Xcode sin firma y una aplicación de simulador: para instalar en un iPhone/iPad o publicar se necesita la cuenta y firma de Apple. No se ha publicado en tiendas.
-
-La corrección 1.8 permite explorar el libro mientras sigue sonando y volver al punto narrado sin cortes ni cambios de tamaño. Carpetas y exportaciones usan selectores nativos; Android/iOS integran las voces del sistema.
-
-Consulta DISTRIBUCION.md en el código fuente para requisitos, privacidad, preparación de tiendas y límites de cada plataforma. SHA256SUMS.txt permite comprobar las descargas.
+APK firmado para Android y Android TV/Chromecast con Google TV, Windows, macOS Intel/Apple Silicon y Linux. iOS incluye archivo sin firma y simulador; necesita firma propia de Apple. Las tiendas siguen preparadas sin publicación.

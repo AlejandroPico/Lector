@@ -14,8 +14,8 @@ describe('presentation and localization', () => {
     expect(safeSettings({theme:theme.id,customThemes:[{...theme,colors:[]}]}).theme).toBe('auto')
   })
   it('has twenty distinct themes, twenty base typefaces and ten complete language catalogs', () => {
-    expect(themes).toHaveLength(20); expect(fonts.length).toBeGreaterThanOrEqual(20)
-    expect(new Set(themes.map(theme=>theme.id)).size).toBe(20)
+    expect(themes).toHaveLength(24); expect(fonts.length).toBeGreaterThanOrEqual(20)
+    expect(new Set(themes.map(theme=>theme.id)).size).toBe(24)
     expect(themes.find(theme=>theme.id==='contrast').colors[0]).toBe('#000000')
     expect(translationCount).toBeGreaterThan(140)
     for (const language of Object.keys(languages)) {

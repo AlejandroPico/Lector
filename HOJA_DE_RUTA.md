@@ -1,5 +1,11 @@
 # Ampliaciones acordadas y versiones propuestas
 
+## Ampliación 1.10
+
+Autorizada: pulido de biblioteca, portadas visibles automáticas, colecciones completas, referencias de carpetas, notas coincidentes independientes, 24 colores, cuatro temas nuevos, ajustes replegados por sesión y apariencia opcional de libro con escenarios fotográficos y hojas animadas. El supuesto fallo de escaneo se cancela: procedía de otra carpeta recordada. Emisión aplazada sin cambios.
+
+Esta petición sustituye el valor inicial anterior de portadas desactivadas. Solo se cargan las visibles, con permisos ya concedidos y con opciones de pausa y desactivación. Las incrustadas pueden descargar el EPUB correspondiente de la nube. No se solicitan permisos automáticamente.
+
 ## Corrección de voces 1.9.1
 
 Solicitada el 15 de octubre de 2026: prueba de voz sin asignaciones del narrador del libro, idioma exacto y prioridad regional, voz guardada no disponible identificada sin sustitución silenciosa, errores por nombre/código y diez idiomas. Se conservan las voces de personajes durante la narración real y la independencia entre visor y audio.

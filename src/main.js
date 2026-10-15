@@ -5,6 +5,7 @@ import {createMediaControls} from './media-session.js'
 import {addNarrationMenus,createNarrationTools} from './narration-tools.js'
 import {addLocalVoiceMenus,createLocalVoiceTools} from './local-voice-tools.js'
 import './style.css'
+import './library-polish.css'
 import '@fontsource/atkinson-hyperlegible/400.css'
 import '@fontsource/atkinson-hyperlegible/700.css'
 import '@fontsource/lexend/400.css'
@@ -12,7 +13,6 @@ import '@fontsource/lexend/600.css'
 import faviconURL from '../favicon.svg?url'
 import 'foliate-js/view.js'
 import './reader-lifecycle.js'
-import { Overlayer } from 'foliate-js/overlayer.js'
 import { importBook, escapeHTML, metadataText, pdfPageImage } from './books.js'
 import { allBooks, allFolders, saveFolder, removeFolder, allFonts, saveFont, removeFont, fileId, getBook, saveBook, removeBook, defaults, readJSON, writeJSON, effectiveTheme, safeSettings } from './storage.js'
 import { SpeechController, validateEndpoint, wordAtPoint } from './speech.js'
@@ -24,7 +24,7 @@ import { scanDirectory, ensureFolderPermission, readMetadata } from './folders.j
 import { attachImageGestures } from './image-viewer.js'
 import { NavigationTrail,readingMetrics,estimateRemaining } from './reading.js'
 import { moveFocus,attachGamepad } from './tv-controls.js'
-import { allCatalog,updateCatalog,removeCatalog,allCollections,saveCollection,removeCollection } from './storage.js'
+import { allCatalog,updateCatalog,removeCatalog,allCollections,saveCollection } from './storage.js'
 import { statuses,catalogKey,catalogMetadata,libraryEntries,filterLibrary,duplicateGroups,labels,normalize,languageCode } from './library.js'
 import { reconcileCatalog } from './catalog-refresh.js'
 import { VisibleCoverQueue } from './cover-queue.js'
@@ -38,6 +38,9 @@ import {addLanguageMenus} from './language-menus.js'
 import {createLanguageTools} from './language-tools.js'
 import {addPDFMenus,createPDFTools} from './pdf-tools.js'
 import {addAudioMenus,createAudioTools} from './audio-tools.js'
+import {addLibraryPolish,createLibraryPolish} from './library-polish.js'
+import {annotationLanes,drawNoteMarks,annotationsOverlap} from './note-marks.js'
+import {createBookScene,sceneTheme} from './book-scene.js'
 
 const $ = selector => document.querySelector(selector)
 await initializePlatform()
@@ -49,6 +52,7 @@ for (const resource of [...projectFonts,...userFonts]) {
 const storedSettings = readJSON('lector-settings', {})
 if(platform.tv&&storedSettings.tvMode===undefined)storedSettings.tvMode=true
 if (!storedSettings.presentationVersion) storedSettings.animated = true
+if(!storedSettings.libraryPresentationVersion){storedSettings.preloadCovers=true;storedSettings.preloadEmbeddedCovers=true;storedSettings.libraryPresentationVersion=1}
 const settings = safeSettings(storedSettings)
 settings.presentationVersion = 2
 setUILanguage(settings.uiLanguage)
@@ -66,7 +70,7 @@ const metricsCache=new WeakMap()
 let catalogRecords=[],collections=[],catalogItems=[],duplicateClusters=[],duplicateIDs=new Set(),duplicateFocus,organizingItem,metadataBatch
 let shownLibrary=[],lastSpeechSave=0
 let coverQueuePaused=false
-let editingNote,notebookBooks=[],notebookShown=[],notebookLimit=100,exportEntries=[]
+let editingNote,notebookBooks=[],notebookShown=[],notebookLimit=100,exportEntries=[],annotationPoint
 let dictionaryInstall,dictionaryResult,dictionaryQuerySequence=0,vocabularyLimit=100
 let projectDictionaries=[],personalProjectDictionaries=[],dictionaryResourcesPromise
 let languageTools
@@ -150,7 +154,9 @@ $('#app').innerHTML = `
     <details class="settings-section" open><summary>General</summary>
     <label class="field">Idioma de la interfaz<select data-setting="uiLanguage"><option value="auto">Detectar idioma del sistema</option>${Object.entries(languages).map(([code,label])=>`<option value="${code}">${label}</option>`).join('')}</select></label>
     <p class="small muted">El idioma cambia los menús, no el texto del libro.</p>
-    <label class="field">Apariencia<select data-setting="appearance"><option value="minimal">Lectura minimalista</option></select></label>
+    <label class="field">Apariencia<select data-setting="appearance"><option value="minimal">Lectura minimalista</option><option value="book">Libro sobre la mesa</option></select></label>
+    <label class="field" id="book-scene-field" hidden>Entorno del libro<select data-setting="bookScene"><option value="auto">Automático</option><option value="home">En casa</option><option value="afternoon">Luz de tarde</option><option value="night">Lectura nocturna</option><option value="cabin">Cabaña en el bosque</option><option value="school">Pupitre</option><option value="office">Oficina</option></select></label>
+    <p id="book-format-hint" class="small muted" hidden>El libro muestra dos páginas; en móvil, una. El formato continuo y las columnas se conservan para la lectura minimalista.</p>
     <p class="small muted">Las próximas apariencias se elegirán aquí.</p>
     </details>
     <details class="settings-section"><summary>Lectura</summary><button class="settings-link" data-settings-panel="appearance">Tipografía y página ${icon('right')}</button>
@@ -162,7 +168,7 @@ $('#app').innerHTML = `
     <details class="settings-section"><summary>Voz</summary><button class="settings-link" data-settings-panel="voice">Lectura en voz alta ${icon('right')}</button></details>
     <details class="settings-section"><summary>Biblioteca</summary><button class="settings-link" data-settings-tab="library">Abrir biblioteca ${icon('right')}</button>${check('libraryDetails','Mostrar detalles de biblioteca')}${check('preloadCovers','Cargar portadas visibles')}${check('preloadEmbeddedCovers','Obtener portadas incrustadas automáticamente')}<p class="small muted">La carga anticipada puede descargar cubiertas de la nube. Obtener una cubierta incrustada también lee el ebook visible.</p></details>
     <details class="settings-section"><summary>Notas y vocabulario</summary><button class="settings-link" data-settings-tab="notes">Ver notas ${icon('right')}</button><button id="settings-notebook" class="settings-link">Cuaderno de notas ${icon('right')}</button>${check('showAnnotations','Mostrar subrayados')}<button id="settings-dictionaries" class="settings-link">Diccionarios sin conexión ${icon('right')}</button><button id="settings-vocabulary" class="settings-link">Vocabulario personal ${icon('right')}</button><button id="settings-word" class="settings-link">Buscar palabra ${icon('right')}</button></details>
-    <details class="settings-section"><summary>Datos</summary><p class="small muted">Los libros y las notas se guardan en este navegador. No se descargan archivos automáticamente.</p></details>
+    <details class="settings-section"><summary>Datos</summary><p class="small muted">Los libros y las notas se guardan en este navegador. No se exportan archivos automáticamente.</p></details>
     <details class="settings-section"><summary>Dispositivos</summary>${check('tvMode','Modo televisión')}${rangeControl('tvScale','Escala de televisión',1,2,.05,' ×')}<p class="small muted">Flechas para leer y recorrer controles; Intro para seleccionar. Compatible con mandos que envían teclas y con gamepads del navegador.</p><button id="settings-fullscreen" class="settings-link">Pantalla completa ${icon('expand')}</button><button id="settings-zen" class="settings-link">Modo zen ${icon('zen')}</button></details>
   </aside>
   <aside id="appearance-panel" class="panel" role="dialog" aria-labelledby="appearance-title" hidden>
@@ -227,6 +233,7 @@ $('#app').innerHTML = `
     <p id="file-error" class="error small" role="alert" hidden></p>
   </dialog>
   <dialog id="note-dialog" class="small-dialog" aria-labelledby="note-title"><div class="panel-heading"><h2 id="note-title">Nota de lectura</h2><button class="icon-button dialog-close" aria-label="Cerrar">${icon('close')}</button></div><blockquote id="note-quote" data-user-content></blockquote><label class="field">Tu nota<textarea id="note-text" rows="5" maxlength="10000" placeholder="Escribe una nota…"></textarea></label><div class="filter-grid"><label class="field">Color<select id="note-color">${Object.entries(annotationColors).map(([id,value])=>`<option value="${id}">${value.label}</option>`).join('')}</select></label><label class="field">Marca<select id="note-style"><option value="underline">Subrayado</option><option value="highlight">Fondo resaltado</option></select></label></div><button id="save-note" class="primary-button">Guardar nota</button></dialog>
+  <dialog id="overlap-dialog" class="small-dialog" aria-labelledby="overlap-title"><div class="panel-heading"><h2 id="overlap-title">Notas de este fragmento</h2><button class="icon-button dialog-close" aria-label="Cerrar">${icon('close')}</button></div><div id="overlap-notes"></div></dialog>
   <dialog id="notebook-dialog" class="notebook-dialog" aria-labelledby="notebook-title"><div class="panel-heading"><h2 id="notebook-title">Cuaderno de notas</h2><button class="icon-button dialog-close" aria-label="Cerrar">${icon('close')}</button></div><div class="notebook-controls"><label class="field">Libro<select id="notebook-book"><option value="">Todos</option></select></label><label class="field">Tipo<select id="notebook-kind"><option value="">Todos</option><option value="note">Notas</option><option value="highlight">Subrayados</option><option value="bookmark">Marcadores</option></select></label><label class="field">Buscar notas<input id="notebook-search" type="search"></label></div><div class="editor-actions"><button id="notebook-export" class="text-button">Exportar selección</button><span id="notebook-count" class="small muted"></span></div><div id="notebook-list"></div><button id="notebook-more" class="text-button" hidden>Mostrar más</button></dialog>
   <dialog id="notes-export-dialog" class="small-dialog" aria-labelledby="notes-export-title"><div class="panel-heading"><h2 id="notes-export-title">Exportar notas</h2><button class="icon-button dialog-close" aria-label="Cerrar">${icon('close')}</button></div><label class="field">Formato<select id="notes-export-format"><option value="md">Markdown</option><option value="json">JSON</option></select></label><label class="field">Vista previa<textarea id="notes-export-preview" rows="8" readonly></textarea></label><div class="editor-actions"><button id="notes-export-save" class="text-button">Guardar archivo</button><button id="notes-export-copy" class="text-button">Copiar exportación</button><button id="notes-export-pdf" class="text-button">Imprimir / guardar PDF</button><button id="notes-export-download" class="text-button" hidden>Descargar archivo</button></div><p id="notes-export-fallback" class="small muted" hidden>Este navegador no permite elegir destino. Puedes copiar el contenido o descargarlo expresamente.</p></dialog>
   <dialog id="dictionary-dialog" class="small-dialog" aria-labelledby="dictionary-word"><div class="panel-heading"><h2 id="dictionary-word" data-user-content></h2><button class="icon-button dialog-close" aria-label="Cerrar">${icon('close')}</button></div><form id="dictionary-search-form" class="search-field"><label class="sr-only" for="dictionary-query">Buscar palabra</label><input id="dictionary-query" placeholder="Buscar palabra" maxlength="200"><button aria-label="Buscar">${icon('search')}</button></form><label class="field">Idioma de consulta<select id="dictionary-language" data-setting="dictionaryLanguage"><option value="auto">Automático · idioma del libro</option>${Object.entries(languages).map(([code,name])=>`<option value="${code}" data-user-content>${name}</option>`).join('')}</select></label><p id="dictionary-definition"></p><p id="dictionary-source" class="small muted" data-user-content></p><a id="dictionary-license" class="text-link" target="_blank" rel="noopener noreferrer" hidden></a><div class="editor-actions"><button id="dictionary-save-word" class="text-button" disabled>Guardar palabra</button><button id="dictionary-manage" class="text-button">Diccionarios sin conexión</button></div><a id="dictionary-external" class="text-link" target="_blank" rel="noopener noreferrer">Consultar en Wikcionario ↗</a><label class="text-button dictionary-import">Importar diccionario propio<input id="dictionary-file" type="file" accept=".json" hidden></label><p class="small muted">La consulta local no envía palabras a Internet. El enlace externo solo se abre al pulsarlo.</p></dialog>
@@ -255,7 +262,7 @@ $('#app').innerHTML = `
           <div><dt>Autor</dt><dd>Alejandro Pico</dd></div>
           <div><dt>Carácter</dt><dd>Proyecto personal</dd></div>
           <div><dt>Propósito</dt><dd>Lectura y escucha</dd></div>
-          <div><dt>Edición</dt><dd>Versión 1.9.1</dd></div>
+          <div><dt>Edición</dt><dd>Versión 1.10.0</dd></div>
         </dl>
       </aside>
       <div class="about-body">
@@ -284,18 +291,21 @@ $('#app').innerHTML = `
   <div id="toast" class="toast" role="status" hidden></div>
 `
 const menuLayout = organizeMenus()
+addLibraryPolish(settings)
 addLanguageMenus()
 addPDFMenus()
 addAudioMenus(settings)
 addLocalVoiceMenus()
 addNarrationMenus()
 addSyncMenus()
+for(const detail of document.querySelectorAll('.panel details'))detail.open=false
 if(platform.native||platform.desktop){$('#sync-provider option[value="onedrive"]').disabled=true;$('#sync-provider').insertAdjacentHTML('afterend','<p class="small muted">OneDrive se conecta desde la versión web.</p>')}
 if(!platform.printing)$('#notes-export-pdf').hidden=true
 initializeI18n($('#app'), settings.uiLanguage)
 $('#speech-language').value = settings.speechLanguage
 
 const view = $('#reader')
+const bookScene=createBookScene({view,area:$('#reading-area'),settings,getRecord:()=>record})
 const imageViewer = attachImageGestures($('.image-stage'), $('#zoom-image'), { onChange: scale => $('#zoom-level').textContent = `${Math.round(scale * 100)} %` })
 let toastTimer
 function toast(message, duration = 6000) {
@@ -304,8 +314,15 @@ function toast(message, duration = 6000) {
 }
 const handleError = error => { console.error(error); toast(error.message || 'No se pudo completar la operación.') }
 const attempt = fn => async (...args) => { try { await fn(...args) } catch (error) { handleError(error) } }
+const libraryPolish=createLibraryPolish({getItems:()=>catalogItems,getCollections:()=>collections,refresh:updateLibrary,attempt,openItem:openLibraryItem,openLibrary:()=>{if(!$('#library-dialog').open)openLibraryDialog()}})
+$('#book-scene-shortcut').onclick=()=>{togglePanel('preferences');$('#book-scene-field').closest('details').open=true;$('#book-scene-field').scrollIntoView({block:'center'})}
+const swatches=document.createElement('div');swatches.className='note-swatches';swatches.setAttribute('role','group');swatches.setAttribute('aria-label',t('Color'))
+for(const [id,value] of Object.entries(annotationColors)){const button=document.createElement('button');button.type='button';button.style.setProperty('--swatch',value.color);button.title=t(value.label);button.setAttribute('aria-label',t(value.label));button.dataset.noteColor=id;button.onclick=()=>{$('#note-color').value=id;updateNoteSwatches()};swatches.append(button)}
+$('#note-color').closest('.filter-grid').before(swatches)
+function updateNoteSwatches(){$('#note-color').style.setProperty('--note-color',annotationColors[$('#note-color').value]?.color??'#b3872d');for(const button of swatches.children){const label=t(annotationColors[button.dataset.noteColor].label);button.title=label;button.setAttribute('aria-label',label);button.setAttribute('aria-pressed',button.dataset.noteColor===$('#note-color').value);button.disabled=$('#note-color').disabled}}
+$('#note-color').onchange=updateNoteSwatches
 
-const coverQueue=new VisibleCoverQueue({load:loadLibraryCover,done:()=>updateLibrary(),onState:state=>{
+const coverQueue=new VisibleCoverQueue({load:loadLibraryCover,done:refreshLibraryCover,onState:state=>{
   $('#cover-progress').hidden=!settings.preloadCovers
   $('#cover-progress-text').textContent=`${t(state.active?'Cargando portadas…':'Portadas listas')}: ${state.completed}`
   $('#pause-covers').hidden=coverQueuePaused;$('#resume-covers').hidden=!coverQueuePaused
@@ -371,7 +388,7 @@ function bookStyles() {
   const font = fonts.find(([name]) => name === settings.font)?.[1] ?? fonts[0][1]
   const bundledFonts = settings.font === 'Atkinson Hyperlegible' || settings.font === 'Lexend'
     ? [...document.styleSheets].flatMap(sheet => { try { return [...sheet.cssRules].filter(rule => rule.type === CSSRule.FONT_FACE_RULE && rule.style.fontFamily.replace(/["']/g,'') === settings.font).map(rule => rule.cssText.replace(/url\(["']?([^"')]+)["']?\)/g, (_,url) => `url("${new URL(url, sheet.href || document.baseURI).href}")`)) } catch { return [] } }).join('\n') : ''
-  return `${bundledFonts}\n${fontCSS(settings.font)}\nhtml { --theme-bg-color: ${colors.bg}; color: ${colors.ink} !important; background: ${colors.bg} !important; color-scheme: ${document.documentElement.style.colorScheme}; border: 0 !important; outline: 0 !important; box-shadow: none !important; }
+  return `${bundledFonts}\n${fontCSS(settings.font)}\nhtml { --theme-bg-color: ${colors.bg}; color: ${colors.ink} !important; background: ${settings.appearance==='book'?'transparent':colors.bg} !important; color-scheme: ${document.documentElement.style.colorScheme}; border: 0 !important; outline: 0 !important; box-shadow: none !important; }
     body { font-family: ${font} !important; font-size: ${settings.fontSize*(settings.tvMode?settings.tvScale:1)}px !important; line-height: ${settings.lineHeight} !important; color: ${colors.ink} !important; background: transparent !important; text-align: ${settings.justify ? 'justify' : 'left'} !important; overflow-wrap: break-word; }
     p, div, li, blockquote { font-family: inherit !important; font-size: inherit !important; line-height: inherit !important; color: inherit !important; }
     p { margin-block: 0 ${settings.paragraphGap}em !important; }
@@ -392,23 +409,29 @@ function bookStyles() {
 function applySettings() {
   document.body.classList.toggle('tv-mode',settings.tvMode)
   document.body.classList.toggle('reading-info-visible',settings.showReference||settings.showChapterTime||settings.showBookTime)
-  const theme = themeDraft ?? themeById(effectiveTheme(settings.theme),settings.customThemes)
+  const theme = settings.appearance==='book'?sceneTheme(settings.bookScene):themeDraft ?? themeById(effectiveTheme(settings.theme),settings.customThemes)
+  bookScene.update()
+  $('#book-scene-field').hidden=settings.appearance!=='book'
+  $('#book-format-hint').hidden=settings.appearance!=='book'
+  document.querySelector('.theme-options').hidden=settings.appearance==='book'
+  $('#theme-editor').hidden=settings.appearance==='book'
+  $('#book-scene-shortcut').hidden=settings.appearance!=='book'
   document.documentElement.dataset.theme = theme.id
   theme.colors.forEach((value,index) => document.documentElement.style.setProperty(`--${themeProperties[index]}`,value))
   document.documentElement.style.colorScheme = theme.dark ? 'dark' : 'light'
   $('#theme-toggle').innerHTML = icon(theme.icon)
-  $('#reading-area').style.maxWidth = settings.fullWidth ? 'none' : `${settings.width}px`
-  const outer = Math.min(settings.marginOuter,innerWidth<700?48:160)
+  $('#reading-area').style.maxWidth = settings.appearance==='book'?'none':settings.fullWidth ? 'none' : `${settings.width}px`
+  const outer = settings.appearance==='book'?Math.min(36,innerWidth*.025):Math.min(settings.marginOuter,innerWidth<700?48:160)
   $('#reading-area').style.paddingInline = `${outer}px`
   $('#width').disabled = settings.fullWidth
   if (view.renderer) {
-    view.renderer.setAttribute('flow',settings.readingFlow)
-    const count = window.innerWidth < 700 || settings.readingFlow==='scrolled' ? 1 : settings.columns
+    view.renderer.setAttribute('flow',settings.appearance==='book'?'paginated':settings.readingFlow)
+    const count = settings.appearance==='book'?(innerWidth<700?1:2):window.innerWidth < 700 || settings.readingFlow==='scrolled' ? 1 : settings.columns
     view.renderer.setAttribute('max-column-count', count)
     view.renderer.setAttribute('max-inline-size', `${Math.max(220, ($('#reading-area').clientWidth - outer*2) / count)}px`)
     view.renderer.setAttribute('gap', `${settings.gutter}%`)
     view.renderer.setAttribute('margin', `${Math.min(settings.marginInner,innerWidth<700?48:100)}px`)
-    view.renderer.toggleAttribute('animated', settings.animated && !matchMedia('(prefers-reduced-motion: reduce)').matches)
+    view.renderer.toggleAttribute('animated', settings.appearance!=='book'&&settings.animated && !matchMedia('(prefers-reduced-motion: reduce)').matches)
     view.renderer.setStyles?.(bookStyles())
   }
   document.querySelectorAll('[data-setting]').forEach(input => {
@@ -425,10 +448,11 @@ function applySettings() {
   $('#browser-voice-settings').hidden = settings.provider !== 'browser'
   localVoiceTools?.refresh()
   speech.onHighlight(narratedRange)
-  document.querySelector('[data-setting="columns"]').disabled=settings.readingFlow==='scrolled'
+  document.querySelector('[data-setting="columns"]').disabled=settings.appearance==='book'||settings.readingFlow==='scrolled'
+  document.querySelector('[data-setting="readingFlow"]').disabled=settings.appearance==='book'
   gamepad.update();updateHistoryControls();updateReadingInformation()
   if(catalogItems.length)renderLibrary()
-  if(record)for(const note of record.notes.filter(note=>note.kind!=='bookmark'))(settings.showAnnotations?view.addAnnotation({value:note.cfi}):view.deleteAnnotation({value:note.cfi})).catch(()=>{})
+  if(record)for(const cfi of new Set(record.notes.filter(note=>note.kind!=='bookmark').map(note=>note.cfi)))(settings.showAnnotations?view.addAnnotation({value:cfi}):view.deleteAnnotation({value:cfi})).catch(()=>{})
   if(!settings.showOpeningCover && !$('#opening-cover').hidden) attempt(()=>finishOpeningCover())()
   writeJSON('lector-settings', settings)
 }
@@ -523,7 +547,7 @@ function updateHistoryControls() {
   $('#history-forward').hidden=!settings.historyControls||!navigationTrail.future.length
 }
 function updateReadingReturn(){$('#return-reading').hidden=!speech.browsing||!speech.cursorCFI||speech.state==='stopped'}
-$('#return-reading').onclick=attempt(()=>speech.returnToReading())
+$('#return-reading').onclick=attempt(()=>{bookScene.reset();return speech.returnToReading()})
 function updateReadingInformation() {
   const current=view.renderer?.getContents()[0],range=positionRange()
   const info=$('#reading-information');info.hidden=!record||!(settings.showReference||settings.showChapterTime||settings.showBookTime)
@@ -545,6 +569,7 @@ function updateReadingInformation() {
 }
 async function navigateTo(target,fraction=false) {
   if(!book||busy)return
+  bookScene.reset()
   speech.browse()
   layoutSequence++;preservingAnchor=false
   await layoutNavigation.catch(()=>{})
@@ -557,6 +582,7 @@ async function navigateTo(target,fraction=false) {
 }
 async function navigateHistory(direction) {
   if(!book||busy)return
+  bookScene.reset()
   const target=direction<0?navigationTrail.back(anchorCFI()):navigationTrail.forward(anchorCFI())
   if(!target)return
   speech.browse()
@@ -602,7 +628,7 @@ async function updateLibrary() {
     button.append(label, percent); button.addEventListener('click', attempt(() => openStored(item.id)))
     $('#resume-list').append(button)
   })
-  renderFolders(); renderLibrary()
+  renderFolders(); renderLibrary();libraryPolish.refresh()
 }
 
 function renderFolders() {
@@ -613,7 +639,8 @@ function renderFolders() {
     const remove = document.createElement('button'); remove.className = 'icon-button'; remove.innerHTML = icon('close'); remove.title = t('Desvincular carpeta'); remove.setAttribute('aria-label',t('Desvincular carpeta'))
     remove.disabled=Boolean(folderScan||metadataBatch)
     remove.onclick = attempt(async () => { if(folderScan||metadataBatch)return;coverQueue.cancel();await removeFolder(folder.id); await updateLibrary() })
-    row.append(label,remove); $('#folder-list').append(row)
+    const location=document.createElement('input');location.className='folder-location';location.value=folder.handle?.displayPath??folder.location??'';location.placeholder=t('Ruta o etiqueta de esta carpeta');location.setAttribute('aria-label',t('Ruta o etiqueta de esta carpeta'));location.readOnly=Boolean(folder.handle?.displayPath);location.title=location.value||t('El navegador no facilita la ruta completa. Puedes escribirla como referencia.');location.onchange=attempt(async()=>{folder.location=location.value.trim().slice(0,1000);await saveFolder(folder)})
+    const info=document.createElement('div');info.className='folder-info';info.append(label,location);row.append(info,remove); $('#folder-list').append(row)
   }
 }
 
@@ -701,6 +728,7 @@ async function markReading(){
 }
 
 function renderLibrary() {
+  const scrollTop=$('.library-results').scrollTop,sidebarTop=$('#sidebar').scrollTop
   const coverTargets=new Map()
   const display=settings.libraryDialogView
   for (const url of libraryCoverURLs) URL.revokeObjectURL(url)
@@ -710,7 +738,6 @@ function renderLibrary() {
   for(const key of ['author','series','genre','tag','language','format','status','collection'])filters[key]=$(`#filter-${key}`).value
   const filtered=filterLibrary(catalogItems,filters,currentLanguage(),duplicateFocus??duplicateIDs)
   shownLibrary=filtered.slice(0,libraryLimit)
-  $('#collection-delete').hidden=!filters.collection
   $('#read-visible-metadata').disabled=Boolean(metadataBatch)||!shownLibrary.some(item=>item.kind==='folder'&&item.metadata)
   $('#library-count').textContent = `${filtered.length.toLocaleString(currentLanguage())} ${t('libros')}`
   const list = $('#library-list'); list.replaceChildren(); list.classList.toggle('cover-grid', display === 'covers')
@@ -722,17 +749,15 @@ function renderLibrary() {
   if (!filtered.length) { const empty = document.createElement('p'); empty.className = 'small muted'; empty.textContent = t(query ? 'No hay resultados.' : 'Los libros que abras aparecerán aquí.'); list.append(empty) }
   for (const item of shownLibrary) {
     const row = document.createElement('div'); row.className = 'library-row'
+    row.addEventListener('click',event=>{if(display==='covers'&&matchMedia('(hover:none)').matches&&event.target.closest('.catalog-cover')&&!row.classList.contains('details-open')){event.preventDefault();event.stopImmediatePropagation();for(const other of list.querySelectorAll('.details-open'))other.classList.remove('details-open');row.classList.add('details-open')}},true)
     if (display === 'covers') {
       const cover = document.createElement('button'); cover.className = 'catalog-cover'; cover.title = t(item.coverBlob?'Abrir libro':'Cargar portada'); cover.setAttribute('aria-label',`${cover.title}: ${item.title}`)
       if (item.coverBlob) {
         const image = document.createElement('img'); const url = URL.createObjectURL(item.coverBlob); libraryCoverURLs.push(url)
         image.src = url; image.alt = item.title; cover.append(image)
       } else cover.innerHTML = icon('book')
-      cover.onclick = attempt(async () => {
-        if (item.coverBlob) {await openLibraryItem(item);return}
-        cover.disabled=true;cover.setAttribute('aria-busy','true')
-        try {await loadLibraryCover(item);await updateLibrary()}finally{cover.disabled=false;cover.removeAttribute('aria-busy')}
-      })
+      cover.onclick = attempt(()=>openLibraryItem(item))
+      cover.dataset.title=item.title;cover.dataset.bookId=item.id
       row.append(cover)
       if(!item.coverBlob&&(item.kind==='folder'&&item.cover||settings.preloadEmbeddedCovers&&(item.kind==='folder'||item.file||item.fileHandle)))coverTargets.set(cover,item)
     }
@@ -766,11 +791,12 @@ function renderLibrary() {
         await languageTools?.forget(item.id);await removeBook(item.id);await removeCatalog(item.id); await updateLibrary()
       }); actions.append(remove)
     }
-    row.append(actions)
+    if(display==='covers'){const shutter=document.createElement('div');shutter.className='cover-shutter';shutter.append(content,actions);row.append(shutter)}else row.append(actions)
     list.append(row)
   }
   $('#library-more').hidden = filtered.length <= libraryLimit
   renderSidebarLibrary(coverTargets)
+  $('.library-results').scrollTop=scrollTop;$('#sidebar').scrollTop=sidebarTop
   coverQueue.observe(coverTargets,settings.preloadCovers&&!coverQueuePaused&&!folderScan&&!metadataBatch)
 }
 
@@ -778,12 +804,15 @@ let sidebarLibraryLimit=60
 function renderSidebarLibrary(coverTargets) {
   const list=$('#sidebar-library-list'), items=recentReadingOrder(catalogItems,currentLanguage())
   list.replaceChildren();list.classList.toggle('cover-grid',settings.libraryView==='covers')
+  let previous
   for(const item of items.slice(0,sidebarLibraryLimit)) {
+    if(previous?.lastReadAt&&!item.lastReadAt){const divider=document.createElement('hr');divider.className='sidebar-recent-divider';list.append(divider)}
+    previous=item
     const row=document.createElement('div');row.className='sidebar-library-row'
     if(settings.libraryView==='covers') {
       const cover=document.createElement('button');cover.className='sidebar-catalog-cover catalog-cover';cover.setAttribute('aria-label',`${t(item.coverBlob?'Abrir libro':'Cargar portada')}: ${item.title}`)
       if(item.coverBlob){const image=document.createElement('img'),url=URL.createObjectURL(item.coverBlob);libraryCoverURLs.push(url);image.src=url;image.alt=item.title;cover.append(image)}else cover.innerHTML=icon('book')
-      cover.onclick=attempt(async()=>{if(item.coverBlob)await openLibraryItem(item);else {await loadLibraryCover(item);await updateLibrary()}})
+      cover.onclick=attempt(()=>openLibraryItem(item));cover.dataset.title=item.title;cover.dataset.bookId=item.id
       row.append(cover)
       if(!item.coverBlob&&(item.cover||settings.preloadEmbeddedCovers))coverTargets.set(cover,item)
     }
@@ -798,7 +827,7 @@ function openLibraryDialog() {
 }
 function closeLibraryDialog() { for(const id of ['library-filter-dialog','library-sources-dialog','library-collections-dialog','library-dialog'])$(`#${id}`).close() }
 $('#library-dialog').addEventListener('close',()=>{renderLibrary()})
-for(const name of ['filter','sources','collections'])$(`#library-${name}-toggle`).onclick=()=> $(`#library-${name}-dialog`).showModal()
+for(const name of ['filter','sources','collections'])$(`#library-${name}-toggle`).onclick=()=> {if(name==='collections')libraryPolish.refresh();$(`#library-${name}-dialog`).showModal()}
 $('#sidebar-library-more').onclick=()=>{sidebarLibraryLimit+=60;renderLibrary()}
 $('#library-dialog-close').onclick=closeLibraryDialog
 $('#library-expand').onclick=openLibraryDialog
@@ -818,19 +847,26 @@ async function coverDimensions(blob) {
   try {await image.decode();return {width:image.naturalWidth,height:image.naturalHeight}}
   finally{URL.revokeObjectURL(url)}
 }
+function refreshLibraryCover(item){
+  for(const button of document.querySelectorAll('.catalog-cover')){
+    if(button.dataset.bookId!==item.id||!item.coverBlob)continue
+    const image=document.createElement('img'),url=URL.createObjectURL(item.coverBlob);libraryCoverURLs.push(url);image.src=url;image.alt=item.title;button.replaceChildren(image);button.title=t('Abrir libro');button.setAttribute('aria-label',`${t('Abrir libro')}: ${item.title}`)
+  }
+}
 async function loadLibraryCover(item,signal) {
   const check=()=>{if(signal?.aborted)throw new DOMException('Cancelled','AbortError')}
   let cover,imported
   try {
     check()
     if(item.kind==='folder') {
-      await ensureFolderPermission(item.folder.handle)
+      if(signal){if(await item.folder.handle.queryPermission({mode:'read'})!=='granted')throw new DOMException('Permission required','NotAllowedError')}
+      else await ensureFolderPermission(item.folder.handle)
       check()
       if(item.cover) cover=await item.cover.getFile()
       else {const file=await item.formats[0].handle.getFile();if(file.size>100*1024*1024) throw new Error(t('El límite de esta versión es de 100 MB por archivo.'));imported=await importBook(file,()=>{});cover=await imported.getCover?.()}
     } else if(record?.id===item.id) cover=record.coverBlob??await book?.getCover?.()
     else if(item.file || item.fileHandle) {
-      if(item.fileHandle) await ensureFolderPermission(item.fileHandle)
+      if(item.fileHandle){if(signal){if(await item.fileHandle.queryPermission({mode:'read'})!=='granted')throw new DOMException('Permission required','NotAllowedError')}else await ensureFolderPermission(item.fileHandle)}
       const file=item.fileHandle?await item.fileHandle.getFile():new File([item.file],item.filename,{type:item.file.type})
       imported=await importBook(file,()=>{});cover=await imported.getCover?.()
     } else throw new Error(t('Vuelve a elegir el archivo para recuperar sus notas y su posición.'))
@@ -839,12 +875,14 @@ async function loadLibraryCover(item,signal) {
     if(item.kind==='folder') {
       const entry=item.folder.entries.find(entry=>entry.key===item.key);entry.coverBlob=cover;delete entry.coverInvalidated;await saveFolder(item.folder)
     } else {const original=await getBook(item.id);await saveBook({...original,coverBlob:cover});if(record?.id===item.id) record.coverBlob=cover}
+    item.coverBlob=cover
   } finally{imported?.destroy?.()}
 }
 
 async function openFolderEntry(folder, entry, format = entry.formats[0]) {
   if (busy) return
   await ensureFolderPermission(folder.handle)
+  coverQueue.retry()
   const file = await format.handle.getFile()
   if (file.size > 100 * 1024 * 1024) throw new Error('El límite de esta versión es de 100 MB por archivo.')
   const id = await fileId(file)
@@ -967,7 +1005,8 @@ async function openFile(file, saved) {
 
 view.addEventListener('relocate', ({ detail }) => {
   if (!record) return
-  if(!$('#opening-cover').hidden && detail.reason==='navigation') attempt(()=>finishOpeningCover(false))()
+  if(bookScene.closed&&detail.reason==='navigation')bookScene.reset()
+  if(!$('#opening-cover').hidden && detail.reason==='navigation'&&!preservingAnchor) attempt(()=>finishOpeningCover(false))()
   if(record.cfi!==detail.cfi&&!busy&&!preservingAnchor)record.positionUpdatedAt=Date.now()
   record.cfi = detail.cfi; record.fraction = Number.isFinite(detail.fraction) ? detail.fraction : record.fraction
   if(!busy&&!preservingAnchor&&detail.reason==='navigation')record.lastReadAt=Date.now()
@@ -982,6 +1021,7 @@ view.addEventListener('relocate', ({ detail }) => {
   })
   clearTimeout(saveTimer); saveTimer = setTimeout(saveRecord, 300)
   updateReadingInformation();updateHistoryControls()
+  bookScene.progress(record.fraction)
 })
 
 view.addEventListener('load', ({ detail: { doc, index } }) => {
@@ -1002,7 +1042,7 @@ view.addEventListener('load', ({ detail: { doc, index } }) => {
   doc.querySelectorAll('.pdf-original').forEach(button => button.textContent = t('Ver página original'))
   doc.addEventListener('keydown', onKey)
   let press, dismissClick=false
-  doc.addEventListener('pointerdown', event => { press={x:event.clientX,y:event.clientY}; dismissClick=!$('#selection-menu').hidden; closePanels(); if(dismissClick)dismissSelection() })
+  doc.addEventListener('pointerdown', event => { press={x:event.clientX,y:event.clientY};annotationPoint={doc,...press}; dismissClick=!$('#selection-menu').hidden; closePanels(); if(dismissClick)dismissSelection() })
   doc.addEventListener('pointerup', () => {
     setTimeout(() => {
       const selected = doc.defaultView.getSelection()
@@ -1029,7 +1069,7 @@ view.addEventListener('load', ({ detail: { doc, index } }) => {
       showImage(await pdfPageImage(book.pdf, Number(pdfButton.dataset.pdfPage)), `Página ${pdfButton.dataset.pdfPage}`)
       return
     }
-    if (!settings.clickToRead || !['playing','paused'].includes(speech.state) || event.target.closest('a,button,input')
+    if ($('#note-dialog').open||$('#overlap-dialog')?.open||!settings.clickToRead || !['playing','paused'].includes(speech.state) || event.target.closest('a,button,input')
       || doc.defaultView.getSelection()?.toString().trim() || !press || Math.hypot(event.clientX-press.x,event.clientY-press.y)>6) return
     const word = wordAtPoint(doc,event.clientX,event.clientY,settings.language)
     if (word) { event.preventDefault(); await speech.restart(word) }
@@ -1057,14 +1097,23 @@ view.addEventListener('link', event => {
   } else {event.preventDefault();attempt(()=>navigateTo(href))()}
 })
 
-view.addEventListener('draw-annotation', ({ detail }) => {const note=record?.notes.find(note=>note.cfi===detail.annotation.value);if(settings.showAnnotations&&note)detail.draw(note.style==='highlight'?Overlayer.highlight:Overlayer.underline,{color:annotationColor(note)})})
+view.addEventListener('draw-annotation', ({ detail }) => {const notes=record?.notes.filter(note=>note.kind!=='bookmark'&&note.cfi===detail.annotation.value)??[];if(settings.showAnnotations&&notes.length)detail.draw(drawNoteMarks,{notes,lanes:annotationLanes(record.notes)})})
 view.addEventListener('create-overlay', ({ detail }) => {
   if (!record) return
   for (const note of record.notes) if (note.kind !== 'bookmark'&&settings.showAnnotations) view.addAnnotation({ value: note.cfi }).catch(() => {})
 })
 view.addEventListener('show-annotation', ({ detail }) => {
   const note = record?.notes.find(item => item.cfi === detail.value)
-  if (note) openNoteEditor(record,note)
+  if(!note||detail.range?.startContainer.ownerDocument.defaultView.getSelection()?.toString().trim())return
+  const overlapping=record.notes.filter(item=>{
+    if(item.kind==='bookmark'||!annotationsOverlap(item,note))return false
+    if(annotationPoint?.doc!==detail.range?.startContainer.ownerDocument)return true
+    try{const range=view.resolveNavigation(item.cfi).anchor(annotationPoint.doc);return [...range.getClientRects()].some(rect=>annotationPoint.x>=rect.left&&annotationPoint.x<=rect.right&&annotationPoint.y>=rect.top&&annotationPoint.y<=rect.bottom)}catch{return false}
+  })
+  if(overlapping.length<2){openNoteEditor(record,note);return}
+  const list=$('#overlap-notes');list.replaceChildren()
+  for(const item of overlapping){const button=document.createElement('button');button.className='text-button overlap-note';button.style.borderLeft=`3px solid ${annotationColor(item)}`;button.dataset.userContent='';button.textContent=[item.quote,item.text].filter(Boolean).join(' — ');button.onclick=()=>{$('#overlap-dialog').close();openNoteEditor(record,item)};list.append(button)}
+  $('#overlap-dialog').showModal()
 })
 
 function dismissSelection() {
@@ -1112,11 +1161,12 @@ function selectedNote(){
 }
 function openNoteEditor(source,note,kind='note'){
   const current=source.id===record?.id?record:source
-  const existing=note.id?current.notes.find(item=>item.id===note.id):current.notes.find(item=>item.cfi===note.cfi&&item.kind!=='bookmark')
+  const existing=note.id?current.notes.find(item=>item.id===note.id):undefined
   editingNote={bookId:source.id,note:{...note,...existing},kind:existing?.kind??kind}
   $('#note-quote').textContent=note.quote??note.label??'';$('#note-text').value=existing?.text??note.text??''
   $('#note-color').value=existing?.color??'gold';$('#note-style').value=existing?.style??'underline'
   $('#note-color').disabled=editingNote.kind==='bookmark';$('#note-style').disabled=editingNote.kind==='bookmark'
+  updateNoteSwatches()
   $('#selection-menu').hidden=true;$('#note-dialog').showModal();$('#note-text').focus()
 }
 async function saveNoteEdit(){
@@ -1128,14 +1178,14 @@ async function saveNoteEdit(){
   if(editingNote.kind==='bookmark')note.kind='bookmark'
   const index=source.notes.findIndex(item=>item.id===note.id)
   if(index>=0)source.notes[index]=note;else source.notes.push(note)
-  if(source===record){if(note.kind!=='bookmark')await view.addAnnotation({value:note.cfi});await saveRecord();renderNotes()}else await saveBook({...source,updatedAt:Date.now()})
+  if(source===record){if(note.kind!=='bookmark')for(const cfi of new Set(record.notes.filter(item=>item.kind!=='bookmark').map(item=>item.cfi)))await view.addAnnotation({value:cfi});await saveRecord();renderNotes()}else await saveBook({...source,updatedAt:Date.now()})
   $('#note-dialog').close();editingNote=undefined;await refreshNotebook();toast('Nota guardada')
 }
 async function deleteNote(source,note){
   const current=source.id===record?.id?record:await getBook(source.id);if(!current)return
   current.notes=current.notes.filter(item=>item.id!==note.id)
   current.deletedNotes=[...(current.deletedNotes??[]).filter(item=>item.id!==note.id),{id:note.id,updatedAt:Date.now()}]
-  if(current===record){if(note.kind!=='bookmark')await view.deleteAnnotation({value:note.cfi});await saveRecord();renderNotes()}else await saveBook({...current,updatedAt:Date.now()})
+  if(current===record){if(note.kind!=='bookmark'){await view.deleteAnnotation({value:note.cfi});if(record.notes.some(item=>item.kind!=='bookmark'&&item.cfi===note.cfi))await view.addAnnotation({value:note.cfi});for(const item of record.notes.filter(item=>item.kind!=='bookmark'))await view.addAnnotation({value:item.cfi})}await saveRecord();renderNotes()}else await saveBook({...current,updatedAt:Date.now()})
   await refreshNotebook()
 }
 async function copyCitation(source,note){await navigator.clipboard.writeText(citation(source,note));toast('Cita copiada')}
@@ -1251,6 +1301,7 @@ function fitImage() {
 }
 
 function clearOpeningCover() {
+  bookScene.reset()
   $('#opening-cover').hidden=true;view.inert=false;$('#reading-area').classList.remove('cover-open')
   $('#opening-cover-image').removeAttribute('src')
   if(openingCoverURL) URL.revokeObjectURL(openingCoverURL)
@@ -1272,7 +1323,7 @@ async function finishOpeningCover(skip=true) {
   saveRecord()
   await markReading().catch(()=>{})
 }
-$('#start-reading').onclick=attempt(async()=>{await finishOpeningCover();$('#audio-toggle').focus({preventScroll:true})})
+$('#start-reading').onclick=attempt(async()=>{await bookScene.turn(1,()=>finishOpeningCover(),true);$('#audio-toggle').focus({preventScroll:true})})
 $('#opening-cover-zoom').onclick=()=>{if(openingCoverURL) showImage(openingCoverURL,record?.title??'')}
 
 async function changePage(direction) {
@@ -1281,7 +1332,10 @@ async function changePage(direction) {
   layoutSequence++;preservingAnchor=false
   await layoutNavigation.catch(()=>{})
   await view.renderer.whenNavigationIdle?.()
-  if(!$('#opening-cover').hidden) {if(direction>0) await finishOpeningCover();return}
+  if(bookScene.closed){if(direction<0)await bookScene.openBack();return}
+  if(!$('#opening-cover').hidden) {if(direction>0) await bookScene.turn(1,()=>finishOpeningCover(),true);return}
+  if(settings.appearance==='book'&&direction>0&&view.renderer.atEnd){await bookScene.closeBack();return}
+  if(settings.appearance==='book'&&direction<0&&view.renderer.atStart&&record.coverBlob){await bookScene.turn(-1,()=>showOpeningCover(record.coverBlob,record.title),true);return}
   dismissSelection()
   pageNavigation=pageNavigation.catch(()=>{}).then(()=>direction > 0 ? view.next() : view.prev())
   await pageNavigation
@@ -1345,7 +1399,7 @@ document.querySelectorAll('[data-tab]').forEach(button => button.onclick = () =>
 })
 document.querySelectorAll('[data-setting]').forEach(input => {
   input.addEventListener(['range', 'checkbox'].includes(input.type) || input.tagName === 'SELECT' ? 'input' : 'change', async () => {
-    const layout=['readingFlow','font','fontSize','lineHeight','paragraphGap','columns','width','gutter','fullWidth','marginOuter','marginInner','hyphenate','tvMode','tvScale'].includes(input.dataset.setting)
+    const layout=['appearance','bookScene','readingFlow','font','fontSize','lineHeight','paragraphGap','columns','width','gutter','fullWidth','marginOuter','marginInner','hyphenate','tvMode','tvScale'].includes(input.dataset.setting)
     const origin=layout&&book?(preservingAnchor?record.anchorCFI:anchorCFI()):null,sequence=layout?++layoutSequence:layoutSequence,id=record?.id
     if(layout){preservingAnchor=Boolean(origin)}
     if (['provider', 'voice', 'rate', 'pitch', 'endpoint', 'model', 'apiVoice', 'instructions','sleepEnabled','sleepMinutes','pronunciationsEnabled','voicePrice','voicePriceUnit','voiceCurrency','costLimitEnabled','costLimit','characterLimitEnabled','characterLimit','costMargin'].includes(input.dataset.setting)) {audioTools?.cancel()}
@@ -1353,7 +1407,7 @@ document.querySelectorAll('[data-setting]').forEach(input => {
     if(['endpoint','elevenEndpoint','provider'].includes(input.dataset.setting)){apiKey='';$('#api-key').value=''}
     if (input.dataset.setting === 'uiLanguage') {
       setUILanguage(settings.uiLanguage)
-      renderLibraryFilters();renderLibrary(); syncVoices()
+      renderLibraryFilters();renderLibrary();renderFolders();libraryPolish.refresh();updateNoteSwatches();syncVoices()
       languageTools?.refresh()
     }
     if (input.dataset.setting === 'libraryView') renderLibrary()
@@ -1531,7 +1585,6 @@ $('#show-duplicates').onclick=showDuplicates
 $('#read-visible-metadata').onclick=attempt(readShownMetadata)
 $('#metadata-cancel').onclick=()=>metadataBatch?.abort()
 $('#collection-create').onclick=attempt(async()=>{await createCollection($('#collection-name'));await updateLibrary()})
-$('#collection-delete').onclick=attempt(async()=>{const id=$('#filter-collection').value;if(id){await removeCollection(id);await updateLibrary()}})
 $('#organize-form').onsubmit=attempt(saveOrganization)
 $('#organize-collection-create').onclick=attempt(async()=>{const selected=[...$('#organize-collections').querySelectorAll('input:checked')].map(input=>input.value);const collection=await createCollection($('#organize-collection-name'));renderCollectionChoices([...selected,collection.id]);renderLibraryFilters()})
 $('#library-more').onclick = () => { libraryLimit += 60; renderLibrary() }
@@ -1581,7 +1634,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) { cle
 window.addEventListener('pagehide', () => { saveRecord(); speech.stop();gamepad.dispose() })
 window.addEventListener('resize', attempt(()=>preserveLayout(()=>{ $('#selection-menu').hidden = true; applySettings() })))
 globalThis.speechSynthesis?.addEventListener('voiceschanged', syncVoices)
-setInterval(() => { if (settings.theme === 'auto') applySettings() }, 60000)
+setInterval(() => { if (settings.theme === 'auto'||settings.appearance==='book'&&settings.bookScene==='auto') applySettings() }, 60000)
 languageTools=createLanguageTools({getBook:()=>book,getRecord:()=>record,getSelection:()=>selection,view,
   prepareReading:async()=>{speech.stop();await finishOpeningCover()},navigateTo,
   toggleAudio:()=>speech.toggle(),showSettings:()=>{if($('#preferences-panel').hidden)togglePanel('preferences')},closePanels,getSettings:()=>settings,onError:handleError})

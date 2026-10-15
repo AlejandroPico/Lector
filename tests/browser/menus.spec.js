@@ -3,7 +3,7 @@ import {test,expect} from '@playwright/test'
 test('central settings and shortcuts share controls; credits are found without advanced menus',async({page})=>{
   await page.goto('/');await page.locator('#dismiss-file').click()
   await page.locator('#preferences-toggle').click()
-  await expect(page.locator('#preferences-panel [data-setting="readingFlow"]')).toBeVisible()
+  await expect(page.locator('#preferences-panel details[open]')).toHaveCount(0)
   await page.locator('#settings-search').fill('créditos')
   await expect(page.locator('#preferences-panel [data-setting="readingFlow"]')).toBeVisible()
   await page.locator('[data-setting="readingFlow"]').selectOption('scrolled')
