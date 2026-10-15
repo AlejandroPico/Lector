@@ -1,7 +1,8 @@
 import {themeById} from './presentation.js'
 import {t} from './i18n.js'
+import {focusedBookPage} from './scene-picker.js'
 import './book-scene.css'
-const sceneNames=['home','afternoon','night','cabin','school','office']
+const sceneNames=['home','afternoon','night','cabin','school','office','library','bamboo','garden','study']
 export function effectiveScene(value,hour=new Date().getHours()){
   return value==='auto'?(hour>=7&&hour<18?'home':hour>=18&&hour<22?'afternoon':'night'):sceneNames.includes(value)?value:'home'
 }
@@ -9,7 +10,7 @@ export function sceneTheme(value){
   const scene=effectiveScene(value)
   const theme=themeById(scene==='night'?'night':scene==='afternoon'?'afternoon':scene==='office'?'winter':'morning')
   if(scene==='night')return {...theme,icon:'moon',colors:['#d9c5a0','#302b25','#352c23','#988976','#5a4c3d','#705b3e','#c5b17f','#443a2d'],dark:false}
-  return {...theme,icon:({home:'comfort',afternoon:'sunset',cabin:'leaf',school:'book',office:'type'})[scene]??theme.icon,colors:[scene==='school'?'#fff8e8':'#f7efdc',...theme.colors.slice(1)]}
+  return {...theme,icon:({home:'comfort',afternoon:'sunset',cabin:'leaf',school:'book',office:'type',library:'book',bamboo:'leaf',garden:'leaf',study:'book'})[scene]??theme.icon,colors:[scene==='school'?'#fff8e8':'#f7efdc',...theme.colors.slice(1)]}
 }
 
 // The live reader remains the only navigable book. Temporary sandboxed DOM
@@ -17,13 +18,19 @@ export function sceneTheme(value){
 export function createBookScene({view,area,settings,getRecord}){
   const background=document.createElement('div');background.id='book-environment';background.setAttribute('aria-hidden','true');document.querySelector('#app').prepend(background)
   const folio=document.createElement('div');folio.className='book-folio';folio.setAttribute('aria-hidden','true');folio.innerHTML='<i class="book-stack book-stack-left"></i><i class="book-stack book-stack-right"></i><i class="book-binding"></i>';area.prepend(folio)
+  area.insertAdjacentHTML('beforeend','<button id="book-edge-left" class="book-edge" hidden></button><button id="book-edge-right" class="book-edge" hidden></button><div id="book-page-focus" class="book-page-focus" role="group" hidden><button data-book-side="left">‹</button><button data-book-side="right">›</button></div>')
   const closing=document.createElement('section');closing.id='closing-cover';closing.className='closing-cover';closing.hidden=true;const reopen=document.createElement('button');reopen.className='book-back-cover';reopen.setAttribute('aria-label',t('Volver a las últimas páginas'));closing.append(reopen);area.append(closing)
-  let turning=false,activeLayer,boundRenderer
+  let turning=false,activeLayer,boundRenderer,focusSide='left'
   const enabled=()=>settings.appearance==='book'
   const motion=()=>enabled()&&settings.animated&&!matchMedia('(prefers-reduced-motion: reduce)').matches
   function progress(fraction=0){
     const value=Math.max(0,Math.min(1,Number(fraction)||0));area.style.setProperty('--read-stack',`${2+value*12}px`);area.style.setProperty('--unread-stack',`${2+(1-value)*12}px`)
     area.classList.toggle('book-end',value>=.999)
+    const focused=focusedBookPage(settings),side=focusSide
+    area.dataset.bookSide=side
+    area.classList.toggle('book-focused',focused)
+    const controls=area.querySelector('#book-page-focus');controls.hidden=!focused||!getRecord();controls.setAttribute('aria-label',t('Página visible'))
+    for(const button of controls.querySelectorAll('button')){button.setAttribute('aria-pressed',String(button.dataset.bookSide===side));button.setAttribute('aria-label',t(button.dataset.bookSide==='left'?'Página izquierda':'Página derecha'))}
   }
   function snapshot(){
     const bounds=view.getBoundingClientRect(),frames=[]
@@ -49,14 +56,19 @@ export function createBookScene({view,area,settings,getRecord}){
     return Promise.all(loads)
   }
   async function turn(direction,navigate,force=false){
-    if(!motion()||turning||!getRecord())return navigate()
+    const navigatePage=async()=>{
+      const before=view.lastLocation?.cfi,result=await navigate()
+      if(!force&&focusedBookPage(settings)&&before&&before!==view.lastLocation?.cfi){focusSide=focusSide==='left'?'right':'left';progress(getRecord()?.fraction)}
+      return result
+    }
+    if(!motion()||turning||!getRecord())return navigatePage()
     turning=true;const before=snapshot(),layer=activeLayer=document.createElement('div');layer.className=`book-turn ${direction<0?'book-turn-back':''}`;layer.setAttribute('aria-hidden','true');layer.inert=true
     const areaRect=area.getBoundingClientRect();layer.style.cssText=`left:${before.bounds.left-areaRect.left}px;top:${before.bounds.top-areaRect.top}px;width:${before.bounds.width}px;height:${before.bounds.height}px`
     const still=document.createElement('div');still.className='book-turn-still'
     const leaf=document.createElement('div');leaf.className='book-turn-leaf';const front=document.createElement('div'),back=document.createElement('div');front.className='book-leaf-front';back.className='book-leaf-back';leaf.append(front,back);layer.append(still,leaf);area.append(layer)
     try{
       await Promise.all([paint(front,before,direction>0?'right':'left'),paint(still,before,direction>0?'left':'right')])
-      const oldCFI=view.lastLocation?.cfi,result=await navigate()
+      const oldCFI=view.lastLocation?.cfi,result=await navigatePage()
       await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))
       if(!enabled()||!force&&oldCFI===view.lastLocation?.cfi)return result
       await paint(back,snapshot(),direction>0?'left':'right')
@@ -68,6 +80,7 @@ export function createBookScene({view,area,settings,getRecord}){
   function update(){
     reopen.setAttribute('aria-label',t('Volver a las últimas páginas'))
     document.body.classList.toggle('physical-book',enabled());document.body.dataset.bookScene=effectiveScene(settings.bookScene);background.hidden=!enabled();folio.hidden=!enabled()
+    for(const [id,label] of [['book-edge-left','Página anterior'],['book-edge-right','Página siguiente']]){const button=area.querySelector('#'+id);button.hidden=!enabled()||!getRecord();button.setAttribute('aria-label',t(label));button.title=t(label)}
     if(!enabled()){activeLayer?.remove();closing.hidden=true;area.classList.remove('back-closed');if(area.querySelector('#opening-cover').hidden)view.inert=false}
     progress(getRecord()?.fraction)
     const renderer=view.renderer
@@ -81,5 +94,5 @@ export function createBookScene({view,area,settings,getRecord}){
     await turn(1,()=>{closing.hidden=false;area.classList.add('back-closed');view.inert=true},true)
   }
   reopen.onclick=openBack
-  return {update,progress,turn,closeBack,openBack,reset:hideBack,get closed(){return !closing.hidden}}
+  return {update,progress,turn,closeBack,openBack,reset:hideBack,get side(){return area.dataset.bookSide},get closed(){return !closing.hidden}}
 }

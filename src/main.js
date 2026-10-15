@@ -14,7 +14,7 @@ import faviconURL from '../favicon.svg?url'
 import 'foliate-js/view.js'
 import './reader-lifecycle.js'
 import { importBook, escapeHTML, metadataText, pdfPageImage } from './books.js'
-import { allBooks, allFolders, saveFolder, removeFolder, allFonts, saveFont, removeFont, fileId, getBook, saveBook, removeBook, defaults, readJSON, writeJSON, effectiveTheme, safeSettings } from './storage.js'
+import { allBooks, allFolders, saveFolder, removeFolder, allFonts, saveFont, removeFont, fileId, getBook, saveBook, defaults, readJSON, writeJSON, effectiveTheme, safeSettings } from './storage.js'
 import { SpeechController, validateEndpoint, wordAtPoint } from './speech.js'
 import { icon, iconButton } from './icons.js'
 import { fonts, themes, themeById, themeProperties, validateTheme } from './presentation.js'
@@ -24,7 +24,7 @@ import { scanDirectory, ensureFolderPermission, readMetadata } from './folders.j
 import { attachImageGestures } from './image-viewer.js'
 import { NavigationTrail,readingMetrics,estimateRemaining } from './reading.js'
 import { moveFocus,attachGamepad } from './tv-controls.js'
-import { allCatalog,updateCatalog,removeCatalog,allCollections,saveCollection } from './storage.js'
+import { allCatalog,updateCatalog,allCollections,saveCollection } from './storage.js'
 import { statuses,catalogKey,catalogMetadata,libraryEntries,filterLibrary,duplicateGroups,labels,normalize,languageCode } from './library.js'
 import { reconcileCatalog } from './catalog-refresh.js'
 import { VisibleCoverQueue } from './cover-queue.js'
@@ -41,6 +41,7 @@ import {addAudioMenus,createAudioTools} from './audio-tools.js'
 import {addLibraryPolish,createLibraryPolish} from './library-polish.js'
 import {annotationLanes,drawNoteMarks,annotationsOverlap} from './note-marks.js'
 import {createBookScene,sceneTheme} from './book-scene.js'
+import {addScenePicker,updateScenePicker,focusedBookPage} from './scene-picker.js'
 
 const $ = selector => document.querySelector(selector)
 await initializePlatform()
@@ -190,7 +191,7 @@ $('#app').innerHTML = `
   </aside>
   <aside id="theme-panel" class="panel compact-panel" role="dialog" aria-labelledby="theme-title" hidden>
     <div class="panel-heading"><h2 id="theme-title">Tema</h2><button class="icon-button panel-close" aria-label="Cerrar">${icon('close')}</button></div>
-    ${themePicker}<p class="small muted">Automático: mañana de 7 a 18 h, tarde de 18 a 22 h y noche de 22 a 7 h, según la hora del dispositivo.</p>
+    ${themePicker}
     <details id="theme-editor" class="settings-section"><summary>Editor de temas</summary>
       <form id="theme-form"><label class="field">Nombre del tema<input id="theme-name" maxlength="48" required></label>
       <div class="color-fields">${colorLabels.map((label,index)=>`<label>${label}<input type="color" data-theme-color="${index}" aria-label="${label}"></label>`).join('')}</div>
@@ -262,7 +263,7 @@ $('#app').innerHTML = `
           <div><dt>Autor</dt><dd>Alejandro Pico</dd></div>
           <div><dt>Carácter</dt><dd>Proyecto personal</dd></div>
           <div><dt>Propósito</dt><dd>Lectura y escucha</dd></div>
-          <div><dt>Edición</dt><dd>Versión 1.10.0</dd></div>
+          <div><dt>Edición</dt><dd>Versión 1.11.0</dd></div>
         </dl>
       </aside>
       <div class="about-body">
@@ -291,7 +292,7 @@ $('#app').innerHTML = `
   <div id="toast" class="toast" role="status" hidden></div>
 `
 const menuLayout = organizeMenus()
-addLibraryPolish(settings)
+addLibraryPolish(settings);addScenePicker()
 addLanguageMenus()
 addPDFMenus()
 addAudioMenus(settings)
@@ -315,7 +316,8 @@ function toast(message, duration = 6000) {
 const handleError = error => { console.error(error); toast(error.message || 'No se pudo completar la operación.') }
 const attempt = fn => async (...args) => { try { await fn(...args) } catch (error) { handleError(error) } }
 const libraryPolish=createLibraryPolish({getItems:()=>catalogItems,getCollections:()=>collections,refresh:updateLibrary,attempt,openItem:openLibraryItem,openLibrary:()=>{if(!$('#library-dialog').open)openLibraryDialog()}})
-$('#book-scene-shortcut').onclick=()=>{togglePanel('preferences');$('#book-scene-field').closest('details').open=true;$('#book-scene-field').scrollIntoView({block:'center'})}
+$('#book-edge-left').onclick=()=>changePage(-1);$('#book-edge-right').onclick=()=>changePage(1)
+for(const button of document.querySelectorAll('[data-book-side]'))button.onclick=()=>{if(button.dataset.bookSide!==bookScene.side)changePage(button.dataset.bookSide==='left'?-1:1)}
 const swatches=document.createElement('div');swatches.className='note-swatches';swatches.setAttribute('role','group');swatches.setAttribute('aria-label',t('Color'))
 for(const [id,value] of Object.entries(annotationColors)){const button=document.createElement('button');button.type='button';button.style.setProperty('--swatch',value.color);button.title=t(value.label);button.setAttribute('aria-label',t(value.label));button.dataset.noteColor=id;button.onclick=()=>{$('#note-color').value=id;updateNoteSwatches()};swatches.append(button)}
 $('#note-color').closest('.filter-grid').before(swatches)
@@ -411,22 +413,27 @@ function applySettings() {
   document.body.classList.toggle('reading-info-visible',settings.showReference||settings.showChapterTime||settings.showBookTime)
   const theme = settings.appearance==='book'?sceneTheme(settings.bookScene):themeDraft ?? themeById(effectiveTheme(settings.theme),settings.customThemes)
   bookScene.update()
-  $('#book-scene-field').hidden=settings.appearance!=='book'
+  updateScenePicker(settings)
   $('#book-format-hint').hidden=settings.appearance!=='book'
   document.querySelector('.theme-options').hidden=settings.appearance==='book'
   $('#theme-editor').hidden=settings.appearance==='book'
-  $('#book-scene-shortcut').hidden=settings.appearance!=='book'
   document.documentElement.dataset.theme = theme.id
   theme.colors.forEach((value,index) => document.documentElement.style.setProperty(`--${themeProperties[index]}`,value))
   document.documentElement.style.colorScheme = theme.dark ? 'dark' : 'light'
   $('#theme-toggle').innerHTML = icon(theme.icon)
-  $('#reading-area').style.maxWidth = settings.appearance==='book'?'none':settings.fullWidth ? 'none' : `${settings.width}px`
+  const area=$('#reading-area')
+  if(settings.appearance==='book'){
+    const focused=focusedBookPage(settings),zen=document.body.classList.contains('zen'),top=zen?30:innerWidth<700?75:90,bottom=zen?30:innerWidth<700?98:88
+    const availableWidth=innerWidth-(document.body.classList.contains('sidebar-open')&&innerWidth>900?290:0)-(innerWidth<700?28:76),ratio=focused?0.76:1.6
+    const height=Math.max(100,Math.min(innerHeight-top-bottom,Math.min(settings.fullWidth?3840:settings.width,availableWidth)/ratio))
+    area.style.maxWidth=`${height*ratio}px`;area.style.height=`${height}px`;area.style.top=`calc(${top+Math.max(0,(innerHeight-top-bottom-height)/2)}px + var(--safe-top))`;area.style.bottom='auto'
+  }else{area.style.maxWidth=settings.fullWidth?'none':`${settings.width}px`;area.style.height='';area.style.top='';area.style.bottom=''}
   const outer = settings.appearance==='book'?Math.min(36,innerWidth*.025):Math.min(settings.marginOuter,innerWidth<700?48:160)
   $('#reading-area').style.paddingInline = `${outer}px`
   $('#width').disabled = settings.fullWidth
   if (view.renderer) {
     view.renderer.setAttribute('flow',settings.appearance==='book'?'paginated':settings.readingFlow)
-    const count = settings.appearance==='book'?(innerWidth<700?1:2):window.innerWidth < 700 || settings.readingFlow==='scrolled' ? 1 : settings.columns
+    const count = settings.appearance==='book'?(focusedBookPage(settings)?1:2):window.innerWidth < 700 || settings.readingFlow==='scrolled' ? 1 : settings.columns
     view.renderer.setAttribute('max-column-count', count)
     view.renderer.setAttribute('max-inline-size', `${Math.max(220, ($('#reading-area').clientWidth - outer*2) / count)}px`)
     view.renderer.setAttribute('gap', `${settings.gutter}%`)
@@ -765,7 +772,7 @@ function renderLibrary() {
     const button = document.createElement('button'); button.className = 'library-book'; button.dataset.userContent = ''; button.textContent = item.title
     button.onclick = attempt(()=>openLibraryItem(item))
     content.append(button)
-    if (item.author) { const author = document.createElement('span'); author.className = 'small muted'; author.dataset.userContent=''; author.textContent = item.author; content.append(author) }
+    if (item.author) { const author = document.createElement('span'); author.className = 'small muted library-author'; author.dataset.userContent=''; author.textContent = item.author; content.append(author) }
     if(settings.libraryDetails){const details=document.createElement('span');details.className='small muted catalog-details';details.dataset.userContent='';details.textContent=[t(statuses[item.status]),item.series&&`${item.series}${item.seriesIndex===null?'':` · ${item.seriesIndex}`}`,...item.genres,...item.tags].filter(Boolean).join(' · ');content.append(details)}
     if (item.kind === 'folder') {
       const formats = document.createElement('div'); formats.className = 'catalog-formats'
@@ -782,15 +789,8 @@ function renderLibrary() {
     }
     row.append(content)
     const actions=document.createElement('div');actions.className='library-row-actions'
+    if(display==='list'){const formats=content.querySelector('.catalog-formats');if(formats)actions.append(formats);else{const formats=document.createElement('span');formats.className='catalog-formats local-formats';formats.textContent=item.formatNames.join(' · ').toUpperCase();actions.append(formats)}}
     const organize=document.createElement('button');organize.className='icon-button organize-book';organize.innerHTML=icon('settings');organize.title=t('Organizar libro');organize.setAttribute('aria-label',`${organize.title}: ${item.title}`);organize.onclick=()=>openOrganize(item);actions.append(organize)
-    if (item.kind === 'local') {
-      const remove = document.createElement('button'); remove.className = 'icon-button'; remove.innerHTML = icon('trash'); remove.title = t('Quitar de la biblioteca'); remove.setAttribute('aria-label',t('Quitar de la biblioteca'))
-      remove.onclick = attempt(async () => {
-        if (item.notes?.length && !confirm(`${t('Quitar de la biblioteca')}: «${item.title}» (${item.notes.length})?`)) return
-        if (record?.id === item.id) { clearTimeout(saveTimer); speech.stop();clearOpeningCover(); view.close(); book?.destroy?.(); book = null; record = null; $('#audio-toggle').disabled = true; $('.reading-footer').hidden = true }
-        await languageTools?.forget(item.id);await removeBook(item.id);await removeCatalog(item.id); await updateLibrary()
-      }); actions.append(remove)
-    }
     if(display==='covers'){const shutter=document.createElement('div');shutter.className='cover-shutter';shutter.append(content,actions);row.append(shutter)}else row.append(actions)
     list.append(row)
   }
@@ -855,7 +855,7 @@ function refreshLibraryCover(item){
 }
 async function loadLibraryCover(item,signal) {
   const check=()=>{if(signal?.aborted)throw new DOMException('Cancelled','AbortError')}
-  let cover,imported
+  let cover,imported,identifiedDuplicate=false
   try {
     check()
     if(item.kind==='folder') {
@@ -863,7 +863,14 @@ async function loadLibraryCover(item,signal) {
       else await ensureFolderPermission(item.folder.handle)
       check()
       if(item.cover) cover=await item.cover.getFile()
-      else {const file=await item.formats[0].handle.getFile();if(file.size>100*1024*1024) throw new Error(t('El límite de esta versión es de 100 MB por archivo.'));imported=await importBook(file,()=>{});cover=await imported.getCover?.()}
+      else {
+        const format=item.formats[0],file=await format.handle.getFile()
+        if(file.size>100*1024*1024)throw new Error(t('El límite de esta versión es de 100 MB por archivo.'))
+        const hash=await fileId(file);check()
+        const original=item.folder.entries.find(entry=>entry.key===item.key);original.hashes={...original.hashes,[format.name]:hash};await saveFolder(item.folder)
+        identifiedDuplicate=catalogItems.some(other=>other.kind==='local'&&other.id===hash)
+        imported=await importBook(file,()=>{});cover=await imported.getCover?.()
+      }
     } else if(record?.id===item.id) cover=record.coverBlob??await book?.getCover?.()
     else if(item.file || item.fileHandle) {
       if(item.fileHandle){if(signal){if(await item.fileHandle.queryPermission({mode:'read'})!=='granted')throw new DOMException('Permission required','NotAllowedError')}else await ensureFolderPermission(item.fileHandle)}
@@ -876,7 +883,7 @@ async function loadLibraryCover(item,signal) {
       const entry=item.folder.entries.find(entry=>entry.key===item.key);entry.coverBlob=cover;delete entry.coverInvalidated;await saveFolder(item.folder)
     } else {const original=await getBook(item.id);await saveBook({...original,coverBlob:cover});if(record?.id===item.id) record.coverBlob=cover}
     item.coverBlob=cover
-  } finally{imported?.destroy?.()}
+  } finally{imported?.destroy?.();if(identifiedDuplicate&&!signal?.aborted)await updateLibrary()}
 }
 
 async function openFolderEntry(folder, entry, format = entry.formats[0]) {
@@ -894,7 +901,7 @@ async function openFolderEntry(folder, entry, format = entry.formats[0]) {
   await openFile(file, { ...previous, id, folderId: folder.id, entryKey: entry.key, fileHandle: format.handle, author: entry.author, coverBlob, catalogTitle: entry.opfLoaded ? entry.title : undefined })
   if (record?.id === id) {
     const original = folder.entries.find(item=>item.key===entry.key)
-    original.updatedAt = Date.now();original.coverBlob=record.coverBlob;delete original.coverInvalidated; await saveFolder(folder); await updateLibrary()
+    original.hashes={...original.hashes,[format.name]:id};original.updatedAt = Date.now();original.coverBlob=record.coverBlob;delete original.coverInvalidated; await saveFolder(folder); await updateLibrary()
   }
   if (innerWidth < 900) sidebar(false)
 }
@@ -1399,7 +1406,7 @@ document.querySelectorAll('[data-tab]').forEach(button => button.onclick = () =>
 })
 document.querySelectorAll('[data-setting]').forEach(input => {
   input.addEventListener(['range', 'checkbox'].includes(input.type) || input.tagName === 'SELECT' ? 'input' : 'change', async () => {
-    const layout=['appearance','bookScene','readingFlow','font','fontSize','lineHeight','paragraphGap','columns','width','gutter','fullWidth','marginOuter','marginInner','hyphenate','tvMode','tvScale'].includes(input.dataset.setting)
+    const layout=['appearance','bookScene','bookMobileView','readingFlow','font','fontSize','lineHeight','paragraphGap','columns','width','gutter','fullWidth','marginOuter','marginInner','hyphenate','tvMode','tvScale'].includes(input.dataset.setting)
     const origin=layout&&book?(preservingAnchor?record.anchorCFI:anchorCFI()):null,sequence=layout?++layoutSequence:layoutSequence,id=record?.id
     if(layout){preservingAnchor=Boolean(origin)}
     if (['provider', 'voice', 'rate', 'pitch', 'endpoint', 'model', 'apiVoice', 'instructions','sleepEnabled','sleepMinutes','pronunciationsEnabled','voicePrice','voicePriceUnit','voiceCurrency','costLimitEnabled','costLimit','characterLimitEnabled','characterLimit','costMargin'].includes(input.dataset.setting)) {audioTools?.cancel()}
@@ -1415,7 +1422,7 @@ document.querySelectorAll('[data-setting]').forEach(input => {
     Object.assign(settings, safeSettings(settings)); applySettings()
     audioTools?.refresh()
     if(['sleepEnabled','sleepMinutes'].includes(input.dataset.setting)){speech.timer.clear();if(settings.sleepEnabled&&speech.state!=='stopped')speech.timer.arm(settings.sleepMinutes)}
-    if(origin){await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));if(sequence===layoutSequence&&record?.id===id){layoutNavigation=view.goTo(origin);await layoutNavigation;if(sequence!==layoutSequence||record?.id!==id)return;record.anchorCFI=origin;preservingAnchor=false;updateReadingInformation();saveRecord()}}
+    if(origin){if(['appearance','width','fullWidth','bookMobileView'].includes(input.dataset.setting)&&!matchMedia('(prefers-reduced-motion: reduce)').matches)await new Promise(resolve=>setTimeout(resolve,260));await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));if(sequence===layoutSequence&&record?.id===id){layoutNavigation=view.goTo(origin);await layoutNavigation;if(sequence!==layoutSequence||record?.id!==id)return;record.anchorCFI=origin;preservingAnchor=false;updateReadingInformation();saveRecord()}}
   })
 })
 $('#api-key').oninput = event => { apiKey = event.target.value.trim() }
@@ -1584,7 +1591,7 @@ $('#clear-library-filters').onclick=()=>{clearLibraryFilters();renderLibrary()}
 $('#show-duplicates').onclick=showDuplicates
 $('#read-visible-metadata').onclick=attempt(readShownMetadata)
 $('#metadata-cancel').onclick=()=>metadataBatch?.abort()
-$('#collection-create').onclick=attempt(async()=>{await createCollection($('#collection-name'));await updateLibrary()})
+$('#collection-create').onclick=attempt(async()=>{const existing=collections.find(item=>normalize(item.name)===normalize($('#collection-name').value));if(existing){$('#filter-collection').value=existing.id;$('#library-collections-dialog').close();renderLibrary();return}await createCollection($('#collection-name'));await updateLibrary()})
 $('#organize-form').onsubmit=attempt(saveOrganization)
 $('#organize-collection-create').onclick=attempt(async()=>{const selected=[...$('#organize-collections').querySelectorAll('input:checked')].map(input=>input.value);const collection=await createCollection($('#organize-collection-name'));renderCollectionChoices([...selected,collection.id]);renderLibraryFilters()})
 $('#library-more').onclick = () => { libraryLimit += 60; renderLibrary() }

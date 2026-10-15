@@ -10,7 +10,8 @@ export function addLibraryPolish(settings){
   dialog.insertAdjacentHTML('beforeend',`<div id="collection-list"></div><section id="collection-editor" hidden><div class="collection-editor-heading"><button id="collection-back" class="icon-button" aria-label="Volver">${icon('left')}</button><input id="collection-rename" maxlength="80" aria-label="Nombre de colección"><button id="collection-save-name" class="icon-button" aria-label="Guardar nombre">${icon('check')}</button></div><div class="collection-tools"><button id="collection-open" class="text-button">Ver libros</button><button id="collection-members-toggle" class="text-button">Editar libros</button><button id="collection-remove" class="icon-button" aria-label="Eliminar colección">${icon('trash')}</button></div><div id="collection-members" hidden><label class="field">Buscar libros<input id="collection-member-search" type="search"></label><div id="collection-member-list"></div><button id="collection-save-members" class="primary-button">Guardar selección</button></div><div id="collection-preview"></div></section>`)
   $('#collection-delete').remove()
   if(!globalThis.lectorDesktop){const hint=document.createElement('p');hint.className='small muted';hint.textContent='El navegador no facilita la ruta completa. Puedes escribirla como referencia.';$('#folder-list').after(hint)}
-  $('#theme-panel .shared-settings').insertAdjacentHTML('afterbegin','<button id="book-scene-shortcut" class="settings-link" hidden>Entorno del libro</button>')
+  $('#collection-name').placeholder='Buscar o crear colección'
+  $('#collection-name').setAttribute('aria-label','Buscar o crear colección')
   for(const button of document.querySelectorAll('[data-library-view="covers"]')){
     const wrap=document.createElement('div');wrap.className='cover-size-control';button.replaceWith(wrap);wrap.append(button)
     const popup=document.createElement('div');popup.className='cover-size-popup';popup.innerHTML=`<label>Tamaño de portadas<input type="range" min="100" max="280" step="5" value="${settings.coverSize}" aria-label="Tamaño de portadas"></label>`;wrap.append(popup)
@@ -48,7 +49,8 @@ export function createLibraryPolish({getItems,getCollections,refresh,attempt,ope
       return
     }
     const list=$('#collection-list');list.replaceChildren()
-    for(const item of [...getCollections()].sort((a,b)=>a.name.localeCompare(b.name,currentLanguage()))){
+    const query=normalize($('#collection-name').value)
+    for(const item of [...getCollections()].filter(item=>!query||normalize(item.name).includes(query)).sort((a,b)=>a.name.localeCompare(b.name,currentLanguage()))){
       const row=document.createElement('div');row.className='collection-row'
       const open=button(item.name,()=>{$('#filter-collection').value=item.id;$('#library-collections-dialog').close();openLibrary();refresh()});open.dataset.userContent=''
       const count=document.createElement('span');count.className='small muted';count.textContent=String(getItems().filter(book=>book.collections.includes(item.id)).length)
@@ -64,6 +66,8 @@ export function createLibraryPolish({getItems,getCollections,refresh,attempt,ope
   $('#collection-remove').onclick=attempt(async()=>{if(!selected())return;await removeCollection(selectedID);selectedID=undefined;editingMembers=false;await refresh()})
   $('#collection-members-toggle').onclick=()=>{editingMembers=!editingMembers;if(editingMembers){selectedMembers=new Set(members().map(item=>item.id));$('#collection-member-search').value=''}render()}
   $('#collection-member-search').oninput=renderMembers
+  $('#collection-name').oninput=render
+  $('#collection-name').onkeydown=event=>{if(event.key==='Enter'&&!event.isComposing){event.preventDefault();$('#collection-create').click()}}
   $('#collection-save-members').onclick=attempt(async()=>{for(const item of getItems()){const before=item.collections.includes(selectedID),after=selectedMembers.has(item.id);if(before!==after)await updateCatalog(item.id,state=>({...state,collections:after?[...new Set([...(state.collections??[]),selectedID])]:(state.collections??[]).filter(id=>id!==selectedID),updatedAt:Date.now()}))}editingMembers=false;await refresh()})
   return {refresh:render}
 }

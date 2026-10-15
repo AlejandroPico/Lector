@@ -49,4 +49,15 @@ Cobre|Coure|Copper|Cuivre|Kupfer|Cobre|Rame|铜色|銅色|तांबई
 Marrón|Marró|Brown|Marron|Braun|Castanho|Marrone|棕色|茶色|भूरा
 Pizarra|Pissarra|Slate|Ardoise|Schiefer|Ardósia|Ardesia|石板色|スレート|स्लेट
 Gris|Gris|Gray|Gris|Grau|Cinzento|Grigio|灰色|灰色|धूसर
+Buscar o crear colección|Cercar o crear col·lecció|Find or create collection|Chercher ou créer une collection|Sammlung suchen oder erstellen|Pesquisar ou criar coleção|Cerca o crea raccolta|查找或创建收藏集|コレクションを検索・作成|संग्रह खोजें या बनाएँ
+Biblioteca de cerezo|Biblioteca de cirerer|Cherrywood library|Bibliothèque en merisier|Kirschholz-Bibliothek|Biblioteca de cerejeira|Biblioteca in ciliegio|樱桃木书房|桜材の図書室|चेरी की लकड़ी का पुस्तकालय
+Rincón de bambú|Racó de bambú|Bamboo corner|Coin de bambou|Bambusecke|Recanto de bambu|Angolo di bambù|竹韵一角|竹の読書コーナー|बाँस का कोना
+Jardín de roble claro|Jardí de roure clar|Light oak garden|Jardin de chêne clair|Garten mit heller Eiche|Jardim de carvalho claro|Giardino in rovere chiaro|浅橡木花园|明るいオークの庭|हल्के ओक का बगीचा
+Estudio de caoba|Estudi de caoba|Mahogany study|Bureau en acajou|Mahagoni-Arbeitszimmer|Escritório de mogno|Studio in mogano|桃花心木书斋|マホガニーの書斎|महोगनी का अध्ययन कक्ष
+Vista en móvil|Vista al mòbil|Mobile view|Vue mobile|Mobilansicht|Vista no telemóvel|Vista su cellulare|移动视图|モバイル表示|मोबाइल दृश्य
+Una página|Una pàgina|One page|Une page|Eine Seite|Uma página|Una pagina|单页|1ページ|एक पृष्ठ
+Libro abierto|Llibre obert|Open book|Livre ouvert|Aufgeschlagenes Buch|Livro aberto|Libro aperto|双页书本|見開き|खुली किताब
+Página visible|Pàgina visible|Visible page|Page visible|Sichtbare Seite|Página visível|Pagina visibile|当前页|表示ページ|दिखाई देने वाला पृष्ठ
+Página izquierda|Pàgina esquerra|Left page|Page de gauche|Linke Seite|Página esquerda|Pagina sinistra|左页|左ページ|बायाँ पृष्ठ
+Página derecha|Pàgina dreta|Right page|Page de droite|Rechte Seite|Página direita|Pagina destra|右页|右ページ|दायाँ पृष्ठ
 `

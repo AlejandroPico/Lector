@@ -4,7 +4,16 @@ body[data-book-scene="night"] #book-environment {background-image:radial-gradien
 body[data-book-scene="cabin"] #book-environment {background-image:linear-gradient(#10230b18,#10150828),url('../public/scenes/cabin.webp');}
 body[data-book-scene="school"] #book-environment {background-image:url('../public/scenes/school.webp');}
 body[data-book-scene="office"] #book-environment {background-image:url('../public/scenes/office.webp');}
-.physical-book .toolbar,.physical-book .reading-footer {background:color-mix(in srgb,var(--surface) 94%,transparent);}
+.physical-book {--desk-ink:#fff4df;--desk-shadow:#160b04;}
+.physical-book .toolbar,.physical-book .reading-footer {background:transparent;border:0;color:var(--desk-ink);text-shadow:0 1px 3px var(--desk-shadow),0 0 12px var(--desk-shadow);}
+.physical-book .toolbar .icon-button,.physical-book .reading-footer button {color:var(--desk-ink);background:transparent;border:0;box-shadow:none;}
+.physical-book .toolbar svg,.physical-book .reading-footer svg {filter:drop-shadow(0 1px 2px var(--desk-shadow));}
+.physical-book .toolbar .icon-button:hover,.physical-book .reading-footer button:hover {color:#fff;filter:brightness(1.2);}
+.physical-book .toolbar-separator {background:transparent;}
+.physical-book #audio-toggle {border:0;background:transparent;box-shadow:none;color:var(--desk-ink);}
+.physical-book .reading-information {color:inherit;}
+.physical-book[data-book-scene="garden"],.physical-book[data-book-scene="bamboo"],.physical-book[data-book-scene="school"] {--desk-ink:#30291f;--desk-shadow:#fff4dd;}
+.physical-book[data-book-scene="garden"] .toolbar .icon-button:hover,.physical-book[data-book-scene="bamboo"] .toolbar .icon-button:hover,.physical-book[data-book-scene="school"] .toolbar .icon-button:hover {color:#15110b;}
 .physical-book #reading-area {width:calc(100% - 76px);top:calc(90px + var(--safe-top));bottom:calc(88px + var(--safe-bottom));max-width:none;isolation:isolate;padding-block:0;overflow:visible;}
 .book-folio {position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,#d1b890 0%,#f7efdc 3%,#faf3e2 46%,#e2cfab 49.6%,#997e5755 50%,#f6e9cd 50.5%,#f9f1df 54%,#f7efdc 97%,#c8b18b 100%);border-radius:3px 10px 14px 4px;box-shadow:0 3px 0 3px #ab9572,0 9px 0 5px #57402d,0 20px 24px 8px #160c0755,0 40px 65px #160c0766;}
 .book-folio::after {content:'';position:absolute;inset:0;opacity:.12;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' opacity='.35' filter='url(%23p)'/%3E%3C/svg%3E");}
@@ -15,10 +24,10 @@ body[data-book-scene="office"] #book-environment {background-image:url('../publi
 .physical-book #reader,.physical-book #reader::part(filter),.physical-book #reader::part(container) {background:transparent!important;}
 .physical-book #reader {position:relative;z-index:1;}
 .physical-book #reading-area:not(.cover-open):not(.back-closed)::after {content:'';position:absolute;inset:0 auto 0 50%;width:5%;transform:translateX(-50%);z-index:2;background:linear-gradient(90deg,transparent,#58391522 35%,#58391544 50%,#fff7dd44 60%,transparent);pointer-events:none;}
-.physical-book[data-book-scene="night"] .book-folio {background:linear-gradient(90deg,#a18c68,var(--paper) 4%,#dfc9a7 46%,#b69a72 49.6%,#715a3c88 50%,#cfb58a 51%,var(--paper) 54%,var(--paper) 97%,#a18c68);}
+.physical-book[data-book-scene="night"] .book-focused .book-folio {background:linear-gradient(90deg,#a18c68,var(--paper) 4%,#dfc9a7 46%,#b69a72 49.6%,#715a3c88 50%,#cfb58a 51%,var(--paper) 54%,var(--paper) 97%,#a18c68);}
 .physical-book .opening-cover {inset:0;background:transparent;padding:16px 0 12px;z-index:4;}
 .physical-book.cover-placeholder .book-folio {visibility:hidden;}
-.physical-book .cover-open .book-folio {background:none;box-shadow:none;}
+.physical-book .cover-open .book-focused .book-folio {background:none;box-shadow:none;}
 .physical-book .cover-open .book-folio>* {display:none;}
 .physical-book .opening-cover-image {width:auto;max-width:70%;filter:drop-shadow(12px 18px 12px #1c100b88);}
 .physical-book .opening-cover-image img {width:auto;max-width:100%;border-radius:2px 6px 6px 2px;box-shadow:-5px 0 0 #3b291c,5px 3px 0 #c3b190,9px 5px 0 #5d4430;}
@@ -46,13 +55,41 @@ body[data-book-scene="office"] #book-environment {background-image:url('../publi
 .physical-book.zen #reading-area {inset-block:calc(30px + var(--safe-top)) calc(30px + var(--safe-bottom));width:calc(100% - 64px);}
 @media(max-width:699px){
  .physical-book #reading-area {width:calc(100% - 28px);top:calc(75px + var(--safe-top));bottom:calc(73px + var(--safe-bottom));}
- .book-binding {display:none;}
- .physical-book #reading-area::after {display:none;}
- .book-folio {background:linear-gradient(90deg,#d1b890,#f7efdc 4%,#faf3e2 90%,#d7bf98);box-shadow:0 4px 0 2px #b29c7a,0 8px 0 4px #57402d,0 20px 24px #160c0766;}
+ .book-focused .book-binding {display:none;}
+ .physical-book #reading-area.book-focused::after {display:none;}
+ .book-focused .book-folio {background:linear-gradient(90deg,#d1b890,#f7efdc 4%,#faf3e2 90%,#d7bf98);box-shadow:0 4px 0 2px #b29c7a,0 8px 0 4px #57402d,0 20px 24px #160c0766;}
  .physical-book .opening-cover-image {max-width:90%;}
  .physical-book.zen #reading-area {width:calc(100% - 24px);inset-block:calc(20px + var(--safe-top)) calc(20px + var(--safe-bottom));}
- .book-turn-leaf {width:100%;left:0;}
- .book-turn-still {display:none;}
- .book-page-copy {left:0!important;}
+ .book-focused .book-turn-leaf {width:100%;left:0;}
+ .book-focused .book-turn-still {display:none;}
+ .book-focused .book-page-copy {left:0!important;}
 }
 @media(prefers-reduced-motion:reduce){.book-turn{display:none;}}
+
+/* The desk remains visible around a portrait-proportioned spread. */
+body[data-book-scene="library"] #book-environment {background-image:url('../public/scenes/library.webp');}
+body[data-book-scene="bamboo"] #book-environment {background-image:url('../public/scenes/bamboo.webp');}
+body[data-book-scene="garden"] #book-environment {background-image:url('../public/scenes/garden.webp');}
+body[data-book-scene="study"] #book-environment {background-image:url('../public/scenes/study.webp');}
+.physical-book #reading-area {transition:max-width .24s ease,height .24s ease,top .24s ease;}
+.book-edge {position:absolute;top:12px;bottom:0;width:25px;padding:0;border:0;background:transparent;z-index:6;cursor:pointer;}
+#book-edge-left {left:-14px;}
+#book-edge-right {right:-14px;}
+.book-edge:focus-visible {outline:1px solid var(--accent);outline-offset:1px;}
+.cover-open .book-edge,.back-closed .book-edge {z-index:7;}
+.book-page-focus {position:absolute;bottom:-38px;left:50%;transform:translateX(-50%);display:flex;gap:22px;z-index:7;color:var(--desk-ink);}
+.book-page-focus button {width:32px;height:30px;padding:0;color:inherit;font-size:23px;text-shadow:0 1px 3px var(--desk-shadow);background:transparent;opacity:.6;}
+.book-page-focus button[aria-pressed="true"] {opacity:1;}
+.book-focused .book-binding {display:block;left:0;transform:none;width:7%;background:linear-gradient(90deg,#51331644,transparent);}
+.book-focused[data-book-side="left"] .book-binding {left:auto;right:0;background:linear-gradient(90deg,transparent,#51331644);}
+.physical-book #reading-area.book-focused::after {display:none;}
+.book-focused .book-folio {background:linear-gradient(90deg,#d1b890,#f7efdc 4%,#faf3e2 90%,#d7bf98);}
+.book-focused[data-book-side="right"] .book-folio {background:linear-gradient(90deg,#d7bf98,#faf3e2 10%,#f7efdc 96%,#d1b890);}
+.book-focused .book-turn-leaf {width:100%;left:0;}
+.book-focused .book-turn-still {display:none;}
+.book-focused .book-page-copy {left:0!important;}
+@media(prefers-reduced-motion:reduce){.physical-book #reading-area {transition:none;}}
+
+@media(min-width:901px){.physical-book.sidebar-open #reading-area {width:calc(100% - 366px);}}
+
+.physical-book:is([data-book-scene="garden"],[data-book-scene="bamboo"],[data-book-scene="school"]) .reading-footer button:hover {color:#15110b;}

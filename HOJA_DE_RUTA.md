@@ -1,5 +1,9 @@
 # Ampliaciones acordadas y versiones propuestas
 
+## Ampliación 1.11
+
+Biblioteca sin doble ficha para el mismo archivo leído y catalogado; listas compactas, sin papelera, y campo de colecciones que filtra y crea con Intro. Tema incorpora el cambio de apariencia y miniaturas de todos los entornos, con cuatro nuevas maderas. Libro proporcional y redimensionable, barras transparentes y navegación por los cantos; página individual en móvil con selección del lado contiguo y alternativa de libro abierto. Se mantienen notas, progreso, voz y diez idiomas.
+
 ## Ampliación 1.10
 
 Autorizada: pulido de biblioteca, portadas visibles automáticas, colecciones completas, referencias de carpetas, notas coincidentes independientes, 24 colores, cuatro temas nuevos, ajustes replegados por sesión y apariencia opcional de libro con escenarios fotográficos y hojas animadas. El supuesto fallo de escaneo se cancela: procedía de otra carpeta recordada. Emisión aplazada sin cambios.

@@ -29,7 +29,7 @@ Los archivos y `SHA256SUMS.txt` se publican después de aprobar las comprobacion
 
 ## Preparación de tiendas
 
-Identificador: `io.github.alejandropico.lector`. Versión: `1.10.0`. Android versionCode: `1010000`. Categoría: libros/educación. Diez idiomas de interfaz. Iconos y banner TV proceden del `favicon.svg` del proyecto; Apple incorpora manifiesto de privacidad.
+Identificador: `io.github.alejandropico.lector`. Versión: `1.11.0`. Android versionCode: `1011000`. Categoría: libros/educación. Diez idiomas de interfaz. Iconos y banner TV proceden del `favicon.svg` del proyecto; Apple incorpora manifiesto de privacidad.
 
 `distribution/store-metadata.json` contiene textos y enlaces iniciales; `distribution/apple` contiene permisos y plantilla de exportación. Los campos de identidad del titular quedan pendientes de su cuenta real. Antes de enviar:
 

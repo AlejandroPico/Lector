@@ -1,5 +1,9 @@
 # Lector
 
+## Versión 1.11 · biblioteca y libro adaptable
+
+Biblioteca sin doble ficha para el mismo archivo leído y catalogado; listas compactas, sin papelera, y campo de colecciones que filtra y crea con Intro. Tema incorpora el cambio de apariencia y miniaturas de todos los entornos, con cuatro nuevas maderas. Libro proporcional y redimensionable, barras transparentes y navegación por los cantos; página individual en móvil con selección del lado contiguo y alternativa de libro abierto. Se mantienen notas, progreso, voz y diez idiomas.
+
 ## Versión 1.10 · biblioteca y libro sobre la mesa
 
 Biblioteca de portadas completas, detalles como persiana al pasar el ratón o enfocar con teclado, primer toque para mostrar información y segundo para abrir en pantallas táctiles. Tamaño ajustable desde el icono de portadas; recuento en Filtros y desplazamiento sin barra visible. Portadas visibles automáticas, también las incrustadas en EPUB, con cola secuencial, pausa y caché. Leer una cubierta incrustada puede descargar el ebook de OneDrive; se puede desactivar en Ajustes → Biblioteca. No se solicitan permisos automáticamente.

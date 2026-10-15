@@ -48,3 +48,21 @@ describe('catalog metadata and organization',()=>{
     for(const row of libraryRows.trim().split('\n'))expect(row.split('|')).toHaveLength(10)
   })
 })
+
+
+it('unifies a standalone reading with its byte-identical folder entry, preserving state and distinct editions',()=>{
+ const hash='a'.repeat(64),notes=[{id:'note',text:'Keep me'}]
+ const books=[{id:hash,title:'Imported title',filename:'same.epub',notes,lastReadAt:123,fraction:.4,coverBlob:'cover'}, {id:'b'.repeat(64),title:'Same name',filename:'same.epub'}]
+ const folders=[{id:'folder',entries:[{key:'entry',title:'Same name',hashes:{'same.epub':hash},formats:[{extension:'epub'}]}]}]
+ const records=[{id:hash,collections:['favourites'],status:'reading',overrides:{author:'Author'}},{id:'folder:entry',overrides:{title:'Corrected title'}}]
+ const items=libraryEntries(books,folders,records)
+ expect(items).toHaveLength(2)
+ expect(items.find(item=>item.kind==='folder')).toMatchObject({title:'Corrected title',author:'Author',collections:['favourites'],lastReadAt:123,fraction:.4,coverBlob:'cover'})
+ expect(books[0].notes).toBe(notes)
+ const removed=libraryEntries(books,folders,[...records.slice(0,1),{...records[1],collections:[]}])
+ expect(removed.find(item=>item.kind==='folder').collections).toEqual([])
+ const identified=libraryEntries(books,[{...folders[0],entries:[{...folders[0].entries[0],hashes:undefined}]}],[...records,{id:'folder:entry',fingerprints:[hash]}])
+ expect(identified).toHaveLength(2)
+})
+
+it('has all new interface strings in every supported language',async()=>{const {libraryPolishRows}=await import('../src/i18n-library-polish.js');for(const row of libraryPolishRows.trim().split('\n'))expect(row.split('|').every(Boolean)&&row.split('|').length===10).toBe(true)})

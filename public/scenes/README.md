@@ -21,3 +21,23 @@ Use case: photorealistic-natural. Asset type: full-screen book reader scene back
 ### office.webp
 
 Use case: photorealistic-natural. Asset type: full-screen book reader scene background. An ultra-realistic landscape 3:2 overhead perpendicular photograph of an EMPTY sophisticated office writing desk, charcoal slate leather desk mat covers central 94% and narrow smoked oak wood border at far edges. Finely tactile black-gray leather, subtle grain, gentle cool neutral studio daylight from upper left. Calm modern refined quiet office atmosphere. Center entirely empty for a separate large interactive book. No book, no objects, no paper, no text, logos, watermark or collage. Photographic material realism.
+
+## library.webp — 1.11
+Generación integrada de imágenes (sin API externa configurada). Conversión a WebP con Sharp.
+
+Use case: photorealistic-natural. Asset: full screen background texture for an interactive reading application. Warm cherry wood library reading desk, rich reddish amber satin wood, subtle fine grain, old library atmosphere. Strictly overhead perpendicular photograph, flat tabletop filling entire landscape frame, no perspective horizon. Center 90 percent completely empty and evenly usable to overlay an interactive book. Real material photography, tactile fine detail, restrained contrast, welcoming peaceful reading mood. No book, no objects, no writing, no labels, no text, no watermark. Landscape 1536x1024.
+
+## bamboo.webp — 1.11
+Generación integrada de imágenes (sin API externa configurada). Conversión a WebP con Sharp.
+
+Use case: photorealistic-natural. Asset: full screen background texture for an interactive reading application. Honey pale bamboo writing desk in a serene tea reading corner, narrow natural bamboo fibers, calming soft light. Strictly overhead perpendicular photograph, flat tabletop filling entire landscape frame, no perspective horizon. Center 90 percent completely empty and evenly usable to overlay an interactive book. Real material photography, tactile fine detail, restrained contrast, welcoming peaceful reading mood. No book, no objects, no writing, no labels, no text, no watermark. Landscape 1536x1024.
+
+## garden.webp — 1.11
+Generación integrada de imágenes (sin API externa configurada). Conversión a WebP con Sharp.
+
+Use case: photorealistic-natural. Asset: full screen background texture for an interactive reading application. Pale whitewashed oak reading table in a bright conservatory, natural subtle oak grain, gentle dappled daylight near the extreme edges. Strictly overhead perpendicular photograph, flat tabletop filling entire landscape frame, no perspective horizon. Center 90 percent completely empty and evenly usable to overlay an interactive book. Real material photography, tactile fine detail, restrained contrast, welcoming peaceful reading mood. No book, no objects, no writing, no labels, no text, no watermark. Landscape 1536x1024.
+
+## study.webp — 1.11
+Generación integrada de imágenes (sin API externa configurada). Conversión a WebP con Sharp.
+
+Use case: photorealistic-natural. Asset: full screen background texture for an interactive reading application. Antique dark mahogany study desk, deep burgundy brown wood, delicate aged patina and polished grain, warm intimate lamplight. Strictly overhead perpendicular photograph, flat tabletop filling entire landscape frame, no perspective horizon. Center 90 percent completely empty and evenly usable to overlay an interactive book. Real material photography, tactile fine detail, restrained contrast, welcoming peaceful reading mood. No book, no objects, no writing, no labels, no text, no watermark. Landscape 1536x1024.

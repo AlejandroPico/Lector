@@ -54,3 +54,27 @@
  .note-swatches {gap:6px;}
 }
 @media(prefers-reduced-motion:reduce){.cover-shutter{transition:none;}}
+
+/* Quiet, single-line library rows; the cover gallery keeps its inner shutter. */
+.library-dialog #library-list:not(.cover-grid) .library-row {padding:3px 0;min-height:32px;align-items:center;gap:10px;}
+#library-list:not(.cover-grid) .library-entry {display:flex;flex-direction:row;align-items:baseline;flex-wrap:wrap;gap:0 6px;min-width:0;}
+#library-list:not(.cover-grid) .library-book {font-size:12px;line-height:1.5;padding:3px 0;width:auto;max-width:100%;}
+#library-list:not(.cover-grid) .library-author {font-size:12px;color:var(--muted);line-height:1.5;}
+#library-list:not(.cover-grid) .library-author::before {content:'— ';}
+#library-list:not(.cover-grid) .catalog-details {flex-basis:100%;}
+#library-list:not(.cover-grid) .library-row-actions {align-items:center;gap:7px;}
+#library-list:not(.cover-grid) .catalog-formats {margin:0;gap:4px;font-size:9px;color:var(--muted);}
+#library-list:not(.cover-grid) .catalog-formats button {border:0;padding:3px 0;font-size:9px;color:var(--muted);}
+.appearance-switch {display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 18px;border-bottom:1px solid var(--line);}
+.appearance-switch button {font-size:12px;color:var(--muted);padding:10px 4px;border-bottom:2px solid transparent;}
+.appearance-switch button[aria-pressed="true"] {color:var(--ink);border-color:var(--accent);}
+.scene-options {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 12px;margin-bottom:20px;}
+.scene-option {padding:0;text-align:left;color:var(--ink);font-size:11px;}
+.scene-thumbnail {display:block;position:relative;height:70px;background-position:center;background-size:cover;margin-bottom:6px;outline:1px solid var(--line);outline-offset:2px;}
+.scene-option[aria-pressed="true"] .scene-thumbnail {outline:2px solid var(--accent);}
+.scene-thumbnail svg {position:absolute;inset:0;margin:auto;filter:drop-shadow(0 1px 3px #000);color:white;}
+.scene-afternoon::after,.scene-night::after {content:'';position:absolute;inset:0;background:#a8531744;}
+.scene-night::after {background:#050407aa;}
+#theme-panel,.shared-settings:has(.scene-options) {scrollbar-width:none;}
+#theme-panel::-webkit-scrollbar,.shared-settings:has(.scene-options)::-webkit-scrollbar {display:none;}
+@media(max-width:500px){#library-list:not(.cover-grid) .library-entry{display:block;}#library-list:not(.cover-grid) .library-book{display:inline;}#library-list:not(.cover-grid) .library-author{margin-left:5px;}#library-list:not(.cover-grid) .library-row-actions{gap:3px;}}

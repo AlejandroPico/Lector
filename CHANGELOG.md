@@ -1,5 +1,9 @@
 # Historial de versiones
 
+## 1.11.0
+
+Biblioteca sin doble ficha para el mismo archivo leído y catalogado; listas compactas, sin papelera, y campo de colecciones que filtra y crea con Intro. Tema incorpora el cambio de apariencia y miniaturas de todos los entornos, con cuatro nuevas maderas. Libro proporcional y redimensionable, barras transparentes y navegación por los cantos; página individual en móvil con selección del lado contiguo y alternativa de libro abierto. Se mantienen notas, progreso, voz y diez idiomas.
+
 ## 1.10.0
 
 - Portadas completas y carga automática de las visibles con permisos ya concedidos; cola y preferencia desactivable. La enumeración de carpetas sigue sin leer contenidos.

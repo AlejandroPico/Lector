@@ -19,12 +19,20 @@ export function recentReadingOrder(items,locale='es') {
   return [...items].sort((a,b)=>(b.lastReadAt??0)-(a.lastReadAt??0)||collator.compare(a.title??'',b.title??''))
 }
 export function libraryEntries(books,folders,records){
-  const stored=new Map(records.map(record=>[record.id,record])),opened=new Map(books.filter(book=>book.folderId).map(book=>[catalogKey(book),book]))
-  const linked=folders.flatMap(folder=>folder.entries.map(entry=>{const saved=opened.get(`${folder.id}:${entry.key}`);return {...entry,folder,id:`${folder.id}:${entry.key}`,kind:'folder',coverBlob:entry.coverBlob??(!entry.coverInvalidated?saved?.coverBlob:undefined),lastReadAt:saved?.lastReadAt,cfi:saved?.cfi,coverSeen:saved?.coverSeen,fraction:saved?.fraction}}))
+  const stored=new Map(records.map(record=>[record.id,record])),opened=new Map(),byHash=new Map(books.map(book=>[book.id,book])),aliases=new Map()
+  for(const book of books.filter(book=>book.folderId)){const key=catalogKey(book);opened.set(key,[...(opened.get(key)??[]),book])}
+  const linked=folders.flatMap(folder=>folder.entries.map(entry=>{
+    const id=`${folder.id}:${entry.key}`,hashes=[...Object.values(entry.hashes??{}),...(stored.get(id)?.fingerprints??[])].filter(hash=>typeof hash==='string'&&/^[a-f\d]{64}$/i.test(hash)).map(hash=>hash.toLowerCase())
+    const readings=[...new Set([...(opened.get(id)??[]),...hashes.map(hash=>byHash.get(hash)).filter(Boolean)])].sort((a,b)=>(b.lastReadAt??b.updatedAt??0)-(a.lastReadAt??a.updatedAt??0)),saved=readings[0]
+    for(const reading of readings)aliases.set(reading.id,id)
+    return {...entry,folder,id,kind:'folder',savedId:saved?.id,coverBlob:entry.coverBlob??(!entry.coverInvalidated?saved?.coverBlob:undefined),lastReadAt:saved?.lastReadAt,cfi:saved?.cfi,coverSeen:saved?.coverSeen,fraction:saved?.fraction}
+  }))
   const linkedIDs=new Set(linked.map(item=>item.id))
   const linkedFolders=new Set(folders.map(folder=>folder.id))
-  return [...books.filter(book=>!linkedIDs.has(catalogKey(book))&&(!book.folderId||!linkedFolders.has(book.folderId))).map(book=>({...book,kind:'local'})),...linked].map(base=>{
-    const state=stored.get(base.id)??{},metadata=catalogMetadata(state.metadata??base),overrides=state.overrides??{}
+  return [...books.filter(book=>!aliases.has(book.id)&&!linkedIDs.has(catalogKey(book))&&(!book.folderId||!linkedFolders.has(book.folderId))).map(book=>({...book,kind:'local'})),...linked].map(base=>{
+    // A cached reading and its folder entry are one book, identified by bytes or
+    // an explicit folder link, never by a potentially shared title or filename.
+    const fallback=stored.get(base.savedId)??{},primary=stored.get(base.id)??{},state={...fallback,...primary,overrides:{...fallback.overrides,...primary.overrides}},metadata=catalogMetadata(state.metadata??base),overrides=state.overrides??{}
     const formats=base.formats?.map(format=>format.extension)??[base.filename?.split('.').pop()?.toLowerCase()].filter(Boolean)
     return {...base,lastReadAt:base.lastReadAt??(base.coverSeen!==false&&base.cfi?1:0),...Object.fromEntries(Object.entries(metadata).filter(([,value])=>Array.isArray(value)?value.length:value!==''&&value!==null)),...overrides,
       authors:labels(overrides.author??metadata.authors),tags:labels(overrides.tags??metadata.tags),genres:labels(overrides.genres??metadata.genres),formatNames:formats,
