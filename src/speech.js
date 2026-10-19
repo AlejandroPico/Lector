@@ -99,6 +99,18 @@ export function wordAtPoint(doc, x, y, language) {
   return null
 }
 
+// Reconstruct a device checkpoint against the original document, including pronunciation offsets.
+export async function speechCheckpoint(view,checkpoint,settings,cast={}){
+  const resolved=view.resolveNavigation(checkpoint.cfi),source=view.book.sections[resolved?.index]
+  if(!source)return null
+  const doc=source.createDocument?await source.createDocument():new DOMParser().parseFromString(await(await fetch(await source.load())).text(),'text/html')
+  const point=resolved.anchor?.(doc),first=speechFrom(documentSpeech(doc,settings.language,settings.pronunciationsEnabled?settings.pronunciations.map(rule=>rule.from).filter(term=>term.includes('.')):[]),point,true)[0]
+  if(!first)return checkpoint.cfi
+  const part=castSegments(first,resolved.index,cast,view,settings.narrationEnabled)[0]
+  const spoken=spokenSegment(part,narrationSettings(settings,cast,part.characterId)),at=Math.min(Math.max(0,checkpoint.charIndex||0),Math.max(0,spoken.text.length-1))
+  return view.getCFI(resolved.index,spoken.wordRange(at,1))
+}
+
 // Page-sized fragments keep voices without boundary events on visible text.
 export function speechPages(segments, renderer, language) {
   if (renderer.scrolled || !renderer.size) return segments
@@ -133,7 +145,7 @@ export function validateEndpoint(value) {
 }
 
 export class SpeechController {
-  constructor({ view, settings, getKey, onState, onError, onHighlight,onAudio=()=>{},onBrowseChange=()=>{},onActivity=()=>{},waitForView=()=>Promise.resolve(),getCast=()=>({}) }) {
+  constructor({ view, settings, getKey, onState, onError, onHighlight,onAudio=()=>{},onCursor=()=>{},getBookId=()=>'',onBrowseChange=()=>{},onActivity=()=>{},waitForView=()=>Promise.resolve(),getCast=()=>({}) }) {
     Object.assign(this, { view, settings, getKey, onState, onError, onHighlight })
     this.cache = new Map(); this.run = 0; this.state = 'stopped'; this.pending = new Set()
     this.browsing=false;this.onBrowseChange=onBrowseChange
@@ -142,6 +154,7 @@ export class SpeechController {
     this.waitForView=waitForView;this.documents=new WeakMap()
     this.getCast=getCast
     this.onAudio=onAudio
+    this.onCursor=onCursor;this.getBookId=getBookId
     view.addEventListener('load',({detail:{doc,index}})=>this.documents.set(doc,index))
     this.budget=new AudioBudget(settings,()=>this.onActivity())
     this.timer=new SleepTimer(()=>{this.stop();this.onError('El temporizador ha detenido la lectura.')},()=>this.onActivity())
@@ -173,6 +186,7 @@ export class SpeechController {
     for (const finish of this.pending) finish()
     this.pending.clear()
     this.onHighlight(null); this.setState('stopped')
+    this.nativeActive=false;this.nativeMap=null;this.nativeCache=null;this.nativeFingerprint=null
   }
   async restart(range) { this.stop(); return this.toggle(range,true) }
   async toggle(startRange, exact = false) {
@@ -202,8 +216,86 @@ export class SpeechController {
     await this.view.renderer.whenNavigationIdle?.()
     if(run!==this.run)return
     const visible = startRange ?? this.view.lastLocation?.range
+    if(settings.provider==='browser'&&globalThis.speechSynthesis?.startQueue){await this.readNative(run,visible,exact);return}
     this.setState('playing')
     await this.readSection(run, visible, exact)
+  }
+  async nativeParts(index,point,exact){
+    const source=this.view.book.sections[index]
+    const doc=source.createDocument?await source.createDocument():new DOMParser().parseFromString(await(await fetch(await source.load())).text(),'text/html')
+    const {settings,cast}=this.nativeConfig
+    const anchor=point?this.view.resolveNavigation(point)?.anchor?.(doc):null
+    const sentences=speechFrom(documentSpeech(doc,settings.language,settings.pronunciationsEnabled?settings.pronunciations.map(rule=>rule.from).filter(term=>term.includes('.')):[]),anchor,exact)
+    return sentences.flatMap(sentence=>castSegments(sentence,index,cast,this.view,settings.narrationEnabled)).flatMap(segment=>{
+      const voiceSettings=narrationSettings(settings,cast,segment.characterId),spoken=spokenSegment(segment,voiceSettings)
+      return splitSentences(spoken.text,3000,settings.language).map(cut=>({
+        ...spoken,text:cut.text,range:spoken.wordRange(cut.start,cut.text.length),
+        wordRange:(at,length)=>spoken.wordRange(cut.start+at,length),voiceSettings,
+      }))
+    })
+  }
+  async readNative(run,visible,exact){
+    this.nativeActive=true;this.setState('loading')
+    const start=this.view.renderer.getContents()[0]?.index??0
+    const point=visible?this.view.getCFI(start,visible):null
+    this.nativeConfig={settings:structuredClone(this.settings()),cast:structuredClone(this.getCast()??{}),start,point,exact}
+    const items=[],map=[],voices=speechSynthesis.getVoices()
+    const chapters=[];const visit=entries=>{for(const entry of entries??[]){const resolved=this.view.resolveNavigation(entry.href);if(Number.isInteger(resolved?.index))chapters.push({section:resolved.index,anchor:resolved.anchor,label:entry.label??''});visit(entry.subitems)}};visit(this.view.book.toc)
+    try{
+      for(let index=start;index<this.view.book.sections.length;index++){
+        if(this.view.book.sections[index].linear==='no')continue
+        const parts=await this.nativeParts(index,index===start?point:null,index===start&&exact)
+        if(run!==this.run)return
+        if(index===start)this.nativeCache={index,promise:Promise.resolve(parts)}
+        for(let part=0;part<parts.length;part++){
+          const segment=parts[part],settings=segment.voiceSettings,voice=selectBrowserVoice(voices,settings.voice,settings.language)
+          if(settings.voice&&!voices.some(voice=>voice.voiceURI===settings.voice))throw Error(t('La voz guardada ya no está disponible en este navegador. Elige otra voz.'))
+          const cfi=this.view.getCFI(index,segment.range)
+          const chapter=chapters.findLast(item=>{if(item.section!==index)return item.section<index;if(!item.anchor)return true;try{const doc=segment.range.startContainer.ownerDocument,target=item.anchor(doc);if(target===0)return true;const range=target?.nodeType?doc.createRange():target;if(target?.nodeType)range.selectNodeContents(target);return range?.compareBoundaryPoints(Range.START_TO_START,segment.range)<=0}catch{return false}})?.label??''
+          items.push({text:segment.text,cfi,chapter,characterId:segment.characterId??'narrator',voice:voice?.voiceURI??'',language:voice?.lang||settings.language,rate:settings.rate,pitch:settings.pitch,wpm:settings.narrationWpm||170})
+          map.push({index,part,cfi})
+        }
+        // Yield while preparing long books; stopping cancels preparation as well.
+        await new Promise(resolve=>setTimeout(resolve,0));if(run!==this.run)return
+      }
+      if(!items.length){this.stop();return}
+      this.nativeMap=map
+      this.setState(this.state==='paused'?'paused':'playing')
+      const reading=speechSynthesis.startQueue({items,bookId:this.getBookId(),paused:this.state==='paused',deadline:this.timer.deadline||0},{
+        onPosition:data=>this.nativePosition(data,run),
+        onState:state=>{if(run===this.run&&['playing','paused'].includes(state)&&this.state!==state)this.setState(state)},
+        onStop:data=>{if(data.reason==='sleep'&&run===this.run)this.onError(t('El temporizador ha detenido la lectura.'))},
+      })
+      this.updateNativeSettings();await reading
+      if(run===this.run)this.stop()
+    }catch(error){if(run===this.run){this.stop();this.onError(`${t('No se pudo reproducir la voz seleccionada')} (${error.message}).`)}}
+  }
+  async nativePosition(data,run){
+    const entry=this.nativeMap?.[data.item];if(!entry||run!==this.run)return
+    const ticket=this.nativeTicket=(this.nativeTicket??0)+1
+    this.cursorCFI=entry.cfi;this.onCursor(this.cursorCFI)
+    try{
+      if(this.nativeCache?.index!==entry.index){const {start,point,exact}=this.nativeConfig;this.nativeCache={index:entry.index,promise:this.nativeParts(entry.index,entry.index===start?point:null,entry.index===start&&exact)}}
+      const parts=await this.nativeCache.promise
+      if(ticket!==this.nativeTicket||run!==this.run)return
+      const segment=this.mappedSegment(parts[entry.part],entry.index),length=data.charLength||parts[entry.part].text.slice(data.charIndex).match(/^\S+/)?.[0].length||1
+      // mappedSegment records the word CFI even while its chapter is not displayed.
+      let word=segment.wordRange(data.charIndex||0,length)
+      this.onCursor(this.cursorCFI)
+      if(this.background)return
+      await this.restoreCursor(run)
+      if(ticket!==this.nativeTicket||run!==this.run)return
+      word=segment.wordRange(data.charIndex||0,length)
+      this.follow(word,run);this.onHighlight(this.settings().highlightMode==='sentence'?segment.range:word)
+    }catch(error){if(run===this.run)this.onError(error.message)}
+  }
+  updateNativeSettings(){
+    if(!this.nativeActive||!this.nativeMap||!speechSynthesis.configure)return
+    const settings=this.settings(),cast=this.getCast()??{},voices=speechSynthesis.getVoices(),characters={}
+    for(const id of ['narrator',...(cast.characters??[]).map(item=>item.id)]){const config=narrationSettings(settings,cast,id),voice=selectBrowserVoice(voices,config.voice,config.language);characters[id]={voice:config.voice||voice?.voiceURI||'',language:voice?.lang||config.language,rate:config.rate,pitch:config.pitch,wpm:config.narrationWpm||170}}
+    const fingerprint=JSON.stringify([characters,settings.sleepEnabled,settings.sleepMinutes]);if(this.nativeFingerprint===fingerprint)return;this.nativeFingerprint=fingerprint
+    if(!settings.sleepEnabled)this.timer.clear();else this.timer.arm(settings.sleepMinutes)
+    speechSynthesis.configure({characters,deadline:this.timer.deadline||0}).catch(error=>this.onError(error.message))
   }
   follow(range, run = this.run) {
     if (run !== this.run || !this.canFollow()) return
@@ -324,6 +416,7 @@ export class SpeechController {
     })
   }
   async rewind(){
+    if(this.nativeActive){await speechSynthesis.rewind?.();return}
     if(this.audio&&this.settings().rewindMode==='seconds'&&this.audio.currentTime>this.settings().rewindSeconds){this.audio.currentTime-=this.settings().rewindSeconds;return}
     if(this.historyBook!==this.view.book||!this.history.length)return
     let position=Math.max(0,this.history.length-2)

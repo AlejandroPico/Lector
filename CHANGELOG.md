@@ -1,5 +1,11 @@
 # Historial de versiones
 
+## 2.1.0
+
+La aplicación Android mantiene su motor de síntesis y toda la cola de narración en un servicio de audio, independiente de la página. Avanza entre frases y capítulos con la pantalla apagada; ofrece pausa/reanudación, retrocesos acumulables de unos diez segundos y parada desde notificaciones, bloqueo y controles multimedia compatibles. Muestra título, capítulo, autor y cubierta proporcionada por el libro. Pausa al perder audio o desconectar auriculares, libera recursos al pausar y respeta el temporizador nativo. Sincroniza estado/posición al volver y conserva un ancla local para recuperar avances tras una interrupción del proceso.
+
+Aplica a **Voces del sistema del APK Android**. El navegador/PWA y la narración mediante proveedores externos mantienen sus restricciones actuales; no se garantiza ese mismo comportamiento en ellos ni se cambia la calidad del motor instalado. La estimación de diez segundos usa texto y velocidad, porque el motor TTS no proporciona una pista temporal exacta. Ver [guía de prueba](LECTURA_SEGUNDO_PLANO.md).
+
 ## 2.0.0
 
 Cubierta cerrada sin superposición de hojas o texto. Interfaz nocturna de texto claro con superficies coherentes y colores del papel independientes. Doce opciones de entorno con Terraza de olivo, icono de oficina diferenciado y selector más compacto. Fondos expandidos completos, sin recorte, también en pantallas panorámicas. Mantiene datos, voz, diez idiomas y distribución multiplataforma. Las [propuestas futuras](IDEAS_2_0.md) quedan pendientes de selección.

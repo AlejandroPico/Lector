@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="audio_play">Resume</string>
+    <string name="audio_pause">Pause</string>
+    <string name="audio_rewind">Rewind ~10 s</string>
+    <string name="audio_stop">Stop</string>
+</resources>

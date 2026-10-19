@@ -295,3 +295,7 @@ Un personaje puede tener voz del navegador, voz de OpenAI/compatible, identifica
 Perfiles globales: Natural, Calma, Expresiva, Documental, Para dormir y Personalizada. Se combinan con el ritmo del personaje. El navegador aplica ritmo y tono; Piper puede cambiar interlocutor y velocidad de reproducción, sin interpretar indicaciones de emoción. Las indicaciones se envían a OpenAI/compatibles que las admitan; ElevenLabs utiliza su voz y estabilidad. La exportación por capítulos utiliza el reparto y las indicaciones compatibles, conservando el audio original generado por el motor; la velocidad de reproducción se ajusta al escucharlo.
 
 La evaluación real de 1.5 generó y decodificó un capítulo completo con Piper en CPU Windows: interlocutor 1 para el diálogo de Luis y 0 para narración y atribución, sin reservas de presupuesto ni peticiones de voz en nube. Las APIs externas y el análisis de interlocutores se validaron con respuestas controladas; no se realizaron llamadas de pago ni se garantiza la precisión de un modelo no probado.
+
+## Narración Android con pantalla apagada — 2.1
+
+El APK utiliza un servicio nativo para las voces del sistema y su cola completa de lectura. Ofrece controles en las notificaciones y pantalla de bloqueo: pausa, reanudar y retroceso acumulable de unos diez segundos, con título, capítulo y portada. La página se sincroniza con la narración al regresar, respetando la navegación manual. [Cómo probarlo y alcance por plataforma](LECTURA_SEGUNDO_PLANO.md). No equivale a retransmisión ni mejora por sí mismo las voces instaladas.

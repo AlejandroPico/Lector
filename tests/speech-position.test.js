@@ -1,5 +1,5 @@
 import { it, expect } from 'vitest'
-import { documentSpeech, speechFrom } from '../src/speech.js'
+import { documentSpeech, speechFrom,speechCheckpoint } from '../src/speech.js'
 
 it('resumes at a clicked word inside a sentence and keeps word ranges aligned', () => {
   const doc = new DOMParser().parseFromString('<p>El jardín estaba en calma. Elena abrió el libro.</p>','text/html')
@@ -17,4 +17,11 @@ it('does not count hidden DOM text when continuing at a clicked word',()=>{
   const segment=speechFrom(documentSpeech(doc),point,true)[0]
   expect(segment.text).toBe('estaba en calma.')
   expect(segment.wordRange(10,5).toString()).toBe('calma')
+})
+
+it('restores an Android checkpoint through pronunciation offsets instead of losing the spoken position',async()=>{
+ const doc=new DOMParser().parseFromString('<p>El Dr. Pérez abrió el libro.</p>','text/html'),node=doc.querySelector('p').firstChild
+ const view={book:{sections:[{createDocument:async()=>doc}]},resolveNavigation:()=>({index:0,anchor:()=>{const range=doc.createRange();range.setStart(node,0);range.setEnd(node,node.length);return range}}),getCFI:(_index,range)=>`at:${range.startOffset}`}
+ const cfi=await speechCheckpoint(view,{cfi:'epubcfi(test)',charIndex:10},{language:'es',rate:1,pitch:1,pronunciationsEnabled:true,pronunciations:[{from:'Dr.',to:'doctor'}]})
+ expect(cfi).toBe('at:7')
 })

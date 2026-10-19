@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="audio_play">फिर शुरू करें</string>
+    <string name="audio_pause">रोकें</string>
+    <string name="audio_rewind">लगभग 10 सेकंड पीछे</string>
+    <string name="audio_stop">बंद करें</string>
+</resources>

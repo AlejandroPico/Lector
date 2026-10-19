@@ -1,5 +1,5 @@
 import {addSyncMenus,createSyncTools,restoreSyncedBook} from './sync-tools.js'
-import {platform,initializePlatform,openPlatformBooks,platformMetadata,printPlatformHTML} from './platform.js'
+import {platform,initializePlatform,openPlatformBooks,platformMetadata,platformReadingCheckpoint,printPlatformHTML} from './platform.js'
 import {applyPortable} from './sync-core.js'
 import {createMediaControls} from './media-session.js'
 import {addNarrationMenus,createNarrationTools} from './narration-tools.js'
@@ -15,7 +15,7 @@ import 'foliate-js/view.js'
 import './reader-lifecycle.js'
 import { importBook, escapeHTML, metadataText, pdfPageImage } from './books.js'
 import { allBooks, allFolders, saveFolder, removeFolder, allFonts, saveFont, removeFont, fileId, getBook, saveBook, defaults, readJSON, writeJSON, effectiveTheme, safeSettings } from './storage.js'
-import { SpeechController, validateEndpoint, wordAtPoint } from './speech.js'
+import { SpeechController, validateEndpoint, wordAtPoint,speechCheckpoint } from './speech.js'
 import { icon, iconButton } from './icons.js'
 import { fonts, themes, themeById, themeProperties, validateTheme } from './presentation.js'
 import { projectFonts, registerFont, unregisterFont, fontLabel, fontCSS } from './font-resources.js'
@@ -263,7 +263,7 @@ $('#app').innerHTML = `
           <div><dt>Autor</dt><dd>Alejandro Pico</dd></div>
           <div><dt>Carácter</dt><dd>Proyecto personal</dd></div>
           <div><dt>Propósito</dt><dd>Lectura y escucha</dd></div>
-          <div><dt>Edición</dt><dd>Versión 2.0.0</dd></div>
+          <div><dt>Edición</dt><dd>Versión 2.1.0</dd></div>
         </dl>
       </aside>
       <div class="about-body">
@@ -334,6 +334,8 @@ const mediaControls=createMediaControls()
 const speech = new SpeechController({
   view, settings: () => settings, getKey: () => apiKey,
   waitForView:()=>Promise.all([layoutNavigation,pageNavigation]),getCast:()=>record?.narration,
+  getBookId:()=>record?.id??'',
+  onCursor(cfi){if(!record||speech.browsing)return;if(record.anchorCFI!==cfi)record.positionUpdatedAt=Date.now();record.anchorCFI=cfi;record.lastReadAt=Date.now();if(performance.now()-lastSpeechSave>3000){lastSpeechSave=performance.now();saveRecord()}},
   onState(state) {
     if(platform.native&&['playing','loading'].includes(state))platformMetadata(record).catch(()=>{})
     updateReadingReturn()
@@ -410,6 +412,7 @@ function bookStyles() {
 }
 
 function applySettings() {
+  speech.updateNativeSettings()
   document.body.classList.toggle('tv-mode',settings.tvMode)
   document.body.classList.toggle('reading-info-visible',settings.showReference||settings.showChapterTime||settings.showBookTime)
   const theme = settings.appearance==='book'?sceneTheme(settings.bookScene):themeDraft ?? themeById(effectiveTheme(settings.theme),settings.customThemes)
@@ -982,6 +985,8 @@ async function openFile(file, saved) {
       syncVoices()
     }
     applySettings()
+    const checkpoint=await platformReadingCheckpoint(record.id)
+    if(checkpoint?.cfi&&checkpoint.updatedAt>record.positionUpdatedAt){try{record.anchorCFI=await speechCheckpoint(view,checkpoint,settings,record.narration);record.positionUpdatedAt=checkpoint.updatedAt}catch{ /* Keep the last valid saved anchor. */ }}
     await view.init({ lastLocation: nextRecord.anchorCFI??nextRecord.cfi, showTextStart: !nextRecord.cfi })
     if (!view.renderer.getContents().length) throw new Error('No se pudo mostrar el primer capítulo del documento.')
     if (sequence !== loadSequence) return
@@ -1640,7 +1645,7 @@ document.addEventListener('pointerdown', event => {
 document.addEventListener('dragover', event => { if (event.dataTransfer.types.includes('Files')) event.preventDefault() })
 document.addEventListener('drop', event => { if (event.dataTransfer.files.length) { event.preventDefault(); openFile(event.dataTransfer.files[0]) } })
 document.addEventListener('visibilitychange', () => { if (document.hidden) { clearTimeout(saveTimer); saveRecord() } })
-window.addEventListener('pagehide', () => { saveRecord(); speech.stop();gamepad.dispose() })
+window.addEventListener('pagehide', () => { saveRecord(); if(!speech.nativeActive)speech.stop();gamepad.dispose() })
 window.addEventListener('resize', attempt(()=>preserveLayout(()=>{ $('#selection-menu').hidden = true; applySettings() })))
 globalThis.speechSynthesis?.addEventListener('voiceschanged', syncVoices)
 setInterval(() => { if (settings.theme === 'auto'||settings.appearance==='book'&&settings.bookScene==='auto') applySettings() }, 60000)

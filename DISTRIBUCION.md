@@ -1,4 +1,4 @@
-# Distribución de Lector 1.9
+# Distribución de Lector 2.1
 
 [Descargas verificadas](https://github.com/AlejandroPico/Lector/releases/latest) · [Aplicación web](https://alejandropico.github.io/Lector/) · [Privacidad](https://alejandropico.github.io/Lector/privacidad.html)
 
@@ -46,3 +46,7 @@ Privacidad: no anuncios, seguimiento ni servidor propio que reciba bibliotecas. 
 Node 24: `npm ci`, `npm run icons`, `npm run build`. Escritorio: `npm run desktop` / `npm run desktop:pack`. Móviles: `npm run native:sync`; Android requiere JDK 21 y SDK 36; iOS requiere Xcode 26 o posterior en macOS. El flujo `Compilar instaladores` reproduce y publica los paquetes.
 
 Android se firma mediante los secretos cifrados del repositorio `LECTOR_ANDROID_KEYSTORE` y `LECTOR_ANDROID_PASSWORD`. La copia privada original se guarda fuera de Git y OneDrive, en `%LOCALAPPDATA%/Lector/signing`, con contraseña protegida por Windows. No se incluye en el código, paquetes ni registros. El titular debe custodiar una copia segura de esta clave para futuras actualizaciones. Apple y Microsoft no tienen certificados de cuenta configurados; no se inventan identidades de firma.
+
+## Audio Android en segundo plano
+
+La novedad 2.1 requiere el **APK Android**, actualizado sobre la instalación anterior para conservar sus datos. Seleccionar «Voces del sistema (sin coste)» y comenzar a narrar antes de bloquear la pantalla. La instalación PWA desde Chrome no incorpora este servicio nativo. [Guía de comprobación](LECTURA_SEGUNDO_PLANO.md).
