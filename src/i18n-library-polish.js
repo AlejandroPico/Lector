@@ -1,5 +1,16 @@
 // es, ca, en, fr, de, pt, it, zh, ja, hi
 export const libraryPolishRows=`
+Luz del papel|Llum del paper|Paper lighting|Éclairage du papier|Papierbeleuchtung|Luz do papel|Luce della carta|纸张照明|紙の照明|कागज़ की रोशनी
+Personalizar la luz del papel|Personalitzar la llum del paper|Customize paper lighting|Personnaliser l’éclairage du papier|Papierbeleuchtung anpassen|Personalizar a luz do papel|Personalizza la luce della carta|自定义纸张照明|紙の照明をカスタマイズ|कागज़ की रोशनी बदलें
+Intensidad de luz|Intensitat de llum|Light intensity|Intensité lumineuse|Lichtintensität|Intensidade da luz|Intensità della luce|光照强度|光の強さ|रोशनी की तीव्रता
+Calidez|Calidesa|Warmth|Chaleur|Wärme|Calor|Calore|色温暖度|暖かさ|गर्माहट
+De fría a cálida|De freda a càlida|Cool to warm|Du froid au chaud|Von kühl zu warm|De fria a quente|Da fredda a calda|从冷到暖|寒色から暖色へ|ठंडी से गर्म
+Invertir papel y texto|Invertir paper i text|Invert paper and text|Inverser papier et texte|Papier und Text umkehren|Inverter papel e texto|Inverti carta e testo|反转纸张和文字颜色|紙と文字の色を反転|कागज़ और पाठ के रंग उलटें
+Elegir colores del papel y texto|Triar colors del paper i text|Choose paper and text colors|Choisir les couleurs du papier et du texte|Papier- und Textfarben wählen|Escolher cores do papel e texto|Scegli i colori di carta e testo|选择纸张和文字颜色|紙と文字の色を選択|कागज़ और पाठ के रंग चुनें
+Color del papel|Color del paper|Paper color|Couleur du papier|Papierfarbe|Cor do papel|Colore della carta|纸张颜色|紙の色|कागज़ का रंग
+Color del texto|Color del text|Text color|Couleur du texte|Textfarbe|Cor do texto|Colore del testo|文字颜色|文字の色|पाठ का रंग
+El contraste entre el papel y el texto es bajo.|El contrast entre el paper i el text és baix.|Contrast between paper and text is low.|Le contraste entre le papier et le texte est faible.|Der Kontrast zwischen Papier und Text ist gering.|O contraste entre papel e texto é baixo.|Il contrasto tra carta e testo è basso.|纸张和文字之间的对比度较低。|紙と文字のコントラストが低くなっています。|कागज़ और पाठ के बीच कंट्रास्ट कम है।
+Restablecer luz del papel|Restablir llum del paper|Reset paper lighting|Réinitialiser l’éclairage du papier|Papierbeleuchtung zurücksetzen|Repor luz do papel|Ripristina luce della carta|重置纸张照明|紙の照明をリセット|कागज़ की रोशनी रीसेट करें
 Nombre|Nom|Name|Nom|Name|Nome|Nome|名称|名前|नाम
 Mis escenarios|Els meus escenaris|My scenes|Mes décors|Meine Umgebungen|Os meus cenários|I miei scenari|我的场景|マイシーン|मेरे दृश्य
 Tus fotografías se guardan en este navegador o aplicación. No se suben ni se sincronizan.|Les fotografies es guarden en aquest navegador o aplicació. No es pugen ni se sincronitzen.|Your photos are stored in this browser or app. They are not uploaded or synced.|Vos photos sont conservées dans ce navigateur ou cette application. Elles ne sont ni envoyées ni synchronisées.|Deine Fotos bleiben in diesem Browser oder dieser App. Sie werden weder hochgeladen noch synchronisiert.|As fotografias ficam neste navegador ou aplicação. Não são enviadas nem sincronizadas.|Le foto restano in questo browser o app. Non vengono caricate né sincronizzate.|照片保存在此浏览器或应用中，不会上传或同步。|写真はこのブラウザーやアプリ内に保存され、アップロードや同期はされません。|फ़ोटो इसी ब्राउज़र या ऐप में रहती हैं। वे अपलोड या सिंक नहीं होतीं।

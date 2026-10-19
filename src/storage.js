@@ -123,6 +123,7 @@ export const defaults = Object.freeze({
   theme: 'auto', font: 'Georgia', fontSize: 21, lineHeight: 1.75,
   paragraphGap: 0.8, columns: 2, width: 1320, gutter: 7,
   justify: false, animated: true, highlight: true, provider: 'browser', uiLanguage: 'auto',
+  paperLightEnabled:false,paperBrightness:100,paperWarmth:0,paperInverted:false,paperCustomColors:false,paperBackground:'#f7efdc',paperInk:'#30291f',
   appearance: 'minimal', bookScene:'auto', bookMobileView:'page', coverSize:165, libraryView: 'list', fullWidth: false,
   followSpeech: true, clickToRead: true, highlightMode: 'word',
   marginOuter: 10, marginInner: 28, hyphenate: false, customThemes: [],
@@ -165,6 +166,9 @@ export function safeSettings(input = {}) {
   clamp('fontSize', 14, 36); clamp('lineHeight', 1.2, 2.4)
   clamp('paragraphGap', 0, 2); clamp('columns', 1, 3); value.columns = Math.round(value.columns)
   clamp('width', 640, 3840); clamp('gutter', 1, 12)
+  clamp('paperBrightness',60,140);clamp('paperWarmth',-100,100)
+  for(const key of ['paperLightEnabled','paperInverted','paperCustomColors'])if(typeof value[key]!=='boolean')value[key]=defaults[key]
+  for(const key of ['paperBackground','paperInk'])if(typeof value[key]!=='string'||!/^#[a-f\d]{6}$/i.test(value[key]))value[key]=defaults[key]
   clamp('coverSize',100,280)
   if(!['page','spread'].includes(value.bookMobileView))value.bookMobileView='page'
   if(!['minimal','book'].includes(value.appearance))value.appearance='minimal'

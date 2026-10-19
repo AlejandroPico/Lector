@@ -158,3 +158,7 @@ Comprobación GitHub 38569439089 y distribución 38569438947 aprobadas: 87 unita
 ## 2.6 — Escenarios personales
 
 Fotografías propias guardadas en IndexedDB, con preparación local, miniaturas, nombre, contraste de controles y eliminación. Sin subir ni sincronizar imágenes. La selección ausente vuelve a Automático; conservar biblioteca, notas, narración y diez idiomas. Publicar y verificar antes de iniciar 2.7.
+
+## 2.7 — Luz del papel
+
+Autorizada tras publicar y verificar 2.6. Intensidad, calidez, inversión y colores personales para las hojas y el texto, con desactivación/restablecimiento, contraste visible y conservación de menús, escenarios, ilustraciones, voz y posiciones. Aplicable a todos los escenarios físicos y ajena al modo minimalista. No iniciar 2.8 ni posteriores.

@@ -1,3 +1,5 @@
+import {mixPaperColor} from './paper-light.js'
+import {addPaperLightControls,updatePaperLightControls} from './paper-light-ui.js'
 import {createPersonalScenes} from './personal-scenes.js'
 import {createVoiceDiagnostics} from './voice-diagnostics-ui.js'
 import {addSyncMenus,createSyncTools,restoreSyncedBook} from './sync-tools.js'
@@ -268,7 +270,7 @@ $('#app').innerHTML = `
           <div><dt>Autor</dt><dd>Alejandro Pico</dd></div>
           <div><dt>Carácter</dt><dd>Proyecto personal</dd></div>
           <div><dt>Propósito</dt><dd>Lectura y escucha</dd></div>
-          <div><dt>Edición</dt><dd>Versión 2.6.0</dd></div>
+          <div><dt>Edición</dt><dd>Versión 2.7.0</dd></div>
         </dl>
       </aside>
       <div class="about-body">
@@ -297,7 +299,7 @@ $('#app').innerHTML = `
   <div id="toast" class="toast" role="status" hidden></div>
 `
 const menuLayout = organizeMenus()
-addLibraryPolish(settings);addScenePicker()
+addLibraryPolish(settings);addScenePicker();addPaperLightControls()
 addLanguageMenus()
 addPDFMenus()
 addAudioMenus(settings)
@@ -389,7 +391,7 @@ const gamepad=attachGamepad(()=>settings.tvMode,key=>{
 })
 
 function themeColors() {
-  if(settings.appearance==='book')return scenePaperColors(settings.bookScene)
+  if(settings.appearance==='book')return scenePaperColors(settings.bookScene,settings)
   const style = getComputedStyle(document.documentElement)
   return { bg: style.getPropertyValue('--paper').trim(), ink: style.getPropertyValue('--ink').trim(), accent: style.getPropertyValue('--accent').trim(), mark: style.getPropertyValue('--highlight').trim() }
 }
@@ -429,7 +431,9 @@ function applySettings() {
   document.querySelector('.theme-options').hidden=settings.appearance==='book'
   $('#theme-editor').hidden=settings.appearance==='book'
   document.documentElement.dataset.theme = theme.id
-  const paper=scenePaperColors(settings.bookScene);document.documentElement.style.setProperty('--book-paper',paper.bg);document.documentElement.style.setProperty('--book-ink',paper.ink)
+  const paper=scenePaperColors(settings.bookScene,settings);document.documentElement.style.setProperty('--book-paper',paper.bg);document.documentElement.style.setProperty('--book-ink',paper.ink)
+  for(const [name,color] of [['edge',mixPaperColor(paper.bg,'#000000',.18)],['glow',mixPaperColor(paper.bg,'#ffffff',.1)],['fold',mixPaperColor(paper.bg,'#000000',.32)]])document.documentElement.style.setProperty('--book-paper-'+name,color)
+  updatePaperLightControls(settings,paper)
   theme.colors.forEach((value,index) => document.documentElement.style.setProperty(`--${themeProperties[index]}`,value))
   document.documentElement.style.colorScheme = theme.dark ? 'dark' : 'light'
   $('#theme-toggle').innerHTML = icon(theme.icon)
@@ -1446,7 +1450,7 @@ document.querySelectorAll('[data-tab]').forEach(button => button.onclick = () =>
   if (button.dataset.tab === 'library') updateLibrary().catch(handleError)
 })
 document.querySelectorAll('[data-setting]').forEach(input => {
-  input.addEventListener(['range', 'checkbox'].includes(input.type) || input.tagName === 'SELECT' ? 'input' : 'change', async () => {
+  input.addEventListener(['range', 'checkbox','color'].includes(input.type) || input.tagName === 'SELECT' ? 'input' : 'change', async () => {
     const layout=['appearance','bookScene','bookMobileView','readingFlow','font','fontSize','lineHeight','paragraphGap','columns','width','gutter','fullWidth','marginOuter','marginInner','hyphenate','tvMode','tvScale'].includes(input.dataset.setting)
     const origin=layout&&book?(preservingAnchor?record.anchorCFI:anchorCFI()):null,sequence=layout?++layoutSequence:layoutSequence,id=record?.id
     if(layout){preservingAnchor=Boolean(origin)}
@@ -1553,6 +1557,7 @@ $('#theme-panel').addEventListener('click',event=>{
   if (!button) return
   themeDraft=undefined; settings.theme=button.dataset.theme; fillThemeEditor(); applySettings()
 })
+$('#paper-light-reset').onclick=()=>{for(const key of ['paperLightEnabled','paperBrightness','paperWarmth','paperInverted','paperCustomColors','paperBackground','paperInk'])settings[key]=defaults[key];applySettings()}
 $('#reset-appearance').onclick = () => { for (const key of ['font', 'fontSize', 'lineHeight', 'paragraphGap', 'columns', 'width', 'gutter', 'fullWidth', 'justify', 'animated','marginOuter','marginInner','hyphenate']) settings[key] = defaults[key]; applySettings() }
 $('#voice-preview').onclick = attempt(async () => {
   if(speech.diagnostics?.running){toast('Cancela la prueba de voces antes de iniciar la lectura.');return}

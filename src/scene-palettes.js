@@ -1,3 +1,4 @@
+import {illuminatePaper} from './paper-light.js'
 import {isPersonalScene} from './personal-scene-core.js'
 import {themeById} from './presentation.js'
 
@@ -14,8 +15,8 @@ export function sceneTheme(value){
 }
 // Paper is lit independently of the surrounding interface: a dark menu must
 // never put pale text on the book's cream sheets, or dark text on a dark menu.
-export function scenePaperColors(value){
+export function scenePaperColors(value,settings){
   const scene=effectiveScene(value),theme=sceneTheme(value)
-  if(scene==='night')return {bg:'#d9c5a0',ink:'#352c23',accent:'#594223',mark:'#c5b17f'}
-  return {bg:theme.colors[0],ink:theme.colors[2],accent:theme.colors[5],mark:theme.colors[6]}
+  const base=scene==='night'?{bg:'#d9c5a0',ink:'#352c23',accent:'#594223',mark:'#c5b17f'}:{bg:theme.colors[0],ink:theme.colors[2],accent:theme.colors[5],mark:theme.colors[6]}
+  return illuminatePaper(base,settings)
 }

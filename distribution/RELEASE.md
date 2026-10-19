@@ -1,9 +1,9 @@
-Lector 2.6.0 permite utilizar fotografías propias como escenarios del libro sobre la mesa.
+Lector 2.7.0 añade luz y colores regulables del papel para todos los escenarios del libro sobre la mesa, incluidas las fotografías personales.
 
-En Tema → Libro sobre la mesa → Mis escenarios se añaden fotografías PNG, JPEG o WebP, se les asigna un nombre y se elige contraste automático, claro u oscuro para los controles. Las miniaturas aparecen junto a los escenarios incluidos. Se pueden renombrar y eliminar; quitar el escenario activo recupera Automático.
+Tema → Libro sobre la mesa → Luz del papel permite activar la personalización, ajustar intensidad y calidez, invertir papel y texto o elegir ambos colores, incluido fondo negro y texto blanco o amarillo. La configuración viene desactivada para conservar el aspecto anterior, se guarda entre sesiones y puede restablecerse al entorno. Si el contraste elegido es bajo, se indica en los ajustes.
 
-Las imágenes se preparan localmente, con un máximo de 20 MB y 40 megapíxeles de entrada y 2560 píxeles por lado en el recurso guardado. Se vuelven a codificar sin conservar los metadatos originales. Fotografías y miniaturas permanecen en el almacenamiento del navegador o aplicación, sin subirse, sincronizarse ni generar archivos en Descargas. La sincronización de preferencias no transmite la selección de una fotografía privada.
+La iluminación cambia las hojas y el texto, incluidos los cantos y las hojas animadas. No aplica filtros a fotografías, ilustraciones o cubiertas ni modifica los colores de los menús. La lectura minimalista mantiene su presentación. Enlaces y resaltado narrado se adaptan al papel. Cambiar los colores conserva la narración y la ubicación.
 
-La actualización añade un almacén de recursos sin borrar libros, notas ni posiciones. Conserva la narración durante los cambios, los diez idiomas y el encuadre completo de los fondos. Incluye los paquetes de escritorio, APK Android/TV y AAB habituales; iOS sigue ofreciendo archivo sin firma y simulador.
+Los diez idiomas de interfaz incluyen los nuevos controles. Los valores se validan al recuperar preferencias y pueden sincronizarse solo si el usuario elige esa categoría; las fotografías siguen siendo locales. Se estabiliza la preparación de la prueba de una voz guardada para esperar al arranque completo de la aplicación.
 
-La verificación espera a que termine cada guardado antes de comprobar la persistencia y el contraste, y comprueba la continuidad de la narración.
+Incluye los paquetes habituales de escritorio, APK Android/TV y AAB. iOS ofrece archivo sin firma y simulador, que requieren la identidad Apple del titular para distribución real.
