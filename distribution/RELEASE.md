@@ -6,4 +6,6 @@ La imagen ampliada ocupa una ventana con sus proporciones exactas, sin marco, ba
 
 La cubierta cerrada del libro físico oculta completamente la pintura del visor y de las hojas, también en móvil con página individual o libro abierto. No detiene la narración ni altera los datos.
 
+Comprobado el visor y el lateral en la web publicada; la continuidad nativa de audio se verifica además en emuladores Android 10 y 15 con motor de prueba controlado.
+
 APK Android/TV firmado con la misma clave de actualización, AAB y paquetes de escritorio. iOS incluye archivo sin firma y simulador; requiere firma propia de Apple. La lectura con pantalla apagada de 2.1 sigue disponible con las voces del sistema del APK Android. El diccionario 2.3 se entrega por separado después de verificar esta actualización.
