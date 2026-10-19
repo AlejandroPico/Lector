@@ -86,7 +86,9 @@ public class BackgroundNarrationTest {
     controls.play();await(()->"playing".equals(state().getString("state")));assertTrue(((PowerManager.WakeLock)field("wake")).isHeld());
     // A callback from the pre-rewind utterance must not advance the new cursor.
     int before=state().getInteger("item",-1);progress.onDone(second);Thread.sleep(120);assertEquals(before,state().getInteger("item",-1).intValue());
-    controls.stop();await(()->"stopped".equals(state().getString("state")));assertFalse(((PowerManager.WakeLock)field("wake")).isHeld());assertEquals(0,notices.getActiveNotifications().length);
+    controls.stop();await(()->"stopped".equals(state().getString("state")));assertFalse(((PowerManager.WakeLock)field("wake")).isHeld());
+    // NotificationManager removes the foreground notice asynchronously on Android 10.
+    await(()->Arrays.stream(notices.getActiveNotifications()).noneMatch(n->n.getId()==18));
     assertTrue(context.getSharedPreferences("narration",Context.MODE_PRIVATE).getString("checkpoint","").contains("book"));
   }
 }
