@@ -1,3 +1,4 @@
+import {isPersonalScene} from './personal-scene-core.js'
 import {narrationProfiles} from './narration.js'
 import {reviveNativeHandles} from './native-directory.js'
 import { fonts, themes, validateTheme } from './presentation.js'
@@ -6,10 +7,11 @@ let connection
 
 async function db() {
   if (!connection) connection = new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 8)
+    const request = indexedDB.open(DB_NAME, 9)
     request.onupgradeneeded = () => {
       if (!request.result.objectStoreNames.contains('books')) request.result.createObjectStore('books', { keyPath: 'id' })
       if (!request.result.objectStoreNames.contains('folders')) request.result.createObjectStore('folders', { keyPath: 'id' })
+      if (!request.result.objectStoreNames.contains('scenes')) request.result.createObjectStore('scenes', { keyPath: 'id' })
       if (!request.result.objectStoreNames.contains('fonts')) request.result.createObjectStore('fonts', { keyPath: 'id' })
       if (!request.result.objectStoreNames.contains('catalog')) request.result.createObjectStore('catalog', { keyPath:'id' })
       if (!request.result.objectStoreNames.contains('collections')) request.result.createObjectStore('collections', { keyPath:'id' })
@@ -57,6 +59,9 @@ export const allBooks = async () => (await transact('readonly', store => store.g
 export const allFolders = () => transact('readonly', store => store.getAll(), 'folders')
 export const saveFolder = folder => transact('readwrite', store => store.put(folder), 'folders')
 export const removeFolder = id => transact('readwrite', store => store.delete(id), 'folders')
+export const allScenes=()=>transact('readonly',store=>store.getAll(),'scenes')
+export const saveScene=scene=>transact('readwrite',store=>store.put(scene),'scenes')
+export const removeScene=id=>transact('readwrite',store=>store.delete(id),'scenes')
 export const allFonts = () => transact('readonly',store=>store.getAll(),'fonts')
 export const saveFont = font => transact('readwrite',store=>store.put(font),'fonts')
 export const removeFont = id => transact('readwrite',store=>store.delete(id),'fonts')
@@ -163,7 +168,7 @@ export function safeSettings(input = {}) {
   clamp('coverSize',100,280)
   if(!['page','spread'].includes(value.bookMobileView))value.bookMobileView='page'
   if(!['minimal','book'].includes(value.appearance))value.appearance='minimal'
-  if(!['auto','home','afternoon','night','cabin','school','office','library','bamboo','garden','study','olive'].includes(value.bookScene))value.bookScene='auto'
+  if(!isPersonalScene(value.bookScene)&&!['auto','home','afternoon','night','cabin','school','office','library','bamboo','garden','study','olive'].includes(value.bookScene))value.bookScene='auto'
   clamp('rate', 0.5, 2); clamp('pitch', 0.5, 1.5)
   clamp('marginOuter',0,160); clamp('marginInner',0,100)
   clamp('tvScale',1,2);clamp('visualWpm',80,600);clamp('narrationWpm',80,300)

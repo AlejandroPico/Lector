@@ -24,6 +24,6 @@ export function updateScenePicker(settings){
   $('#scene-options').hidden=!physical;$('#mobile-book-field').hidden=!physical
   $('#book-scene-field').hidden=true
   for(const button of document.querySelectorAll('[data-appearance]'))button.setAttribute('aria-pressed',String(button.dataset.appearance===settings.appearance))
-  for(const button of document.querySelectorAll('[data-scene]')){button.setAttribute('aria-pressed',String(button.dataset.scene===settings.bookScene));button.title=t(button.dataset.scene==='auto'?automaticHint:bookScenes.find(scene=>scene[0]===button.dataset.scene)[1])}
+  for(const button of document.querySelectorAll('[data-scene]')){button.setAttribute('aria-pressed',String(button.dataset.scene===settings.bookScene));button.title=button.dataset.sceneLabel??t(button.dataset.scene==='auto'?automaticHint:bookScenes.find(scene=>scene[0]===button.dataset.scene)?.[1]??'')}
   const automatic=document.querySelector('[data-theme="auto"]');if(automatic)automatic.title=t(automaticHint)
 }

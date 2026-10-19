@@ -1,9 +1,7 @@
-Lector 2.5.0 añade Diagnóstico de voces en los ajustes de las voces del navegador o sistema.
+Lector 2.6.0 permite utilizar fotografías propias como escenarios del libro sobre la mesa.
 
-Permite filtrar por idioma y región, elegir entre 1 y 25 voces y escuchar una muestra editable de hasta 200 caracteres. Cada voz se prueba exactamente con su identificador y región, sin sustituciones ni reintentos automáticos. Presenta finalización sin error comunicado, fallo con su código, ausencia de respuesta, cancelación o voz ya no disponible.
+En Tema → Libro sobre la mesa → Mis escenarios se añaden fotografías PNG, JPEG o WebP, se les asigna un nombre y se elige contraste automático, claro u oscuro para los controles. Las miniaturas aparecen junto a los escenarios incluidos. Se pueden renombrar y eliminar; quitar el escenario activo recupera Automático.
 
-No inicia pruebas al abrir el menú ni modifica la voz elegida. Rechaza comenzar durante una lectura activa o pausada y evita iniciar narración durante la prueba. Cerrar la ventana, cancelar o salir a segundo plano detiene el diagnóstico. Cada muestra tiene un límite de espera; las restantes no se reproducen tras cancelar. Los resultados permanecen solo durante la sesión.
+Las imágenes se preparan localmente, con un máximo de 20 MB y 40 megapíxeles de entrada y 2560 píxeles por lado en el recurso guardado. Se vuelven a codificar sin conservar los metadatos originales. Fotografías y miniaturas permanecen en el almacenamiento del navegador o aplicación, sin subirse, sincronizarse ni generar archivos en Descargas. La sincronización de preferencias no transmite la selección de una fotografía privada.
 
-Las voces de red pueden enviar la muestra al proveedor y necesitar conexión. El navegador informa de errores, no garantiza calidad audible; los resultados dependen del perfil y dispositivo actuales. No instala ni traslada voces de Edge a Chrome o Android, ni utiliza APIs de pago para el diagnóstico. Conserva la IA local opcional de 2.4, narración nativa Android en segundo plano, datos y diez idiomas.
-
-Incluye los paquetes de escritorio, APK Android/TV y AAB habituales. iOS conserva archivo sin firma y simulador; requiere la identidad Apple del titular.
+La actualización añade un almacén de recursos sin borrar libros, notas ni posiciones. Conserva la narración durante los cambios, los diez idiomas y el encuadre completo de los fondos. Incluye los paquetes de escritorio, APK Android/TV y AAB habituales; iOS sigue ofreciendo archivo sin firma y simulador.

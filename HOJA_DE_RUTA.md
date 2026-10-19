@@ -16,7 +16,7 @@ Autorizada el 19 de octubre de 2026: servicio autónomo para las voces del siste
 
 La verificación distingue las pruebas del servicio Android con motor controlado y pantalla apagada de la validación auditiva en el móvil del autor. Véase LECTURA_SEGUNDO_PLANO.md.
 
-Autorizadas posteriormente: 2.2 imágenes y cubierta móvil y 2.3 diccionario y burbuja de consulta, en ese orden. Autorizadas ahora, en orden: 2.4 contexto mediante IA; 2.5 diagnóstico de voces. Pendientes de autorización: 2.6 escenarios personales; 2.7 iluminación del papel; 2.8 encuadernaciones; 2.9 cámara móvil; 2.10 página arrastrable; 2.11 previsualización de capítulos; 2.12 organización por lotes; 2.13 emisión real, al final.
+Autorizadas posteriormente: 2.2 imágenes y cubierta móvil y 2.3 diccionario y burbuja de consulta, en ese orden. Autorizadas ahora, en orden: 2.4 contexto mediante IA; 2.5 diagnóstico de voces. Autorizadas ahora, en orden: 2.6 escenarios personales; 2.7 iluminación del papel. Pendientes de autorización: 2.8 encuadernaciones; 2.9 cámara móvil; 2.10 página arrastrable; 2.11 previsualización de capítulos; 2.12 organización por lotes; 2.13 emisión real, al final.
 
 # Ampliaciones acordadas y versiones propuestas
 
@@ -154,3 +154,7 @@ Comprobación GitHub 38569439089 y distribución 38569438947 aprobadas: 87 unita
 2.4 publicada y verificada (main/tag bd4c20d, 102 unitarias, 167 de navegador, Android 10/15, catorce archivos y huellas comprobados) antes de implementar 2.5.
 
 2.5 incorpora pruebas explícitas de voces por idioma/región, selección exacta sin sustitución, muestra editable, cancelación y tiempos de espera, resultados de sesión y protección de la narración activa/pausada. No instala voces de otros navegadores ni diagnostica la calidad audible automáticamente.
+
+## 2.6 — Escenarios personales
+
+Fotografías propias guardadas en IndexedDB, con preparación local, miniaturas, nombre, contraste de controles y eliminación. Sin subir ni sincronizar imágenes. La selección ausente vuelve a Automático; conservar biblioteca, notas, narración y diez idiomas. Publicar y verificar antes de iniciar 2.7.

@@ -1,6 +1,10 @@
 # Convenciones del proyecto
 
-- 2.4 publicada y verificada antes de iniciar 2.5: main/tag bd4c20d, 14 archivos públicos, todas las huellas y descarga APK comprobadas; APK SHA-256 837599cefa9b9babc7691084be0691d7f6661d847e759f5054abe90a9c6a9f2b. 102 pruebas unitarias, 167 de navegador y Android 10/15, firma habitual conservada. 2.5 añade diagnóstico explícito de voces; no iniciar 2.6.
+- 2.6 y 2.7 autorizadas, en orden y con publicación/verificación independientes en main. 2.6: fotografías personales como escenarios locales, gestión y eliminación; no subir/sincronizar imágenes. 2.7: luz, calidez y colores del papel solo en modo libro, para todos los escenarios, sin afectar menús, fotografías ni modo minimalista. No iniciar 2.8 ni posteriores.
+
+- 2.5 publicada y verificada: tag/main 509899f, 107 unitarias, 173 de navegador, Android 10/15 y 14 archivos públicos comprobados. Firma Android habitual conservada.
+
+- 2.4 publicada y verificada antes de iniciar 2.5: main/tag bd4c20d, 14 archivos públicos, todas las huellas y descarga APK comprobadas; APK SHA-256 837599cefa9b9babc7691084be0691d7f6661d847e759f5054abe90a9c6a9f2b. 102 pruebas unitarias, 167 de navegador y Android 10/15, firma habitual conservada. 2.5 añade diagnóstico explícito de voces; la autorización posterior permite 2.6 y 2.7.
 
 - 2.4 y 2.5 autorizadas: completar, publicar y verificar 2.4 antes de implementar 2.5. Contexto local opcional con comprobación de capacidad, descarga explícita y fragmento confirmado; no automatizar chats gratuitos. Diagnóstico de voces a petición explícita, sin detener narración ni cambiar la voz elegida. No activar síntesis real en las pruebas del equipo del autor.
 
@@ -8,7 +12,7 @@
 
 - Ampliación 2.2 autorizada: lateral de altura completa, apertura/cierre de medio segundo, favicon y Lector como cabecera; favicon o X cierran y devuelven el icono de índice. Ocultar barras del lateral y Ajustes conservando desplazamiento y accesibilidad, con movimiento reducido respetado.
 
-- 2.2 y 2.3 autorizadas en orden, con publicación y verificación independientes en main: 2.2 visor proporcional sin marco/barra, cierre superpuesto, gestos/teclado y cubierta móvil sin superposición. Solo tras verificarla, 2.3 diccionario con consulta breve anclada, definición/categoría y ampliación; diagnosticar «especial», idioma y cobertura real. La autorización posterior permite 2.4 y 2.5; no iniciar 2.6 ni posteriores.
+- 2.2 y 2.3 autorizadas en orden, con publicación y verificación independientes en main: 2.2 visor proporcional sin marco/barra, cierre superpuesto, gestos/teclado y cubierta móvil sin superposición. Solo tras verificarla, 2.3 diccionario con consulta breve anclada, definición/categoría y ampliación; diagnosticar «especial», idioma y cobertura real. La autorización posterior permite 2.4 y 2.5; la autorización posterior permite 2.6 y 2.7; no iniciar 2.8.
 
 - 2.1 autorizada: narración Android con pantalla apagada y controles nativos de notificación/bloqueo, pausa/reanudación, retroceso acumulable de ~10 s, libro/capítulo/portada. El servicio debe poseer motor y cola completa, sin depender de callbacks JavaScript entre fragmentos. Conservar navegación independiente, reparto, pronunciaciones, temporizador, datos y diez idiomas. Probar servicio Android con cliente desacoplado y pantalla apagada, distinguir pruebas con motor controlado de una escucha real en móvil. Las versiones 2.2–2.13 continúan pendientes.
 

@@ -1,3 +1,4 @@
+import {isPersonalScene} from './personal-scene-core.js'
 import {annotationColors} from './notes.js'
 // Only portable reading data crosses the device boundary. No files or credentials.
 export const preferenceKeys=['appearance','bookScene','bookMobileView','coverSize','uiLanguage','theme','customThemes','font','fontSize','lineHeight','paragraphGap','columns','width','gutter','fullWidth','marginOuter','marginInner','justify','animated','hyphenate','readingFlow','showOpeningCover','highlight','highlightMode','followSpeech','clickToRead','showAnnotations','showReference','showChapterTime','showBookTime']
@@ -12,6 +13,7 @@ export function portablePreferences(input={}){
  const result={}
  for(const key of preferenceKeys){const value=input[key];if(['string','number','boolean'].includes(typeof value))result[key]=typeof value==='string'?value.slice(0,100):value}
  if(Array.isArray(input.customThemes))result.customThemes=input.customThemes.slice(0,30).flatMap(theme=>theme&&/^personal-[a-z\d-]+$/.test(theme.id)&&string(theme.label,48)&&Array.isArray(theme.colors)&&theme.colors.length===8&&theme.colors.every(color=>/^#[a-f\d]{6}$/i.test(color))?[{id:theme.id.slice(0,100),label:string(theme.label,48),icon:'palette',dark:theme.dark===true,colors:theme.colors}]:[])
+ if(isPersonalScene(result.bookScene))result.bookScene='auto'
  return result
 }
 export function safeSync(input){

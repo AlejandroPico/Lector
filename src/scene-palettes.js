@@ -1,7 +1,9 @@
+import {isPersonalScene} from './personal-scene-core.js'
 import {themeById} from './presentation.js'
 
 export const sceneNames=['home','afternoon','night','cabin','school','office','library','bamboo','garden','study','olive']
 export function effectiveScene(value,hour=new Date().getHours()){
+  if(isPersonalScene(value))return value
   return value==='auto'?(hour>=7&&hour<18?'home':hour>=18&&hour<22?'afternoon':'night'):sceneNames.includes(value)?value:'home'
 }
 export function sceneTheme(value){

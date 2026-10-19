@@ -1,3 +1,4 @@
+import {createPersonalScenes} from './personal-scenes.js'
 import {createVoiceDiagnostics} from './voice-diagnostics-ui.js'
 import {addSyncMenus,createSyncTools,restoreSyncedBook} from './sync-tools.js'
 import {platform,initializePlatform,openPlatformBooks,platformMetadata,platformReadingCheckpoint,printPlatformHTML} from './platform.js'
@@ -46,6 +47,7 @@ import {createBookScene,sceneTheme,scenePaperColors} from './book-scene.js'
 import {addScenePicker,updateScenePicker,focusedBookPage} from './scene-picker.js'
 
 const $ = selector => document.querySelector(selector)
+let personalScenes
 await initializePlatform()
 let userFonts = await allFonts().catch(()=>[])
 for (const resource of [...projectFonts,...userFonts]) {
@@ -266,7 +268,7 @@ $('#app').innerHTML = `
           <div><dt>Autor</dt><dd>Alejandro Pico</dd></div>
           <div><dt>Carácter</dt><dd>Proyecto personal</dd></div>
           <div><dt>Propósito</dt><dd>Lectura y escucha</dd></div>
-          <div><dt>Edición</dt><dd>Versión 2.5.0</dd></div>
+          <div><dt>Edición</dt><dd>Versión 2.6.0</dd></div>
         </dl>
       </aside>
       <div class="about-body">
@@ -421,6 +423,7 @@ function applySettings() {
   document.body.classList.toggle('reading-info-visible',settings.showReference||settings.showChapterTime||settings.showBookTime)
   const theme = settings.appearance==='book'?sceneTheme(settings.bookScene):themeDraft ?? themeById(effectiveTheme(settings.theme),settings.customThemes)
   bookScene.update()
+  personalScenes?.apply()
   updateScenePicker(settings)
   $('#book-format-hint').hidden=settings.appearance!=='book'
   document.querySelector('.theme-options').hidden=settings.appearance==='book'
@@ -1687,6 +1690,8 @@ pdfTools=createPDFTools({getBook:()=>book,getRecord:()=>record,getIndex:()=>view
   showOriginal:async number=>showImage(await pdfPageImage(book.pdf,number),`${t('Página')} ${number}`),
   apply:async(pdfText,pdfOptions,index)=>{const saved={...record,pdfText,pdfOptions,cfi:undefined,anchorCFI:undefined,readingStats:{},navigationTrail:undefined};clearTimeout(saveTimer);await saveBook(saved);await openFile(readingFile,saved);if(book?.pdf)await view.goTo(index)}})
 audioTools=createAudioTools({speech,view,mediaControls,getBook:()=>book,getRecord:()=>record,getSettings:()=>settings,saveSettings:applySettings,closePanels,onError:handleError})
+personalScenes=createPersonalScenes({settings,closePanels,onError:handleError})
+await personalScenes.ready
 applySettings(); syncVoices(); translateUI()
 updateLibrary().catch(() => toast('El almacenamiento local no está disponible. Puedes abrir un libro, pero no se guardará al cerrar.'))
 $('#file-dialog').showModal()
