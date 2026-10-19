@@ -1,5 +1,7 @@
 # Convenciones del proyecto
 
+- 2.2 publicada y verificada antes de implementar 2.3: tag/main 0463859, descarga pública con 14 archivos, APK SHA-256 c9ce36b49694cd6371a9425f405114a9ac7df42b277510cad8653e5cb748253a; 97 unitarias y 157 pruebas de navegador, emuladores Android 10/15. 2.3: consulta breve anclada, ampliación, consulta explícita de bloques propios verificados sin instalar automáticamente y gramática real de las fuentes. Conservar paquetes antiguos y mostrar categoría no indicada cuando falte; ninguna palabra enviada a servicios externos. Las versiones 2.4 y siguientes siguen pendientes.
+
 - Ampliación 2.2 autorizada: lateral de altura completa, apertura/cierre de medio segundo, favicon y Lector como cabecera; favicon o X cierran y devuelven el icono de índice. Ocultar barras del lateral y Ajustes conservando desplazamiento y accesibilidad, con movimiento reducido respetado.
 
 - 2.2 y 2.3 autorizadas en orden, con publicación y verificación independientes en main: 2.2 visor proporcional sin marco/barra, cierre superpuesto, gestos/teclado y cubierta móvil sin superposición. Solo tras verificarla, 2.3 diccionario con consulta breve anclada, definición/categoría y ampliación; diagnosticar «especial», idioma y cobertura real. No iniciar 2.4 ni otros bloques.

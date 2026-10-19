@@ -36,4 +36,48 @@ La verificación del diccionario ha fallado.|La verificació del diccionari ha f
 El diccionario propio supera el límite de 64 MB.|El diccionari propi supera el límit de 64 MB.|Custom dictionary exceeds the 64 MB limit.|Le dictionnaire personnel dépasse 64 Mo.|Eigenes Wörterbuch überschreitet 64 MB.|O dicionário próprio excede 64 MB.|Il dizionario personale supera 64 MB.|自备词典超过64MB限制。|独自辞書は64MBを超えています。|निजी शब्दकोश 64 MB सीमा से बड़ा है।
 El idioma del diccionario no es válido.|L'idioma del diccionari no és vàlid.|Invalid dictionary language.|Langue de dictionnaire invalide.|Ungültige Wörterbuchsprache.|Idioma do dicionário inválido.|Lingua del dizionario non valida.|词典语言无效。|辞書の言語が無効です。|शब्दकोश की भाषा अमान्य है।
 El diccionario propio no es válido.|El diccionari propi no és vàlid.|Invalid custom dictionary.|Dictionnaire personnel invalide.|Ungültiges eigenes Wörterbuch.|Dicionário próprio inválido.|Dizionario personale non valido.|自备词典无效。|独自辞書が無効です。|निजी शब्दकोश अमान्य है।
+Ampliar definición|Ampliar definició|Expand definition|Agrandir la définition|Definition erweitern|Ampliar definição|Espandi definizione|展开释义|定義を広げる|परिभाषा विस्तृत करें
+Categoría no indicada|Categoria no indicada|Part of speech not provided|Catégorie non indiquée|Wortart nicht angegeben|Categoria não indicada|Categoria non indicata|未提供词性|品詞の記載なし|शब्द-भेद उपलब्ध नहीं
+No se encontró esta palabra en los diccionarios disponibles.|No s'ha trobat aquesta paraula als diccionaris disponibles.|This word was not found in the available dictionaries.|Ce mot est introuvable dans les dictionnaires disponibles.|Dieses Wort wurde in den verfügbaren Wörterbüchern nicht gefunden.|Esta palavra não foi encontrada nos dicionários disponíveis.|Parola non trovata nei dizionari disponibili.|可用词典中未找到此词。|利用可能な辞書にこの単語が見つかりません。|उपलब्ध शब्दकोशों में यह शब्द नहीं मिला।
+No se pudo acceder al diccionario. Instálalo para consultar sin conexión.|No s'ha pogut accedir al diccionari. Instal·la'l per consultar sense connexió.|The dictionary could not be reached. Install it for offline lookup.|Le dictionnaire est inaccessible. Installez-le pour consulter hors connexion.|Das Wörterbuch ist nicht erreichbar. Für Offline-Abfragen bitte installieren.|Não foi possível aceder ao dicionário. Instale-o para consultar sem ligação.|Dizionario non raggiungibile. Installalo per consultare offline.|无法访问词典。请安装以供离线查询。|辞書にアクセスできません。オフラインで使うにはインストールしてください。|शब्दकोश उपलब्ध नहीं है। ऑफ़लाइन खोज के लिए इसे इंस्टॉल करें।
+Las palabras no se envían a servicios externos. La consulta carga recursos del proyecto si hacen falta. Instala el idioma para consultar sin conexión. El enlace externo solo se abre al pulsarlo.|Les paraules no s'envien a serveis externs. La consulta carrega recursos del projecte si cal. Instal·la l'idioma per consultar sense connexió. L'enllaç extern només s'obre en prémer-lo.|Words are not sent to external services. Lookup loads project resources if needed. Install the language for offline use. External links open only when clicked.|Les mots ne sont pas envoyés à des services externes. La recherche charge au besoin les ressources du projet. Installez la langue pour consulter hors connexion. Les liens externes ne s'ouvrent que sur demande.|Wörter werden nicht an externe Dienste gesendet. Bei Bedarf werden Projektressourcen geladen. Installieren Sie die Sprache für die Offline-Nutzung. Externe Links öffnen sich nur beim Anklicken.|As palavras não são enviadas a serviços externos. A consulta carrega recursos do projeto se necessário. Instale o idioma para consultar sem ligação. Os links externos só abrem ao clicar.|Le parole non vengono inviate a servizi esterni. La ricerca carica risorse del progetto se necessario. Installa la lingua per l'uso offline. I link esterni si aprono solo al clic.|词语不会发送到外部服务。查询会按需加载项目资源。安装语言包即可离线使用。外部链接仅在点击时打开。|単語は外部サービスに送信されません。必要に応じてプロジェクトのデータを読み込みます。オフライン利用には言語をインストールしてください。外部リンクはクリック時のみ開きます。|शब्द बाहरी सेवाओं को नहीं भेजे जाते। ज़रूरत पर परियोजना के संसाधन लोड होते हैं। ऑफ़लाइन उपयोग के लिए भाषा इंस्टॉल करें। बाहरी लिंक केवल क्लिक करने पर खुलते हैं।
+Adjetivo|Adjectiu|Adjective|Adjectif|Adjektiv|Adjetivo|Aggettivo|形容词|形容詞|विशेषण
+Adverbio|Adverbi|Adverb|Adverbe|Adverb|Advérbio|Avverbio|副词|副詞|क्रिया-विशेषण
+Sustantivo|Substantiu|Noun|Nom|Substantiv|Substantivo|Sostantivo|名词|名詞|संज्ञा
+Verbo|Verb|Verb|Verbe|Verb|Verbo|Verbo|动词|動詞|क्रिया
+Pronombre|Pronom|Pronoun|Pronom|Pronomen|Pronome|Pronome|代词|代名詞|सर्वनाम
+Determinante|Determinant|Determiner|Déterminant|Determinativ|Determinante|Determinante|限定词|限定詞|निर्धारक
+Preposición|Preposició|Preposition|Préposition|Präposition|Preposição|Preposizione|介词|前置詞|पूर्वसर्ग
+Posposición|Postposició|Postposition|Postposition|Postposition|Posposição|Posposizione|后置词|後置詞|परसर्ग
+Conjunción|Conjunció|Conjunction|Conjonction|Konjunktion|Conjunção|Congiunzione|连词|接続詞|समुच्चयबोधक
+Interjección|Interjecció|Interjection|Interjection|Interjektion|Interjeição|Interiezione|感叹词|感動詞|विस्मयादिबोधक
+Numeral|Numeral|Numeral|Numéral|Numerale|Numeral|Numerale|数词|数詞|संख्यावाचक
+Nombre propio|Nom propi|Proper noun|Nom propre|Eigenname|Nome próprio|Nome proprio|专有名词|固有名詞|व्यक्तिवाचक संज्ञा
+Artículo|Article|Article|Article|Artikel|Artigo|Articolo|冠词|冠詞|उपपद
+Partícula|Partícula|Particle|Particule|Partikel|Partícula|Particella|助词|助詞|निपात
+Locución|Locució|Phrase|Locution|Wendung|Locução|Locuzione|短语|成句|वाक्यांश
+Prefijo|Prefix|Prefix|Préfixe|Präfix|Prefixo|Prefisso|前缀|接頭辞|उपसर्ग
+Sufijo|Sufix|Suffix|Suffixe|Suffix|Sufixo|Suffisso|后缀|接尾辞|प्रत्यय
+Infijo|Infix|Infix|Infixe|Infix|Infixo|Infisso|中缀|接中辞|मध्यसर्ग
+Interfijo|Interfix|Interfix|Interfixe|Interfix|Interfixo|Interfisso|连接成分|間辞|संयोजक रूपिम
+Afijo|Afix|Affix|Affixe|Affix|Afixo|Affisso|词缀|接辞|शब्दांश
+Símbolo|Símbol|Symbol|Symbole|Symbol|Símbolo|Simbolo|符号|記号|प्रतीक
+Carácter escrito|Caràcter escrit|Written character|Caractère écrit|Schriftzeichen|Caráter escrito|Carattere scritto|文字字符|文字|लिखित अक्षर
+Puntuación|Puntuació|Punctuation|Ponctuation|Satzzeichen|Pontuação|Punteggiatura|标点|句読点|विराम-चिह्न
+Proverbio|Proverbi|Proverb|Proverbe|Sprichwort|Provérbio|Proverbio|谚语|ことわざ|कहावत
+Locución prepositiva|Locució prepositiva|Prepositional phrase|Locution prépositive|Präpositionale Wendung|Locução prepositiva|Locuzione prepositiva|介词短语|前置詞句|परसर्गीय वाक्यांश
+Locución adverbial|Locució adverbial|Adverbial phrase|Locution adverbiale|Adverbiale Wendung|Locução adverbial|Locuzione avverbiale|副词短语|副詞句|क्रिया-विशेषण पदबंध
+Abreviatura|Abreviatura|Abbreviation|Abréviation|Abkürzung|Abreviatura|Abbreviazione|缩写|略語|संक्षेप
+Participio|Participi|Participle|Participe|Partizip|Particípio|Participio|分词|分詞|कृदंत
+Contracción|Contracció|Contraction|Contraction|Kontraktion|Contração|Contrazione|缩合词|縮約形|संकुचन
+Sílaba|Síl·laba|Syllable|Syllabe|Silbe|Sílaba|Sillaba|音节|音節|वर्णखंड
+Circunfijo|Circumfix|Circumfix|Circonfixe|Zirkumfix|Circunfixo|Circonfisso|环缀|接周辞|परिसर्ग
+Onomatopeya|Onomatopeia|Onomatopoeia|Onomatopée|Lautmalerei|Onomatopeia|Onomatopea|拟声词|擬音語|अनुकरणात्मक शब्द
+Raíz|Arrel|Root|Racine|Wortwurzel|Raiz|Radice|词根|語根|धातु
+Romanización|Romanització|Romanization|Romanisation|Romanisierung|Romanização|Romanizzazione|罗马字转写|ローマ字表記|रोमन लिप्यंतरण
+Clasificador|Classificador|Classifier|Classificateur|Klassifikator|Classificador|Classificatore|量词|類別詞|वर्गसूचक
+Adnominal|Adnominal|Adnominal|Adnominal|Adnominal|Adnominal|Adnominale|连体词|連体詞|संज्ञा-विशेषक
+Adjetivo sustantivado|Adjectiu substantivat|Substantivized adjective|Adjectif substantivé|Substantiviertes Adjektiv|Adjetivo substantivado|Aggettivo sostantivato|名词化形容词|名詞化形容詞|संज्ञीकृत विशेषण
+Contador|Comptador|Counter|Compteur|Zählwort|Contador|Contatore|数助词|助数詞|गणनावाचक
+Elemento compositivo|Element compositiu|Combining form|Élément de composition|Wortbildungselement|Elemento de composição|Elemento compositivo|构词成分|結合形|संयोजन रूप
 `

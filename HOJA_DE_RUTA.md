@@ -1,4 +1,10 @@
+## 2.3 — Diccionario y consulta breve
+
+Autorizada tras verificar la publicación de 2.2. Burbuja anclada, tipo de palabra y definición breve, ampliación al diccionario completo. Acceso a los recursos del proyecto mediante bloques verificados al consultar expresamente una palabra; instalación completa voluntaria para uso sin conexión. Gramática de las fuentes, cobertura e idioma de las definiciones visibles, conservación de paquetes/vocabulario y sin IA ni consultas externas automáticas. Las versiones posteriores continúan pendientes.
+
 ## 2.2 — Visor de imágenes y cubierta móvil
+
+Completada en main y v2.2.0 (0463859): web publicada y 14 descargas verificadas, 97 pruebas unitarias, 157 de navegador y emuladores Android 10/15. APK público y suma de comprobación confirmados antes de empezar 2.3.
 
 Incluye la ampliación solicitada: lateral completo con favicon y Lector, deslizamiento de medio segundo y cierre desde marca/X; ocultar barras de lateral y Ajustes conservando desplazamiento con teclado, rueda y gestos.
 

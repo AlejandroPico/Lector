@@ -1,10 +1,11 @@
 import { defineConfig } from 'vite'
 import {ocrAssets} from './ocr-assets.js'
+import {dictionaryAssets} from './dictionary-assets.js'
 
 export default defineConfig({
   base: './',
   server: {watch: {ignored: ['**/android/**','**/ios/**','**/desktop/**','**/distribution/**','**/release/**']}},
-  plugins:[ocrAssets()],
+  plugins:[ocrAssets(),dictionaryAssets()],
   // Prepare the worker's dependency before the first page loads. Discovering
   // it during OCR otherwise triggers Vite's reload and discards the draft.
   optimizeDeps:{include:['tesseract.js']},

@@ -85,7 +85,7 @@ async function selectWord(page, word) {
 test('selection opens the dictionary and saves anchored notes and bookmarks', async ({ page }) => {
   await open(page)
   await selectWord(page, 'sosiego')
-  await page.locator('#define-selection').click()
+  await page.locator('#define-selection').click();await page.locator('#peek-expand').click()
   await expect(page.locator('#dictionary-definition')).toContainText('tranquilidad')
   await page.locator('#dictionary-dialog .dialog-close').click()
   await selectWord(page, 'sosiego')

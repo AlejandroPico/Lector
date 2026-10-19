@@ -6,14 +6,15 @@ async function wordSearch(page,word,language='es'){
   await page.locator('#dictionary-language').selectOption(language);await page.locator('#dictionary-query').fill(word);await page.locator('#dictionary-search-form button').click()
 }
 test('Spanish package installation persists and all lookups remain offline after reload',async({page,context})=>{
+  test.setTimeout(90000)
   const requests=[];page.on('request',request=>{if(request.url().includes('.json.gz')&&request.resourceType()==='fetch')requests.push(request.url())})
   await manager(page);await expect(page.locator('.dictionary-pack-row')).toHaveCount(10);expect(requests).toEqual([])
   await page.locator('#dictionary-pack-language').selectOption('es');await page.getByRole('button',{name:'Instalar',exact:true}).click()
-  await expect(page.locator('#dictionary-install-progress')).toBeHidden({timeout:60000});await expect(page.getByRole('button',{name:'Eliminar paquete',exact:true})).toBeVisible();expect(requests).toHaveLength(64)
+  await expect(page.locator('#dictionary-install-progress')).toBeHidden({timeout:60000});await expect(page.getByRole('button',{name:'Eliminar paquete',exact:true})).toBeVisible();expect(requests).toHaveLength(128)
   await wordSearch(page,'sosiego');await expect(page.locator('#dictionary-source')).toContainText('Wiktionary');await expect(page.locator('#dictionary-definition')).toContainText('tranquilidad')
   await page.reload();await page.locator('#dismiss-file').click();await page.locator('#preferences-toggle').click();await page.locator('#preferences-panel summary').filter({hasText:'Notas y vocabulario'}).click();await page.locator('#settings-word').click()
   await context.setOffline(true);await page.locator('#dictionary-query').fill('umbral');await page.locator('#dictionary-search-form button').click();await expect(page.locator('#dictionary-source')).toContainText('Wiktionary');await expect(page.locator('#dictionary-definition')).not.toContainText('No se encontró')
-  expect(requests).toHaveLength(64);await context.setOffline(false)
+  expect(requests).toHaveLength(128);await context.setOffline(false)
 })
 test('canceling a package removes partial installation and its stored chunks',async({page})=>{
   await manager(page);await page.locator('#dictionary-pack-language').selectOption('es')
@@ -39,7 +40,7 @@ test('personal Hindi dictionary and learned vocabulary survive reload and packag
 })
 test('corrupt data is rejected and legacy glossary stays usable without installation',async({page})=>{
   await page.goto('/');await page.locator('#file-input').setInputFiles({name:'test.epub',mimeType:'application/epub+zip',buffer:await epub()});await expect(page.locator('#audio-toggle')).toBeEnabled()
-  await page.locator('#preferences-toggle').click();await page.locator('#preferences-panel summary').filter({hasText:'Notas y vocabulario'}).click();await page.locator('#settings-word').click();await page.locator('#dictionary-query').fill('sosiego');await page.locator('#dictionary-search-form button').click()
+  await page.locator('#preferences-toggle').click();await page.locator('#preferences-panel summary').filter({hasText:'Notas y vocabulario'}).click();await page.locator('#settings-word').click();await page.route('**/*.json.gz',route=>route.abort());await page.locator('#dictionary-query').fill('sosiego');await page.locator('#dictionary-search-form button').click()
   await expect(page.locator('#dictionary-definition')).toContainText('tranquilidad');await expect(page.locator('#dictionary-source')).toHaveText('Glosario básico')
   await page.locator('#dictionary-manage').click();await page.locator('#dictionary-pack-language').selectOption('es');await page.route('**/*.json.gz',route=>route.fulfill({body:'bad gzip'}));await page.getByRole('button',{name:'Instalar',exact:true}).click();await expect(page.locator('#dictionary-install-progress')).toBeHidden()
   expect(await page.evaluate(async()=>{const {allDictionaryPacks}=await import('/src/storage.js');return await allDictionaryPacks()})).toEqual([])
@@ -59,7 +60,7 @@ test('vocabulary retains the selected location when narration advances to anothe
     while(node=walker.nextNode())if(node.textContent.includes('sosiego'))break
     const range=doc.createRange(),offset=node.textContent.indexOf('sosiego');range.setStart(node,offset);range.setEnd(node,offset+7)
     const selected=doc.defaultView.getSelection();selected.removeAllRanges();selected.addRange(range);doc.dispatchEvent(new PointerEvent('pointerup',{bubbles:true}))
-  });await page.locator('#define-selection').click();await expect(page.locator('#dictionary-save-word')).toBeEnabled()
+  });await page.locator('#define-selection').click();await page.locator('#peek-expand').click();await expect(page.locator('#dictionary-save-word')).toBeEnabled()
   await page.evaluate(()=>document.querySelector('#reader').goTo(1));await page.locator('#dictionary-save-word').click()
   await expect.poll(()=>page.evaluate(async()=>{const {allVocabulary}=await import('/src/storage.js');return (await allVocabulary()).length})).toBe(1)
   const entry=await page.evaluate(async()=>{const {allVocabulary}=await import('/src/storage.js');return (await allVocabulary())[0]})

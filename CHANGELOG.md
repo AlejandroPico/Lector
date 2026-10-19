@@ -1,5 +1,9 @@
 # Historial de versiones
 
+## 2.3.0
+
+Consultar una palabra abre una burbuja anclada con definición breve y categorías gramaticales documentadas, cierre y ampliación a la consulta completa. No desplaza la lectura ni reinicia la voz al descartarla. Sin instalación previa, la búsqueda explícita utiliza bloques verificados del diccionario del proyecto; la instalación completa sigue siendo voluntaria para disponer de definiciones y gramática sin conexión. Conserva paquetes propios, vocabulario y datos existentes. Los diez recursos incorporan las categorías proporcionadas por Wiktextract, sin deducirlas mediante IA ni inventarlas para recursos antiguos que no las incluyen.
+
 ## 2.2.0
 
 Lateral de altura completa con deslizamiento de medio segundo y cabecera con favicon y Lector. Tanto el favicon como la X lo recogen; respeta movimiento reducido. Lateral y Ajustes permiten desplazarse con rueda, teclado o gestos sin barras visibles.

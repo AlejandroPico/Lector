@@ -219,6 +219,17 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 84%, transparent)
 .dictionary-pack-row button { flex:0 0 auto; }
 #dictionary-install-progress { position:sticky;top:0;background:var(--paper);padding:12px 0;z-index:2; }
 #dictionary-definition,.dictionary-definition { white-space:pre-wrap;overflow-wrap:anywhere; }
+.dictionary-peek {position:fixed;z-index:60;display:flex;flex-direction:column;width:360px;max-width:calc(100dvw - 20px);max-height:calc(100dvh - 20px);padding:12px 16px;background:var(--surface);color:var(--ink);border:1px solid var(--line);box-shadow:var(--shadow);font-size:13px;line-height:1.6;}
+.dictionary-peek::after {content:'';position:absolute;left:var(--peek-tail,50%);width:12px;height:12px;background:var(--surface);transform:translateX(-50%) rotate(45deg);}
+.dictionary-peek[data-side="above"]::after {bottom:-7px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);}
+.dictionary-peek[data-side="below"]::after {top:-7px;border-left:1px solid var(--line);border-top:1px solid var(--line);}
+.peek-heading {display:flex;align-items:center;gap:4px;flex-shrink:0;}
+#peek-word {flex:1;min-width:0;overflow-wrap:anywhere;font-size:16px;font-weight:500;}
+.peek-heading .icon-button {flex-shrink:0;}
+#peek-definition {min-height:0;white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0;max-height:min(210px,35dvh);overflow:auto;scrollbar-width:none;font-size:14px;}
+#peek-definition::-webkit-scrollbar {display:none;}
+#peek-grammar,#peek-source {margin:4px 0;overflow-wrap:anywhere;}
+#peek-source {font-size:10px;}
 .vocabulary-row { padding:16px 0;border-top:1px solid var(--line); }
 .vocabulary-row summary { cursor:pointer;font-size:13px; }
 .vocabulary-row .field { margin-top:12px; }

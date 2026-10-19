@@ -1,11 +1,7 @@
-Lector 2.2.0 mejora el visor de imágenes y la cubierta móvil.
+Lector 2.3.0 mejora el diccionario y la consulta de palabras.
 
-El lateral ocupa toda la altura y se abre y recoge con un deslizamiento de medio segundo. La cabecera muestra el favicon y Lector; el favicon o la X permiten cerrarlo. Respeta movimiento reducido. Las barras de desplazamiento del lateral y de Ajustes desaparecen, conservando rueda, teclado y gestos.
+Consultar abre una burbuja junto a la palabra: definición breve, categorías gramaticales disponibles, cierre y botón para ampliar la consulta. Descartarla no reinicia la narración desde el texto pulsado. La ventana completa mantiene el idioma, el vocabulario personal y los enlaces de procedencia.
 
-La imagen ampliada ocupa una ventana con sus proporciones exactas, sin marco, barra ni espacio sobrante. Una X queda superpuesta a la imagen; también se cierra con Escape o al pulsar fuera. Conserva rueda, pellizco, arrastre y doble clic; el teclado permite +/−, 0 para ajustar y flechas para desplazar. Al girar o redimensionar se ajusta de nuevo.
+La búsqueda explícita puede leer los bloques necesarios del diccionario del proyecto sin instalarlo previamente. Se verifican sus tamaños y huellas; no se envían palabras a servicios externos. La instalación completa sigue siendo voluntaria para consultar sin conexión y conserva los paquetes anteriores. Los diez recursos incorporan las categorías documentadas por Wiktextract; cuando un recurso antiguo o personal no las incluye, se indica. Wiktionary tiene cobertura variable; catalán e hindi mantienen definiciones en inglés, identificado en la consulta.
 
-La cubierta cerrada del libro físico oculta completamente la pintura del visor y de las hojas, también en móvil con página individual o libro abierto. No detiene la narración ni altera los datos.
-
-Comprobado el visor y el lateral en la web publicada; la continuidad nativa de audio se verifica además en emuladores Android 10 y 15 con motor de prueba controlado.
-
-APK Android/TV firmado con la misma clave de actualización, AAB y paquetes de escritorio. iOS incluye archivo sin firma y simulador; requiere firma propia de Apple. La lectura con pantalla apagada de 2.1 sigue disponible con las voces del sistema del APK Android. El diccionario 2.3 se entrega por separado después de verificar esta actualización.
+Incluye APK Android/TV firmado con la clave habitual, AAB y paquetes de escritorio. iOS ofrece archivo sin firma y simulador; requiere firma propia de Apple. Conserva la narración nativa en segundo plano del APK, el visor de imágenes y el lateral animado de 2.2.

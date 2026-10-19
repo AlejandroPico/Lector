@@ -122,7 +122,7 @@ test('upgrading a version-five library keeps existing books and notes intact',as
 
 test('TV navigation stays inside the foreground dialog and Back dismisses only that dialog',async({page})=>{
   await page.addInitScript(()=>localStorage.setItem('lector-settings',JSON.stringify({tvMode:true})))
-  await open(page);await selectWord(page);await page.locator('#define-selection').click();await expect(page.locator('#dictionary-dialog')).toBeVisible()
+  await open(page);await selectWord(page);await page.locator('#define-selection').click();await page.locator('#peek-expand').click();await expect(page.locator('#dictionary-dialog')).toBeVisible()
   await page.locator('#dictionary-context').click();await expect(page.locator('#context-dialog')).toBeVisible()
   await page.locator('#context-configure').focus();await page.keyboard.press('ArrowUp')
   expect(await page.evaluate(()=>document.activeElement.closest('dialog')?.id)).toBe('context-dialog')
