@@ -1,5 +1,9 @@
 # Convenciones del proyecto
 
+- Ampliación 2.2 autorizada: lateral de altura completa, apertura/cierre de medio segundo, favicon y Lector como cabecera; favicon o X cierran y devuelven el icono de índice. Ocultar barras del lateral y Ajustes conservando desplazamiento y accesibilidad, con movimiento reducido respetado.
+
+- 2.2 y 2.3 autorizadas en orden, con publicación y verificación independientes en main: 2.2 visor proporcional sin marco/barra, cierre superpuesto, gestos/teclado y cubierta móvil sin superposición. Solo tras verificarla, 2.3 diccionario con consulta breve anclada, definición/categoría y ampliación; diagnosticar «especial», idioma y cobertura real. No iniciar 2.4 ni otros bloques.
+
 - 2.1 autorizada: narración Android con pantalla apagada y controles nativos de notificación/bloqueo, pausa/reanudación, retroceso acumulable de ~10 s, libro/capítulo/portada. El servicio debe poseer motor y cola completa, sin depender de callbacks JavaScript entre fragmentos. Conservar navegación independiente, reparto, pronunciaciones, temporizador, datos y diez idiomas. Probar servicio Android con cliente desacoplado y pantalla apagada, distinguir pruebas con motor controlado de una escucha real en móvil. Las versiones 2.2–2.13 continúan pendientes.
 
 - Versión 2.0 autorizada: ocultar visor y hojas cuando se muestra la cubierta cerrada, corregir contraste nocturno separando papel e interfaz y unificar superficies de menús. Añadir Terraza de olivo (doce opciones con Automático), icono propio de oficina, compactar selector y expandir fondos completos sin recorte. Conservar datos, continuidad de voz, idiomas y main. IDEAS_2_0.md recoge sugerencias solicitadas, pendientes de elección; no implementarlas por el mero hecho de listarlas.

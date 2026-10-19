@@ -111,7 +111,7 @@ test('images zoom, footnotes float and untrusted book content cannot execute or 
   await page.evaluate(() => document.querySelector('#reader').renderer.getContents()[0].doc.querySelector('img').click())
   await expect(page.locator('#image-dialog')).toBeVisible()
   await expect.poll(() => page.locator('#zoom-image').evaluate(image => image.naturalWidth)).toBeGreaterThan(0)
-  await page.locator('#zoom-in').click(); await expect(page.locator('#zoom-level')).toHaveText('125 %')
+  await page.keyboard.press('+'); await expect(page.locator('.image-stage')).toHaveAttribute('data-zoom','1.25')
   await page.locator('#image-dialog .dialog-close').click()
   await page.evaluate(() => document.querySelector('#reader').renderer.getContents()[0].doc.querySelector('a').click())
   await expect(page.locator('#footnote-dialog')).toBeVisible()

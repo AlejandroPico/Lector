@@ -1,7 +1,9 @@
-Lector 2.1.0 centra la narración Android en un servicio de audio autónomo: las voces del sistema continúan entre frases y capítulos con la pantalla apagada, sin esperar al navegador.
+Lector 2.2.0 mejora el visor de imágenes y la cubierta móvil.
 
-Controles de pausa/reanudación, retroceso acumulable de unos diez segundos y parada en notificaciones y bloqueo. Título del libro, capítulo, autor y cubierta del archivo. Pausa ante desconexión de auriculares y pérdida de audio; temporizador nativo y recuperación del avance al regresar. La navegación manual no se fuerza al punto narrado hasta solicitar el retorno.
+El lateral ocupa toda la altura y se abre y recoge con un deslizamiento de medio segundo. La cabecera muestra el favicon y Lector; el favicon o la X permiten cerrarlo. Respeta movimiento reducido. Las barras de desplazamiento del lateral y de Ajustes desaparecen, conservando rueda, teclado y gestos.
 
-Para probar esta función, actualizar el APK y elegir «Voces del sistema (sin coste)». La versión web/PWA no dispone del servicio Android. Las voces TTS permiten retroceso aproximado, no una búsqueda temporal exacta. Proveedores API/Piper e iOS no adquieren esta garantía de segundo plano en esta entrega. Guía: LECTURA_SEGUNDO_PLANO.md en el repositorio.
+La imagen ampliada ocupa una ventana con sus proporciones exactas, sin marco, barra ni espacio sobrante. Una X queda superpuesta a la imagen; también se cierra con Escape o al pulsar fuera. Conserva rueda, pellizco, arrastre y doble clic; el teclado permite +/−, 0 para ajustar y flechas para desplazar. Al girar o redimensionar se ajusta de nuevo.
 
-APK firmado Android/Android TV, AAB y paquetes de escritorio. iOS incluye archivo sin firma y simulador; requiere firma propia de Apple para instalarse en un dispositivo. No incorpora emisión ni publica en tiendas.
+La cubierta cerrada del libro físico oculta completamente la pintura del visor y de las hojas, también en móvil con página individual o libro abierto. No detiene la narración ni altera los datos.
+
+APK Android/TV firmado con la misma clave de actualización, AAB y paquetes de escritorio. iOS incluye archivo sin firma y simulador; requiere firma propia de Apple. La lectura con pantalla apagada de 2.1 sigue disponible con las voces del sistema del APK Android. El diccionario 2.3 se entrega por separado después de verificar esta actualización.

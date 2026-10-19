@@ -103,7 +103,8 @@ $('#app').innerHTML = `
     </div>
   </header>
   <aside id="sidebar" class="sidebar" hidden aria-label="Navegación del libro">
-    <div class="sidebar-top"><span id="book-title">Biblioteca</span>${iconButton('sidebar-close', 'close', 'Cerrar índice')}</div>
+    <div class="sidebar-brand"><button id="sidebar-brand-close" aria-label="Cerrar índice" title="Cerrar índice"><img src="${faviconURL}" alt="" width="28" height="28"><span data-user-content>Lector</span></button>${iconButton('sidebar-close', 'close', 'Cerrar índice')}</div>
+    <div class="sidebar-top"><span id="book-title">Biblioteca</span></div>
     <div class="sidebar-tabs" role="tablist" aria-label="Navegación">
       <button role="tab" data-tab="contents" aria-selected="true">Índice</button>
       <button role="tab" data-tab="notes" aria-selected="false">Notas</button>
@@ -240,7 +241,7 @@ $('#app').innerHTML = `
   <dialog id="dictionary-dialog" class="small-dialog" aria-labelledby="dictionary-word"><div class="panel-heading"><h2 id="dictionary-word" data-user-content></h2><button class="icon-button dialog-close" aria-label="Cerrar">${icon('close')}</button></div><form id="dictionary-search-form" class="search-field"><label class="sr-only" for="dictionary-query">Buscar palabra</label><input id="dictionary-query" placeholder="Buscar palabra" maxlength="200"><button aria-label="Buscar">${icon('search')}</button></form><label class="field">Idioma de consulta<select id="dictionary-language" data-setting="dictionaryLanguage"><option value="auto">Automático · idioma del libro</option>${Object.entries(languages).map(([code,name])=>`<option value="${code}" data-user-content>${name}</option>`).join('')}</select></label><p id="dictionary-definition"></p><p id="dictionary-source" class="small muted" data-user-content></p><a id="dictionary-license" class="text-link" target="_blank" rel="noopener noreferrer" hidden></a><div class="editor-actions"><button id="dictionary-save-word" class="text-button" disabled>Guardar palabra</button><button id="dictionary-manage" class="text-button">Diccionarios sin conexión</button></div><a id="dictionary-external" class="text-link" target="_blank" rel="noopener noreferrer">Consultar en Wikcionario ↗</a><label class="text-button dictionary-import">Importar diccionario propio<input id="dictionary-file" type="file" accept=".json" hidden></label><p class="small muted">La consulta local no envía palabras a Internet. El enlace externo solo se abre al pulsarlo.</p></dialog>
   <dialog id="dictionary-manager" class="dictionary-manager" aria-labelledby="dictionary-manager-title"><div class="panel-heading"><h2 id="dictionary-manager-title">Diccionarios sin conexión</h2><button class="icon-button dialog-close" aria-label="Cerrar">${icon('close')}</button></div><p class="small muted">Instala solo los idiomas que necesites. Los paquetes se guardan dentro del navegador y se consultan sin conexión.</p><label class="field">Idioma<select id="dictionary-pack-language"><option value="">Todos</option>${Object.entries(languages).map(([code,name])=>`<option value="${code}" data-user-content>${name}</option>`).join('')}</select></label><label class="text-button dictionary-import">Importar diccionario propio<input id="dictionary-manager-file" type="file" accept=".json" hidden></label><div id="dictionary-install-progress" class="small" role="status" hidden><span id="dictionary-install-text"></span><button id="dictionary-install-cancel" class="text-button">Cancelar carga</button></div><div id="dictionary-pack-list"></div><p class="small muted">Wiktionary es una fuente colaborativa con cobertura variable. Catalán e hindi ofrecen aquí definiciones en inglés; puedes añadir paquetes propios en otros idiomas.</p></dialog>
   <dialog id="vocabulary-dialog" class="dictionary-manager" aria-labelledby="vocabulary-title"><div class="panel-heading"><h2 id="vocabulary-title">Vocabulario personal</h2><button class="icon-button dialog-close" aria-label="Cerrar">${icon('close')}</button></div><div class="notebook-controls"><label class="field">Buscar palabra<input id="vocabulary-search" type="search"></label><label class="field">Estado<select id="vocabulary-state"><option value="">Todos</option><option value="learning">Aprendiendo</option><option value="learned">Aprendida</option></select></label></div><div id="vocabulary-list"></div><button id="vocabulary-more" class="text-button" hidden>Mostrar más</button></dialog>
-  <dialog id="image-dialog" class="image-dialog" aria-label="Imagen ampliada"><div class="image-toolbar">${iconButton('zoom-out', 'minus', 'Reducir imagen')}<output id="zoom-level">100 %</output>${iconButton('zoom-in', 'plus', 'Ampliar imagen')}${iconButton('zoom-fit', 'expand', 'Ajustar imagen')}<button class="icon-button dialog-close" aria-label="Cerrar imagen">${icon('close')}</button></div><div class="image-stage"><img id="zoom-image" alt=""></div></dialog>
+  <dialog id="image-dialog" class="image-dialog" aria-label="Imagen ampliada" aria-keyshortcuts="+ - 0"><div class="image-stage"><img id="zoom-image" alt="" draggable="false"></div><button class="icon-button dialog-close" aria-label="Cerrar imagen">${icon('close')}</button></dialog>
   <dialog id="library-dialog" class="library-dialog" aria-labelledby="library-dialog-title"><div class="panel-heading"><h2 id="library-dialog-title">Biblioteca</h2><button id="library-dialog-close" class="icon-button" aria-label="Cerrar biblioteca">${icon('close')}</button></div><div id="library-dialog-content"></div></dialog>
   <dialog id="organize-dialog" class="small-dialog" aria-labelledby="organize-title"><div class="panel-heading"><h2 id="organize-title" data-user-content></h2><button class="icon-button dialog-close" aria-label="Cerrar">${icon('close')}</button></div><form id="organize-form">
   <label class="field">Estado<select id="organize-status">${Object.entries(statuses).map(([value,label])=>`<option value="${value}">${label}</option>`).join('')}</select></label>
@@ -263,7 +264,7 @@ $('#app').innerHTML = `
           <div><dt>Autor</dt><dd>Alejandro Pico</dd></div>
           <div><dt>Carácter</dt><dd>Proyecto personal</dd></div>
           <div><dt>Propósito</dt><dd>Lectura y escucha</dd></div>
-          <div><dt>Edición</dt><dd>Versión 2.1.0</dd></div>
+          <div><dt>Edición</dt><dd>Versión 2.2.0</dd></div>
         </dl>
       </aside>
       <div class="about-body">
@@ -307,7 +308,7 @@ $('#speech-language').value = settings.speechLanguage
 
 const view = $('#reader')
 const bookScene=createBookScene({view,area:$('#reading-area'),settings,getRecord:()=>record})
-const imageViewer = attachImageGestures($('.image-stage'), $('#zoom-image'), { onChange: scale => $('#zoom-level').textContent = `${Math.round(scale * 100)} %` })
+const imageViewer = attachImageGestures($('.image-stage'), $('#zoom-image'))
 let toastTimer
 function toast(message, duration = 6000) {
   $('#toast').textContent = t(message); $('#toast').hidden = false
@@ -489,10 +490,25 @@ function togglePanel(name) {
   }
   $('#selection-menu').hidden = true
 }
-function sidebar(open = $('#sidebar').hidden) {
+let sidebarExpanded=false,sidebarAnimation
+function sidebar(open = !sidebarExpanded) {
+  if(open===sidebarExpanded)return
+  sidebarExpanded=open
   attempt(()=>preserveLayout(()=>{
-    $('#sidebar').hidden = !open; document.body.classList.toggle('sidebar-open', open)
+    const panel=$('#sidebar'),from=panel.hidden?'translateX(-100%)':getComputedStyle(panel).transform,focusBrand=open&&document.activeElement===$('#index-toggle')
+    sidebarAnimation?.cancel()
+    panel.hidden=false;panel.inert=!open
+    const restoreFocus=!open&&panel.contains(document.activeElement)
+    document.body.classList.toggle('sidebar-open', open)
+    if(restoreFocus)$('#index-toggle').focus({preventScroll:true})
     $('#index-toggle').setAttribute('aria-expanded', open);applySettings()
+    const animation=panel.animate([{transform:from},{transform:open?'translateX(0)':'translateX(-100%)'}],{duration:matchMedia('(prefers-reduced-motion: reduce)').matches?0:500,easing:'cubic-bezier(.22,.61,.36,1)',fill:'forwards'})
+    sidebarAnimation=animation
+    animation.finished.then(()=>{
+      if(sidebarAnimation!==animation)return
+      panel.hidden=!open;animation.cancel();sidebarAnimation=null
+      if(focusBrand&&[document.body,$('#index-toggle')].includes(document.activeElement))$('#sidebar-brand-close').focus({preventScroll:true})
+    }).catch(()=>{})
   }))()
 }
 async function preserveLayout(change) {
@@ -1369,6 +1385,7 @@ function onKey(event) {
     return
   }
   if (target.closest?.('input,textarea,select,[contenteditable="true"]')) return
+  if(!settings.tvMode&&target.closest?.('#sidebar,.panel')&&['ArrowUp','ArrowDown','PageUp','PageDown','Home','End'].includes(event.key))return
   if(settings.tvMode&&event.key.startsWith('Arrow')&&target.closest?.('button,a,summary')){event.preventDefault();moveFocus(event.key,target.closest?.('dialog[open]')??document.querySelector('dialog:modal')??document);return}
   if (document.querySelector('dialog[open]')) return
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'o') { event.preventDefault(); $('#file-input').click(); return }
@@ -1388,6 +1405,7 @@ async function toggleFullscreen() {
 
 $('#index-toggle').onclick = () => sidebar()
 $('#sidebar-close').onclick = () => sidebar(false)
+$('#sidebar-brand-close').onclick = () => sidebar(false)
 $('#open-file').onclick = () => { updateLibrary().catch(() => {}); $('#file-dialog').showModal() }
 $('#choose-file').onclick = () => $('#file-input').click()
 $('#dismiss-file').onclick = () => $('#file-dialog').close()
@@ -1575,9 +1593,6 @@ $('#notes-export-save').onclick=attempt(saveNotesExport)
 $('#notes-export-copy').onclick=attempt(async()=>{await navigator.clipboard.writeText($('#notes-export-preview').value);toast('Exportación copiada')})
 $('#notes-export-download').onclick=()=>{const url=URL.createObjectURL(exportBlob()),anchor=document.createElement('a');anchor.href=url;anchor.download=`lector-notas.${$('#notes-export-format').value}`;anchor.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 $('#notes-export-pdf').onclick=attempt(async()=>{const html=notesHTML(exportEntries,t('Notas y citas'));if(await printPlatformHTML(html))return;const popup=window.open('','lector-print');if(!popup){toast('Permite abrir la ventana de impresión.');return}popup.opener=null;popup.document.write(html);popup.document.close();popup.focus();popup.print()})
-$('#zoom-in').onclick = () => imageViewer.step(.25)
-$('#zoom-out').onclick = () => imageViewer.step(-.25)
-$('#zoom-fit').onclick = fitImage
 $('#image-dialog').addEventListener('close', () => { $('#zoom-image').removeAttribute('src') })
 $('#dismiss-zen-hint').onclick = dismissZenHint
 $('#choose-folder').onclick = connectFolder

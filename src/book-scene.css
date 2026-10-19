@@ -98,3 +98,6 @@ body[data-book-scene="study"] #book-environment {background-image:url('../public
 body[data-book-scene="olive"] #book-environment {background-image:url('../public/scenes/olive.webp');}
 .physical-book .sidebar,.physical-book .panel,.physical-book dialog {background:var(--surface);color:var(--ink);}
 .physical-book[data-book-scene="night"] .book-focused .book-folio {background:linear-gradient(90deg,#a18c68,var(--book-paper) 5%,var(--book-paper) 94%,#b69a72);}
+
+/* Opacity also masks composited iframe descendants that declare visibility:visible. */
+.physical-book #reading-area:is(.cover-open,.back-closed) :is(#reader,.book-folio) {visibility:hidden;opacity:0;pointer-events:none;}

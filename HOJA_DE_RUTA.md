@@ -1,10 +1,16 @@
+## 2.2 — Visor de imágenes y cubierta móvil
+
+Incluye la ampliación solicitada: lateral completo con favicon y Lector, deslizamiento de medio segundo y cierre desde marca/X; ocultar barras de lateral y Ajustes conservando desplazamiento con teclado, rueda y gestos.
+
+Autorizada junto con 2.3, en entregas independientes. Visor ajustado a las proporciones de la imagen, sin marco ni barra, cierre superpuesto y gestos/teclado. Máscara del visor y las hojas con la cubierta cerrada también en móvil, incluida la vista de libro abierto. Publicar y verificar antes de implementar 2.3 (diccionario y consulta rápida). Las versiones posteriores siguen pendientes.
+
 ## 2.1 — Narración Android en segundo plano
 
 Autorizada el 19 de octubre de 2026: servicio autónomo para las voces del sistema del APK, cola de frases y capítulos independiente del WebView, controles de pausa/reanudación y retroceso acumulable aproximado de diez segundos, título/capítulo/autor/cubierta en la sesión multimedia. Temporizador nativo, pausa ante pérdida de audio o auriculares y recuperación de posición al volver. No implica Cast ni la incorporación de las voces de Edge a Android.
 
 La verificación distingue las pruebas del servicio Android con motor controlado y pantalla apagada de la validación auditiva en el móvil del autor. Véase LECTURA_SEGUNDO_PLANO.md.
 
-Próximos bloques acordados, pendientes de autorización: 2.2 imágenes y cubierta móvil; 2.3 diccionario y burbuja de consulta; 2.4 contexto mediante IA; 2.5 diagnóstico de voces; 2.6 escenarios personales; 2.7 iluminación del papel; 2.8 encuadernaciones; 2.9 cámara móvil; 2.10 página arrastrable; 2.11 previsualización de capítulos; 2.12 organización por lotes; 2.13 emisión real, al final.
+Autorizadas posteriormente: 2.2 imágenes y cubierta móvil y 2.3 diccionario y burbuja de consulta, en ese orden. Pendientes de autorización: 2.4 contexto mediante IA; 2.5 diagnóstico de voces; 2.6 escenarios personales; 2.7 iluminación del papel; 2.8 encuadernaciones; 2.9 cámara móvil; 2.10 página arrastrable; 2.11 previsualización de capítulos; 2.12 organización por lotes; 2.13 emisión real, al final.
 
 # Ampliaciones acordadas y versiones propuestas
 

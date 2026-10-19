@@ -1,5 +1,11 @@
 # Historial de versiones
 
+## 2.2.0
+
+Lateral de altura completa con deslizamiento de medio segundo y cabecera con favicon y Lector. Tanto el favicon como la X lo recogen; respeta movimiento reducido. Lateral y Ajustes permiten desplazarse con rueda, teclado o gestos sin barras visibles.
+
+El visor ampliado adopta las proporciones exactas de la imagen, sin marco, barra ni márgenes interiores. Cierre superpuesto, clic fuera y Escape; zoom con rueda, pellizco, doble clic y teclado, arrastre y reajuste al girar la pantalla. La cubierta del libro físico oculta también la pintura de los iframes y las hojas en móvil, tanto en página individual como en libro abierto. Conserva narración y datos.
+
 ## 2.1.0
 
 La aplicación Android mantiene su motor de síntesis y toda la cola de narración en un servicio de audio, independiente de la página. Avanza entre frases y capítulos con la pantalla apagada; ofrece pausa/reanudación, retrocesos acumulables de unos diez segundos y parada desde notificaciones, bloqueo y controles multimedia compatibles. Muestra título, capítulo, autor y cubierta proporcionada por el libro. Pausa al perder audio o desconectar auriculares, libera recursos al pausar y respeta el temporizador nativo. Sincroniza estado/posición al volver y conserva un ancla local para recuperar avances tras una interrupción del proceso.
