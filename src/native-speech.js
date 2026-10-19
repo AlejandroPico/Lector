@@ -41,7 +41,7 @@ export async function nativeSpeechAdapter(engine,{target=globalThis,queue=false}
       const id=crypto.randomUUID();active=id;paused=Boolean(options.paused)
       return new Promise((resolve,reject)=>{reading={id,resolve,reject,onPosition,onState,onStop};engine.startQueue({...options,id}).catch(error=>{if(reading?.id!==id)return;reading=null;active=null;paused=false;reject(error)})})
     },
-    rewind:()=>engine.rewind(),
+    rewind:(options={})=>engine.rewind(options),
     configure:options=>engine.configure(options),
     async sync(){const data=await engine.status();if(reading){if(data.state==='stopped')receive({...data,id:reading.id,type:data.error?'error':'end'});else if(data.id===reading.id)receive({...data,type:'position'})}},
   })

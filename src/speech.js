@@ -185,8 +185,8 @@ export class SpeechController {
     this.audio?.pause(); this.audio = null
     for (const finish of this.pending) finish()
     this.pending.clear()
-    this.onHighlight(null); this.setState('stopped')
     this.nativeActive=false;this.nativeMap=null;this.nativeCache=null;this.nativeFingerprint=null
+    this.onHighlight(null); this.setState('stopped')
   }
   async restart(range) { this.stop(); return this.toggle(range,true) }
   async toggle(startRange, exact = false) {
@@ -416,7 +416,7 @@ export class SpeechController {
     })
   }
   async rewind(){
-    if(this.nativeActive){await speechSynthesis.rewind?.();return}
+    if(this.nativeActive){await speechSynthesis.rewind?.({seconds:this.settings().rewindMode==='seconds'?this.settings().rewindSeconds:0});return}
     if(this.audio&&this.settings().rewindMode==='seconds'&&this.audio.currentTime>this.settings().rewindSeconds){this.audio.currentTime-=this.settings().rewindSeconds;return}
     if(this.historyBook!==this.view.book||!this.history.length)return
     let position=Math.max(0,this.history.length-2)

@@ -24,7 +24,7 @@ public class LectorSpeechPlugin extends Plugin {
   @PluginMethod public void speak(PluginCall call){connected(()->{JSArray items=new JSArray();items.put(call.getData());service.start(call.getString("id"),"",items,call.getBoolean("paused",false),0,error->{if(error==null)call.resolve();else call.reject(error);});});}
   @PluginMethod public void pause(PluginCall call){connected(()->{service.pause();call.resolve();});}
   @PluginMethod public void resume(PluginCall call){connected(()->{service.resume();call.resolve();});}
-  @PluginMethod public void rewind(PluginCall call){connected(()->{service.rewind();call.resolve();});}
+  @PluginMethod public void rewind(PluginCall call){connected(()->{service.rewind(call.getInt("seconds",10));call.resolve();});}
   @PluginMethod public void configure(PluginCall call){connected(()->{service.configure(call.getObject("characters",new JSObject()),call.getLong("deadline",0L));call.resolve();});}
   @PluginMethod public void cancel(PluginCall call){connected(()->{service.stopReading("stopped");call.resolve();});}
   @PluginMethod public void status(PluginCall call){connected(()->call.resolve(service.status()));}

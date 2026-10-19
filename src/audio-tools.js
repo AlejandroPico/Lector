@@ -23,7 +23,7 @@ export function createAudioTools({speech,view,mediaControls,getBook,getRecord,ge
  const safe=fn=>async(...args)=>{try{await fn(...args)}catch(error){onError(error)}}
  const money=cost=>`${cost.toFixed(4)} ${getSettings().voiceCurrency}`
  function refresh(){
-   $('audio-rewind').disabled=speech.historyBook!==getBook()||!speech.history.length
+   $('audio-rewind').disabled=!(speech.nativeActive&&speech.nativeMap?.length)&&(speech.historyBook!==getBook()||!speech.history.length)
    $('sleep-status').hidden=!speech.timer.deadline;$('sleep-status').textContent=`${t('Tiempo restante')}: ${Math.ceil(speech.timer.remaining()/60000)} ${t('min')}`
    const usage=speech.budget.usage();$('audio-usage').textContent=`${t('Consumo estimado')}: ${getSettings().voicePrice>0?money(usage.cost):t('Tarifa sin configurar')} · ${usage.characters} ${t('caracteres')} · ${usage.requests} ${t('solicitudes')}${usage.unpriced?` · ${usage.unpriced} ${t('solicitudes sin tarifa')}`:''}`
  }

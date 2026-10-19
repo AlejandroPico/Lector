@@ -21,6 +21,8 @@ El avance se conserva en el almacenamiento privado de Android aunque el WebView 
 | Voces API / Piper | Conservan el reproductor existente. La generación y el encadenamiento dependen de JavaScript; esta versión no garantiza continuidad tras bloquear el móvil. No genera por adelantado un libro de pago. |
 | iPhone/iPad | No se modifica el servicio de audio de iOS en esta entrega. |
 
+En las notificaciones el salto es de unos diez segundos. El botón de retroceso dentro de Lector conserva el ajuste de una frase o la cantidad de segundos elegida en Voz.
+
 La calidad de voz depende del motor instalado. Esta entrega no incorpora las voces en línea exclusivas de Edge ni inicia suscripciones. El retroceso de TTS es **aproximado**: usa longitud del texto, palabras y velocidad configurada; puede cruzar frases y capítulos, pero no equivale a buscar exactamente diez segundos en un MP3.
 
 Los cambios de voz, velocidad y tono se aplican a los fragmentos posteriores sin cortar la frase actual. La cola preparada conserva las pronunciaciones y divisiones de personajes con las que comenzó; tras editar el texto de esas reglas o sus asignaciones, detener e iniciar para preparar una cola actualizada. Los cambios de maquetación y navegación no reemplazan la cola ni detienen la voz.

@@ -152,7 +152,8 @@ public class LectorAudioService extends Service {
     }
   }
   void resume(){if(preparing){preparationPaused=false;return;}if(queue==null||!paused)return;paused=false;speakCurrent();emit("state",0);}
-  void rewind(){if(queue==null)return;estimateOffset();token=null;engine.stop();queue.rewind(10000);checkpoint(true);if(!paused)speakCurrent();else{chapter=queue.current().chapter;updateMetadata();publishState();}emit("position",0);}
+  void rewind(){rewind(10);}
+  void rewind(int seconds){if(queue==null)return;estimateOffset();token=null;engine.stop();if(seconds<=0){queue.index=Math.max(0,queue.index-1);queue.offset=0;}else queue.rewind(Math.min(120,seconds)*1000L);checkpoint(true);if(!paused)speakCurrent();else{chapter=queue.current().chapter;updateMetadata();publishState();}emit("position",0);}
   void stopReading(String reason){
     preparationId++;
     preparing=false;preparationConfig=null;

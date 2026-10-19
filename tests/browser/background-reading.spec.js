@@ -9,9 +9,9 @@ async function openNativeReading(page){
   Object.defineProperty(window,'speechSynthesis',{configurable:true,value:{
    getVoices:()=>[{voiceURI:'test-es',lang:'es-ES',name:'Voz del dispositivo',default:true}],addEventListener(){},
    cancel(){active=false;resolve?.();resolve=null},
-   startQueue(options,callbacks){active=true;native.starts++;native.options=options;native.events=callbacks;return new Promise(done=>{resolve=done})},
+   startQueue(options,callbacks){active=true;native.starts++;native.options=options;native.events=callbacks;return new Promise(done=>{resolve=done;native.finish=done})},
    pause(){native.pauses++;if(active)native.events.onState('paused')},resume(){native.resumes++;if(active)native.events.onState('playing')},
-   rewind:async()=>{native.rewinds++},
+   rewind:async options=>{native.rewinds++;native.rewindOptions=options},
    configure:async options=>{native.configuration=options},
   }})
  })
@@ -54,8 +54,11 @@ test('voice speed and sleep controls reach the native queue without restarting n
  await openNativeReading(page);await page.locator('#voice-toggle').click()
  await page.locator('[data-setting="rate"]').evaluate(input=>{input.value='1.2';input.dispatchEvent(new Event('input',{bubbles:true}))})
  await expect.poll(()=>page.evaluate(()=>window.__native.configuration.characters.narrator.rate)).toBe(1.2)
+ await expect(page.locator('#audio-rewind')).toBeEnabled();await page.locator('#audio-rewind').click();expect(await page.evaluate(()=>window.__native.rewindOptions.seconds)).toBe(0)
  await page.getByText('Temporizador y retroceso',{exact:true}).click()
+ await page.locator('[data-setting="rewindMode"]').selectOption('seconds');await page.locator('[data-setting="rewindSeconds"]').fill('20');await page.locator('[data-setting="rewindSeconds"]').press('Tab');await page.locator('#audio-rewind').click();expect(await page.evaluate(()=>window.__native.rewindOptions.seconds)).toBe(20)
  await page.locator('[data-setting="sleepEnabled"]').check();await expect.poll(()=>page.evaluate(()=>window.__native.configuration.deadline)).toBeGreaterThan(Date.now())
  await page.locator('[data-setting="sleepEnabled"]').uncheck();await expect.poll(()=>page.evaluate(()=>window.__native.configuration.deadline)).toBe(0)
  expect(await page.evaluate(()=>window.__native.starts)).toBe(1);await expect(page.locator('#audio-toggle')).toHaveAttribute('aria-label','Pausar lectura')
+ await page.evaluate(()=>window.__native.finish());await expect(page.locator('#audio-toggle')).toHaveAttribute('aria-label','Leer en voz alta');await expect(page.locator('#audio-rewind')).toBeDisabled()
 })
