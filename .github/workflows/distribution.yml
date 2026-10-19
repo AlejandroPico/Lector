@@ -144,6 +144,8 @@ jobs:
           distribution: temurin
           java-version: 21
       - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
       - run: npm ci
       - run: npm run build && npm run native:sync
       - name: Habilitar aceleración del emulador
