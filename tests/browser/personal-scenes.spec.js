@@ -20,7 +20,7 @@ test('photos are prepared locally, persist and can be renamed or removed while n
  expect(saved).toEqual({count:1,width:2560,height:1440,type:'image/webp',name:'Mi rincón'})
  expect(await page.evaluate(()=>({text:window.__utterance.text,cancels:window.__cancels}))).toEqual(before)
  await manager(page);await page.locator('#personal-scene-name').fill('Una mesa propia');await page.locator('#personal-scene-contrast').selectOption('dark');await page.locator('#personal-scene-save').click()
- await expect(page.locator('body')).toHaveAttribute('data-book-scene',id);expect(await page.locator('body').evaluate(el=>el.style.getPropertyValue('--desk-ink'))).toBe('#27231e')
+ await expect(page.locator('#personal-scenes-dialog')).toBeHidden();await expect(page.locator('body')).toHaveAttribute('data-book-scene',id);await expect.poll(()=>page.locator('body').evaluate(el=>el.style.getPropertyValue('--desk-ink'))).toBe('#27231e')
  await page.screenshot({path:'test-results/26-personal-scene.png'});await page.reload();await page.locator('#dismiss-file').click();await expect(page.locator('body')).toHaveAttribute('data-book-scene',id)
  await manager(page);await expect(page.locator('#personal-scene-name')).toHaveValue('Una mesa propia');await page.locator('#personal-scene-delete').click()
  await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('lector-settings')).bookScene)).toBe('auto')
