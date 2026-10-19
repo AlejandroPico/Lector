@@ -1,3 +1,4 @@
+import {createVoiceDiagnostics} from './voice-diagnostics-ui.js'
 import {addSyncMenus,createSyncTools,restoreSyncedBook} from './sync-tools.js'
 import {platform,initializePlatform,openPlatformBooks,platformMetadata,platformReadingCheckpoint,printPlatformHTML} from './platform.js'
 import {applyPortable} from './sync-core.js'
@@ -265,7 +266,7 @@ $('#app').innerHTML = `
           <div><dt>Autor</dt><dd>Alejandro Pico</dd></div>
           <div><dt>Carácter</dt><dd>Proyecto personal</dd></div>
           <div><dt>Propósito</dt><dd>Lectura y escucha</dd></div>
-          <div><dt>Edición</dt><dd>Versión 2.4.0</dd></div>
+          <div><dt>Edición</dt><dd>Versión 2.5.0</dd></div>
         </dl>
       </aside>
       <div class="about-body">
@@ -1551,6 +1552,7 @@ $('#theme-panel').addEventListener('click',event=>{
 })
 $('#reset-appearance').onclick = () => { for (const key of ['font', 'fontSize', 'lineHeight', 'paragraphGap', 'columns', 'width', 'gutter', 'fullWidth', 'justify', 'animated','marginOuter','marginInner','hyphenate']) settings[key] = defaults[key]; applySettings() }
 $('#voice-preview').onclick = attempt(async () => {
+  if(speech.diagnostics?.running){toast('Cancela la prueba de voces antes de iniciar la lectura.');return}
   speech.stop()
   const sample = { text: 'La tarde caía despacio. Por un momento, todo quedó en silencio.' }
   if (settings.provider !== 'browser') {
@@ -1675,6 +1677,7 @@ document.addEventListener('drop', event => { if (event.dataTransfer.files.length
 document.addEventListener('visibilitychange', () => { if (document.hidden) { clearTimeout(saveTimer); saveRecord() } })
 window.addEventListener('pagehide', () => { saveRecord(); if(!speech.nativeActive)speech.stop();gamepad.dispose() })
 window.addEventListener('resize', attempt(()=>preserveLayout(()=>{ $('#selection-menu').hidden = true; applySettings() })))
+speech.diagnostics=createVoiceDiagnostics({speech,closePanels})
 globalThis.speechSynthesis?.addEventListener('voiceschanged', syncVoices)
 setInterval(() => { if (settings.theme === 'auto'||settings.appearance==='book'&&settings.bookScene==='auto') applySettings() }, 60000)
 languageTools=createLanguageTools({getBook:()=>book,getRecord:()=>record,getSelection:()=>selection,view,

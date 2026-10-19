@@ -177,6 +177,7 @@ export class SpeechController {
     if(current?.index===target?.index){const range=target.anchor?.(current.doc);this.onHighlight(range);if(range)await this.view.renderer.scrollToAnchor(range,true)}
   }
   stop({keepTimer=false}={}) {
+    this.diagnostics?.cancel()
     this.run++; this.abort?.abort(); this.abort = null
     this.follower.stop()
     this.browsing=false;this.cursorCFI=null;this.onBrowseChange()
@@ -190,6 +191,7 @@ export class SpeechController {
   }
   async restart(range) { this.stop(); return this.toggle(range,true) }
   async toggle(startRange, exact = false) {
+    if(this.diagnostics?.running){this.onError('Cancela la prueba de voces antes de iniciar la lectura.');return}
     if (this.state === 'playing') {
       if (this.audio) this.audio.pause()
       else globalThis.speechSynthesis?.pause()

@@ -1,5 +1,7 @@
 # Convenciones del proyecto
 
+- 2.4 publicada y verificada antes de iniciar 2.5: main/tag bd4c20d, 14 archivos públicos, todas las huellas y descarga APK comprobadas; APK SHA-256 837599cefa9b9babc7691084be0691d7f6661d847e759f5054abe90a9c6a9f2b. 102 pruebas unitarias, 167 de navegador y Android 10/15, firma habitual conservada. 2.5 añade diagnóstico explícito de voces; no iniciar 2.6.
+
 - 2.4 y 2.5 autorizadas: completar, publicar y verificar 2.4 antes de implementar 2.5. Contexto local opcional con comprobación de capacidad, descarga explícita y fragmento confirmado; no automatizar chats gratuitos. Diagnóstico de voces a petición explícita, sin detener narración ni cambiar la voz elegida. No activar síntesis real en las pruebas del equipo del autor.
 
 - 2.2 publicada y verificada antes de implementar 2.3: tag/main 0463859, descarga pública con 14 archivos, APK SHA-256 c9ce36b49694cd6371a9425f405114a9ac7df42b277510cad8653e5cb748253a; 97 unitarias y 157 pruebas de navegador, emuladores Android 10/15. 2.3: consulta breve anclada, ampliación, consulta explícita de bloques propios verificados sin instalar automáticamente y gramática real de las fuentes. Conservar paquetes antiguos y mostrar categoría no indicada cuando falte; ninguna palabra enviada a servicios externos. 2.4 y 2.5 autorizadas posteriormente, en orden y con publicación/verificación independientes.

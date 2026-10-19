@@ -491,3 +491,11 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 84%, transparent)
 }
 
 #context-selection.context-unconfigured { opacity: .5; }
+
+#voice-diagnostics-dialog { width: min(570px,calc(100vw - 32px)); }
+#voice-diagnostics-list { max-height: min(42dvh,360px);overflow:auto;scrollbar-width:none;overscroll-behavior:contain;margin-top:14px; }
+#voice-diagnostics-list::-webkit-scrollbar { display:none; }
+.voice-diagnostic-row { display:flex;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);align-items:flex-start;font-size:12px;cursor:pointer; }
+.voice-diagnostic-row > span { display:grid;gap:4px;min-width:0;overflow-wrap:anywhere; }
+.voice-diagnostic-row input { flex:0 0 auto; }
+.voice-diagnostic-result { color:var(--accent); }

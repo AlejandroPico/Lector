@@ -148,3 +148,9 @@ Verificación local de 1.8: 81 pruebas unitarias y 118 casos de navegador aproba
 1.9 completada: PWA y paquetes Windows x64, Linux x64, macOS Intel/Apple Silicon; APK Android/Android TV firmado y AAB; iPhone/iPad compilados para simulador y archivo Xcode sin firma. Descargas públicas en v1.9.0, sumas SHA-256 y guía DISTRIBUCION.md. Las firmas Apple/Microsoft, cuentas, capturas y revisiones físicas de tiendas corresponden al titular y siguen pendientes; no se ha publicado en tiendas ni se implementa Cast.
 
 Comprobación GitHub 38569439089 y distribución 38569438947 aprobadas: 87 unitarias, 118 de navegador y todas las compilaciones. Pages 38569438976 publicada. Windows abre EPUB y detecta voces reales con Node aislado; APK local con firma RSA 4096 verificada, versión 1.9.0, minSDK 26 y entrada Leanback. Producción conserva la navegación manual y el retorno explícito durante WAV real, sin reiniciar audio, modificar dimensiones ni errores. Los adaptadores API se verifican con respuestas controladas, sin facturación. No se afirma prueba en televisores, iPhone o iPad físicos.
+
+## 2.4 y 2.5
+
+2.4 publicada y verificada (main/tag bd4c20d, 102 unitarias, 167 de navegador, Android 10/15, catorce archivos y huellas comprobados) antes de implementar 2.5.
+
+2.5 incorpora pruebas explícitas de voces por idioma/región, selección exacta sin sustitución, muestra editable, cancelación y tiempos de espera, resultados de sesión y protección de la narración activa/pausada. No instala voces de otros navegadores ni diagnostica la calidad audible automáticamente.
