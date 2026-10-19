@@ -84,14 +84,15 @@ test('mobile bilingual reading fits and translates its controls without translat
 
 test('local Ollama requests can be canceled and late replies cannot replace a newer result',async({page})=>{
   await page.addInitScript(()=>localStorage.setItem('lector-language-tools',JSON.stringify({provider:'ollama',endpoint:'http://127.0.0.1:11434/api/chat',model:'installed-model'})))
-  const requests=[]
+  const requests=[];let releaseFirst
+  const firstResponse=new Promise(resolve=>releaseFirst=resolve)
   await page.route('http://127.0.0.1:11434/api/chat',async route=>{
     requests.push({body:route.request().postDataJSON(),headers:route.request().headers()});const index=requests.length
-    if(index===1)await new Promise(resolve=>setTimeout(resolve,350))
+    if(index===1)await firstResponse
     await route.fulfill({json:{message:{content:index===1?'Respuesta anterior':'Respuesta actual'}}}).catch(()=>{})
   })
   await open(page);await selectWord(page);await page.locator('#context-selection').click();await page.locator('#context-run').click()
-  await expect.poll(()=>requests.length).toBe(1);await page.locator('#context-cancel').click();await expect(page.locator('#context-error')).toHaveText('Consulta cancelada')
+  await expect.poll(()=>requests.length).toBe(1);await page.locator('#context-cancel').click();await expect(page.locator('#context-error')).toHaveText('Consulta cancelada');releaseFirst()
   await page.locator('#context-run').click();await expect(page.locator('#context-result')).toHaveText('Respuesta actual')
   expect(requests[1].headers.authorization).toBeUndefined();expect(requests[1].body).toMatchObject({stream:false,options:{num_predict:700}})
   await page.waitForTimeout(400);await expect(page.locator('#context-result')).toHaveText('Respuesta actual')
@@ -128,4 +129,38 @@ test('TV navigation stays inside the foreground dialog and Back dismisses only t
   expect(await page.evaluate(()=>document.activeElement.closest('dialog')?.id)).toBe('context-dialog')
   await page.locator('#context-configure').focus();await page.keyboard.press('Backspace')
   await expect(page.locator('#context-dialog')).toBeHidden();await expect(page.locator('#dictionary-dialog')).toBeVisible()
+})
+
+
+test('browser AI downloads only on explicit confirmation and releases its isolated session',async({page})=>{
+  await page.addInitScript(()=>{
+    window.contextCalls={created:0,prompts:[],destroyed:0}
+    window.LanguageModel={availability:async()=> 'downloadable',create:async options=>{
+      window.contextCalls.created++;window.contextCalls.options=options
+      return {prompt:async messages=>{window.contextCalls.prompts.push(messages);return 'Aquí significa tranquilidad.'},destroy:()=>window.contextCalls.destroyed++}
+    }}
+  })
+  await open(page);await languageSettings(page);await page.locator('#context-provider').selectOption('browser')
+  await expect(page.locator('#context-browser-status')).toHaveText('Modelo pendiente de descarga')
+  expect(await page.evaluate(()=>window.contextCalls.created)).toBe(0)
+  await page.keyboard.press('Escape');await selectWord(page);await page.locator('#context-selection').click()
+  await expect(page.locator('#context-run')).toHaveText('Descargar modelo y consultar')
+  expect(await page.evaluate(()=>window.contextCalls.created)).toBe(0)
+  await page.locator('#context-run').click();await expect(page.locator('#context-result')).toHaveText('Aquí significa tranquilidad.')
+  expect(await page.evaluate(()=>window.contextCalls.created)).toBe(1)
+  expect(await page.evaluate(()=>window.contextCalls.destroyed)).toBe(1)
+  const sent=await page.evaluate(()=>window.contextCalls.prompts[0])
+  expect(JSON.parse(sent[0].content).passage).toBe('El sosiego de la tarde acompañaba a Elena.')
+  await page.screenshot({path:'test-results/24-browser-context.png'})
+  await page.locator('#context-output-language').selectOption('ca')
+  await expect(page.locator('#context-run')).toBeDisabled()
+})
+
+test('unavailable context remains accessible for configuration without downloading',async({page})=>{
+  await page.addInitScript(()=>{window.LanguageModel=undefined})
+  await open(page);await selectWord(page)
+  await expect(page.locator('#context-selection')).toHaveClass(/context-unconfigured/)
+  await page.locator('#context-selection').click();await expect(page.locator('#context-run')).toBeDisabled()
+  await page.locator('#context-configure').click();await page.locator('#context-provider').selectOption('browser')
+  await expect(page.locator('#context-browser-status')).toContainText('no está disponible')
 })

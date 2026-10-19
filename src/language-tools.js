@@ -1,3 +1,4 @@
+import {browserContextAvailability,requestBrowserContext} from './browser-context.js'
 import {importBook,metadataText,sanitizeBookHTML} from './books.js'
 import {readJSON,writeJSON,getTranslation,saveTranslation,removeTranslation} from './storage.js'
 import {lookupOffline} from './offline-dictionaries.js'
@@ -9,7 +10,8 @@ import {selectedContext,readableParagraphs,alignedParagraphs,requestContext,cont
 export function createLanguageTools({getBook,getRecord,getSelection,view,prepareReading,navigateTo,toggleAudio,showSettings,closePanels,getSettings,onError}) {
   const $=selector=>document.querySelector(selector)
   const stored=readJSON('lector-language-tools',{})
-  const config={provider:['none','ollama','chat'].includes(stored.provider)?stored.provider:'none',endpoint:typeof stored.endpoint==='string'?stored.endpoint:'http://127.0.0.1:11434/api/chat',model:typeof stored.model==='string'?stored.model.slice(0,160):'',follow:stored.follow!==false}
+  const config={provider:['none','ollama','chat','browser'].includes(stored.provider)?stored.provider:'none',endpoint:typeof stored.endpoint==='string'?stored.endpoint:'http://127.0.0.1:11434/api/chat',model:typeof stored.model==='string'?stored.model.slice(0,160):'',follow:stored.follow!==false}
+  let browserState='unchecked',availabilitySequence=0
   let request,querySequence=0,contextLanguage,translationBook,translation,sourceBook,sourceID,original=[],translated=[],rows=[],sourceIndex=0,targetIndex=0,limit=160,renderSequence=0,importSequence=0,saveQueue=Promise.resolve(),remember=true
   const handle=fn=>async(...args)=>{try{await fn(...args)}catch(error){
     if($('#bilingual-dialog').open){$('#bilingual-error').textContent=t(error.message);$('#bilingual-error').hidden=false}
@@ -21,13 +23,18 @@ export function createLanguageTools({getBook,getRecord,getSelection,view,prepare
   const transientTranslations=new Map()
   function paragraphsOf(doc){let paragraphs=paragraphCache.get(doc);if(!paragraphs){paragraphs=readableParagraphs(doc);paragraphCache.set(doc,paragraphs)}return paragraphs}
   function syncConnection() {
-    $('#context-connection').hidden=config.provider==='none'
+    $('#context-connection').hidden=!['ollama','chat'].includes(config.provider)
+    $('#context-browser').hidden=config.provider!=='browser'
     $('#context-key-field').hidden=config.provider!=='chat'
     $('#context-cloud-notice').hidden=config.provider!=='chat'
     $('#context-local-notice').hidden=config.provider!=='ollama'
     for(const key of ['provider','endpoint','model'])$(`#context-${key}`).value=config[key]
-    $('#context-run').disabled=config.provider==='none'||Boolean(request)
-    $('#context-destination').textContent=config.provider==='none'?t('Configura un motor en Idiomas y contexto.'):`${config.provider==='ollama'?t('Ollama · servicio local'):t('API compatible con Chat Completions')}: ${config.endpoint}`
+    const ready=config.provider==='browser'?['available','downloadable','downloading'].includes(browserState):['chat','ollama'].includes(config.provider)&&Boolean(config.model.trim())
+    $('#context-run').disabled=!ready||Boolean(request)
+    $('#context-run').textContent=t(config.provider==='browser'&&browserState!=='available'?'Descargar modelo y consultar':config.provider==='browser'?'Consultar en este equipo':'Enviar fragmento')
+    $('#context-selection').classList.toggle('context-unconfigured',!ready)
+    $('#context-selection').title=ready?'':t('Configura un motor en Idiomas y contexto.')
+    $('#context-destination').textContent=config.provider==='browser'?t(browserState==='unavailable'?'La IA del navegador no está disponible para este equipo o idioma.':'IA del navegador · local'):config.provider==='none'?t('Configura un motor en Idiomas y contexto.'):`${config.provider==='ollama'?t('Ollama · servicio local'):t('API compatible con Chat Completions')}: ${config.endpoint}`
   }
   for(const key of ['provider','endpoint','model'])$(`#context-${key}`).addEventListener('change',()=>{
     request?.abort();config[key]=$(`#context-${key}`).value.trim()
@@ -36,8 +43,18 @@ export function createLanguageTools({getBook,getRecord,getSelection,view,prepare
       $('#context-key').value=''
     }
     if(key==='endpoint')$('#context-key').value=''
-    saveConfig();syncConnection()
+    saveConfig();syncConnection();if(config.provider==='browser')void checkBrowser()
   })
+  async function checkBrowser() {
+    const sequence=++availabilitySequence
+    browserState='unchecked';syncConnection()
+    const state=await browserContextAvailability(contextLanguage||currentLanguage(),$('#context-output-language').value||currentLanguage())
+    if(sequence!==availabilitySequence)return
+    browserState=state
+    $('#context-browser-status').textContent=t(state==='available'?'Modelo listo':state==='downloadable'||state==='downloading'?'Modelo pendiente de descarga':'La IA del navegador no está disponible para este equipo o idioma.')
+    syncConnection()
+  }
+  $('#context-check').onclick=()=>void checkBrowser()
   function clearContextRequest(){request?.abort();request=undefined;$('#context-cancel').hidden=true;syncConnection()}
   async function openContext() {
     const selection=getSelection(),snapshot=selectedContext(selection,(metadataText(getBook()?.metadata?.language)||currentLanguage()).split(/[-_]/)[0])
@@ -45,8 +62,8 @@ export function createLanguageTools({getBook,getRecord,getSelection,view,prepare
     const sequence=++querySequence
     $('#context-word').value=snapshot.word;$('#context-fragment').value=snapshot.text;$('#context-output-language').value=currentLanguage()
     $('#context-answer').hidden=true;$('#context-error').hidden=true;$('#context-dictionary').hidden=true
-    $('#context-dialog').showModal();syncConnection()
-    const definition=await lookupOffline(snapshot.word,contextLanguage).catch(()=>null)
+    $('#context-dialog').showModal();syncConnection();if(config.provider==='browser')void checkBrowser()
+    const definition=await lookupOffline(snapshot.word,contextLanguage,{project:true}).catch(()=>null)
     if(sequence!==querySequence||!$('#context-dialog').open)return
     if(definition){
       $('#context-definition').textContent=definition.definition
@@ -69,18 +86,18 @@ export function createLanguageTools({getBook,getRecord,getSelection,view,prepare
     // Snapshot the preview and provider. Editing controls cannot change a running request.
     const input={...config,key:$('#context-key').value.trim(),task,word:$('#context-word').value.trim(),text:$('#context-fragment').value.trim(),language:$('#context-output-language').value,sourceLanguage:contextLanguage,signal:AbortSignal.any([controller.signal,AbortSignal.timeout(120000)])}
     try {
-      contextEndpoint(input.endpoint,input.provider==='ollama')
-      const output=await requestContext(input)
+      if(input.provider!=='browser')contextEndpoint(input.endpoint,input.provider==='ollama')
+      const output=await (input.provider==='browser'?requestBrowserContext(input,{onProgress:percent=>{if(request===controller)$('#context-destination').textContent=`${t('Descargando modelo')}: ${percent}%`}}):requestContext(input))
       if(controller.signal.aborted||request!==controller||!$('#context-dialog').open)return
       $('#context-answer-title').textContent=t(task==='translate'?'Traducción generada':'Explicación generada');$('#context-result').textContent=output;$('#context-answer').hidden=false
     } catch(error) {
       if(!$('#context-dialog').open||request!==controller)return
       $('#context-error').textContent=t(controller.signal.aborted?'Consulta cancelada':error.name==='TimeoutError'?'Tiempo de espera agotado.':error instanceof TypeError?'No se pudo conectar. Revisa el servicio y sus permisos de conexión.':error.message)
       $('#context-error').hidden=false
-    } finally {if(request===controller){request=undefined;$('#context-cancel').hidden=true;syncConnection()}}
+    } finally {if(request===controller){request=undefined;$('#context-cancel').hidden=true;syncConnection();if(config.provider==='browser')void checkBrowser()}}
   }
   for(const id of ['context-word','context-fragment','context-task','context-output-language'])$(`#${id}`).addEventListener('input',()=>{
-    clearContextRequest();$('#context-answer').hidden=true;$('#context-dictionary').hidden=true
+    clearContextRequest();$('#context-answer').hidden=true;$('#context-dictionary').hidden=true;if(config.provider==='browser')void checkBrowser()
   })
 
   const sectionLabel=(book,index)=>{

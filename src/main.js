@@ -265,7 +265,7 @@ $('#app').innerHTML = `
           <div><dt>Autor</dt><dd>Alejandro Pico</dd></div>
           <div><dt>Carácter</dt><dd>Proyecto personal</dd></div>
           <div><dt>Propósito</dt><dd>Lectura y escucha</dd></div>
-          <div><dt>Edición</dt><dd>Versión 2.3.0</dd></div>
+          <div><dt>Edición</dt><dd>Versión 2.4.0</dd></div>
         </dl>
       </aside>
       <div class="about-body">

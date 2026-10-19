@@ -489,3 +489,5 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 84%, transparent)
  .zen .return-reading {bottom:calc(14px + var(--safe-bottom));}
  @media(max-width:900px){#reading-area {top:calc(58px + var(--safe-top));bottom:calc(52px + var(--safe-bottom));}}
 }
+
+#context-selection.context-unconfigured { opacity: .5; }

@@ -16,7 +16,7 @@ Autorizada el 19 de octubre de 2026: servicio autónomo para las voces del siste
 
 La verificación distingue las pruebas del servicio Android con motor controlado y pantalla apagada de la validación auditiva en el móvil del autor. Véase LECTURA_SEGUNDO_PLANO.md.
 
-Autorizadas posteriormente: 2.2 imágenes y cubierta móvil y 2.3 diccionario y burbuja de consulta, en ese orden. Pendientes de autorización: 2.4 contexto mediante IA; 2.5 diagnóstico de voces; 2.6 escenarios personales; 2.7 iluminación del papel; 2.8 encuadernaciones; 2.9 cámara móvil; 2.10 página arrastrable; 2.11 previsualización de capítulos; 2.12 organización por lotes; 2.13 emisión real, al final.
+Autorizadas posteriormente: 2.2 imágenes y cubierta móvil y 2.3 diccionario y burbuja de consulta, en ese orden. Autorizadas ahora, en orden: 2.4 contexto mediante IA; 2.5 diagnóstico de voces. Pendientes de autorización: 2.6 escenarios personales; 2.7 iluminación del papel; 2.8 encuadernaciones; 2.9 cámara móvil; 2.10 página arrastrable; 2.11 previsualización de capítulos; 2.12 organización por lotes; 2.13 emisión real, al final.
 
 # Ampliaciones acordadas y versiones propuestas
 
