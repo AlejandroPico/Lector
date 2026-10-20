@@ -5,15 +5,16 @@ import {focusedBookPage} from './scene-picker.js'
 import './book-scene.css'
 import {moveBookCover,updateBindingControls} from './book-binding.js'
 import {bookCameraRect} from './book-camera-core.js'
+import {createPageDrag} from './book-page-drag.js'
 // The live reader remains the only navigable book. Temporary sandboxed DOM
 // copies preserve its real text and images on both faces of the turning leaf.
-export function createBookScene({view,area,settings,getRecord}){
+export function createBookScene({view,area,settings,getRecord,navigate,onError}){
   const background=document.createElement('div');background.id='book-environment';background.setAttribute('aria-hidden','true');document.querySelector('#app').prepend(background)
   const folio=document.createElement('div');folio.className='book-folio';folio.setAttribute('aria-hidden','true');folio.innerHTML='<i class="book-stack book-stack-left"></i><i class="book-stack book-stack-right"></i><i class="book-binding"></i>';area.prepend(folio)
   area.insertAdjacentHTML('beforeend','<button id="book-edge-left" class="book-edge" hidden></button><button id="book-edge-right" class="book-edge" hidden></button><div id="book-page-focus" class="book-page-focus" role="group" hidden><button data-book-side="left">‹</button><button data-book-side="right">›</button></div>')
   const focusControls=area.querySelector('#book-page-focus');document.querySelector('#app').append(focusControls)
   const closing=document.createElement('section');closing.id='closing-cover';closing.className='closing-cover';closing.hidden=true;const reopen=document.createElement('button');reopen.className='book-back-cover';reopen.setAttribute('aria-label',t('Volver a las últimas páginas'));closing.append(reopen);area.append(closing)
-  let turning=false,activeLayer,boundRenderer,focusSide='left',coverTransition
+  let turning=false,activeLayer,boundRenderer,focusSide='left',coverTransition,dragTransition
   const enabled=()=>settings.appearance==='book'
   const motion=()=>enabled()&&settings.animated&&!matchMedia('(prefers-reduced-motion: reduce)').matches
   function progress(fraction=0){
@@ -48,12 +49,71 @@ export function createBookScene({view,area,settings,getRecord}){
     }
     return Promise.all(loads)
   }
+  function sheet(direction,before){
+    const layer=document.createElement('div');layer.className=`book-turn ${direction<0?'book-turn-back':''}`;layer.setAttribute('aria-hidden','true');layer.inert=true
+    const areaRect=area.getBoundingClientRect(),scale=Number(area.dataset.cameraScale)||1;layer.style.cssText=`left:${(before.bounds.left-areaRect.left)/scale}px;top:${(before.bounds.top-areaRect.top)/scale}px;width:${before.bounds.width}px;height:${before.bounds.height}px`
+    const under=document.createElement('div');under.className='book-turn-under';under.hidden=true
+    const still=document.createElement('div');still.className='book-turn-still'
+    const leaf=document.createElement('div');leaf.className='book-turn-leaf';const front=document.createElement('div'),back=document.createElement('div');front.className='book-leaf-front';back.className='book-leaf-back';leaf.append(front,back);layer.append(under,still,leaf);area.append(layer)
+    return {layer,under,still,leaf,front,back}
+  }
+  const dragControls=createPageDrag({area,view,settings,navigate,onError,
+    canStart:direction=>enabled()&&settings.bookCornerDrag&&settings.readingFlow==='paginated'&&!turning&&getRecord()&&view.renderer&&!area.classList.contains('cover-open')&&!area.classList.contains('back-closed')&&!document.querySelector('dialog[open],.panel:not([hidden])')&&area.querySelector('.book-camera-gesture')?.hidden!==false&&!(direction<0?view.renderer.atStart:view.renderer.atEnd),
+    prepare:prepareDrag})
+  function prepareDrag(direction,corner){
+    if(turning)return
+    turning=true
+    const before=snapshot(),recordId=getRecord()?.id,cfi=view.lastLocation?.cfi,visual=motion()?sheet(direction,before):null
+    const transition=dragTransition={direction,committing:false,cancelled:false,progress:0}
+    if(visual){activeLayer=visual.layer;visual.under.hidden=false;visual.layer.classList.add('book-dragging')}
+    const valid=()=>!transition.cancelled&&enabled()&&getRecord()?.id===recordId
+    const transform=p=>`rotateY(${direction*-180*p}deg) rotateZ(${(corner==='top'?-1:1)*direction*Math.sin(Math.PI*p)*1.2}deg)`
+    // Adjacent columns in the loaded document can be previewed without touching
+    // the live position. Across a chapter boundary, the verso stays paper until
+    // release; only the committed renderer supplies the destination contents.
+    const renderer=view.renderer,page=renderer.page,next=page+direction
+    const preview=Number.isFinite(page)&&next>=1&&next<renderer.pages-1&&!renderer.scrolled&&renderer.scrollProp==='scrollLeft'&&renderer.getAttribute('dir')!=='rtl'?{...before,frames:before.frames.map(frame=>({...frame,x:frame.x-direction*renderer.size}))}:null
+    const ready=visual?Promise.all([paint(visual.front,before,direction>0?'right':'left'),paint(visual.still,before,direction>0?'left':'right'),...(preview?[paint(visual.under,preview,'left'),paint(visual.back,preview,direction>0?'left':'right')]:[])]):Promise.resolve()
+    function cleanup(){
+      visual?.layer.getAnimations({subtree:true}).forEach(animation=>animation.cancel());visual?.layer.remove()
+      if(dragTransition===transition){dragTransition=undefined;turning=false}
+      if(activeLayer===visual?.layer)activeLayer=undefined
+    }
+    transition.cancel=()=>{transition.cancelled=true;cleanup()}
+    transition.move=p=>{transition.progress=p;if(visual){visual.leaf.style.transform=transform(p);visual.layer.style.setProperty('--drag-shade',String(.35+Math.sin(Math.PI*p)*.65))}}
+    transition.finish=async commit=>{
+      try{
+        await ready
+        if(!valid())return
+        if(view.lastLocation?.cfi!==cfi){transition.cancel();return}
+        let destination=0
+        if(commit){
+          transition.committing=true
+          await navigate(direction)
+          await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))
+          if(!valid())return
+          if(view.lastLocation?.cfi!==cfi){
+            destination=1
+            if(visual){visual.back.replaceChildren();visual.under.replaceChildren();const after=snapshot();await Promise.all([paint(visual.back,after,direction>0?'left':'right'),paint(visual.under,after,'left')])}
+          }
+        }
+        if(!valid()||!visual||!motion())return
+        const animation=visual.leaf.animate([{transform:transform(transition.progress)},{transform:transform(destination)}],{duration:Math.max(120,Math.abs(destination-transition.progress)*480),easing:'cubic-bezier(.2,.6,.25,1)',fill:'forwards'})
+        await animation.finished.catch(()=>{})
+      }finally{cleanup()}
+    }
+    return transition
+  }
   async function turn(direction,navigate,force=false){
     if(turning&&force)return
     const navigatePage=async()=>{
       const before=view.lastLocation?.cfi,result=await navigate()
       if(!force&&focusedBookPage(settings)&&before&&before!==view.lastLocation?.cfi){focusSide=focusSide==='left'?'right':'left';progress(getRecord()?.fraction)}
       return result
+    }
+    if(dragTransition){
+      if(dragTransition.committing&&!dragTransition.navigationClaimed&&dragTransition.direction===direction&&!force){dragTransition.navigationClaimed=true;return navigatePage()}
+      dragControls.cancel();dragTransition?.cancel()
     }
     if(!motion()||turning||!getRecord())return navigatePage()
     if(force){
@@ -66,10 +126,7 @@ export function createBookScene({view,area,settings,getRecord}){
       try{return await moveBookCover({area,record:getRecord(),back,opening,navigate:commit,cancelled,settings,onLayer:layer=>{activeLayer=layer;transition.layer=layer}})}
       finally{if(coverTransition===transition)coverTransition=undefined;activeLayer=undefined;turning=false}
     }
-    turning=true;const before=snapshot(),layer=activeLayer=document.createElement('div');layer.className=`book-turn ${direction<0?'book-turn-back':''}`;layer.setAttribute('aria-hidden','true');layer.inert=true
-    const areaRect=area.getBoundingClientRect(),scale=Number(area.dataset.cameraScale)||1;layer.style.cssText=`left:${(before.bounds.left-areaRect.left)/scale}px;top:${(before.bounds.top-areaRect.top)/scale}px;width:${before.bounds.width}px;height:${before.bounds.height}px`
-    const still=document.createElement('div');still.className='book-turn-still'
-    const leaf=document.createElement('div');leaf.className='book-turn-leaf';const front=document.createElement('div'),back=document.createElement('div');front.className='book-leaf-front';back.className='book-leaf-back';leaf.append(front,back);layer.append(still,leaf);area.append(layer)
+    turning=true;const before=snapshot(),{layer,still,leaf,front,back}=sheet(direction,before);activeLayer=layer
     try{
       await Promise.all([paint(front,before,direction>0?'right':'left'),paint(still,before,direction>0?'left':'right')])
       const oldCFI=view.lastLocation?.cfi,result=await navigatePage()
@@ -82,6 +139,7 @@ export function createBookScene({view,area,settings,getRecord}){
     }finally{layer.remove();if(activeLayer===layer)activeLayer=undefined;turning=false}
   }
   function update(){
+    dragControls.update();dragTransition?.cancel()
     updateBindingControls(settings)
     reopen.setAttribute('aria-label',t('Volver a las últimas páginas'))
     document.body.classList.toggle('physical-book',enabled());document.body.dataset.bookScene=effectiveScene(settings.bookScene);background.hidden=!enabled();folio.hidden=!enabled()
@@ -93,6 +151,7 @@ export function createBookScene({view,area,settings,getRecord}){
   }
   function hideBack(){closing.hidden=true;area.classList.remove('back-closed');view.inert=false}
   function reset(){
+    dragControls.cancel();dragTransition?.cancel()
     if(coverTransition&&!coverTransition.committing){
       coverTransition.cancelled=true
       for(const animation of coverTransition.layer?.getAnimations({subtree:true})??[])animation.cancel()
@@ -107,5 +166,8 @@ export function createBookScene({view,area,settings,getRecord}){
     await turn(1,()=>{closing.hidden=false;area.classList.add('back-closed');view.inert=true},true)
   }
   reopen.onclick=openBack
+  view.addEventListener('relocate',()=>{if(dragTransition&&!dragTransition.committing){dragControls.cancel();dragTransition?.cancel()}})
+  for(const type of ['resize','blur'])window.addEventListener(type,()=>dragTransition?.cancel())
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)dragTransition?.cancel()})
   return {update,progress,turn,closeBack,openBack,reset,get side(){return area.dataset.bookSide},get closed(){return !closing.hidden}}
 }

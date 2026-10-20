@@ -1,5 +1,7 @@
 # Convenciones del proyecto
 
+- 2.10 autorizada tras publicar y verificar 2.9 (main/tag 8740dd8, 118 unitarias, 193 de navegador, Android 10/15, 14 archivos y firma conservada). Giro de hoja con arrastre de esquina, ratón/dedo, confirmación o cancelación sin navegar antes de soltar, texto e imágenes reales, cámara y narración conservadas. Opción desactivable, movimiento reducido y diez idiomas. Publicar y verificar en main; no iniciar 2.11 ni posteriores. Esta autorización prevalece sobre las restricciones históricas de 2.10.
+
 - 2.9 autorizada tras publicar y verificar 2.8 (main/tag 20bc87f, 114 unitarias, 187 de navegador, Android 10/15, 14 archivos públicos y firma conservada). Cámara móvil con zoom/encuadre independientes de la paginación, gestos opcionales y salida explícita, selección y voz conservadas; diez idiomas, main y publicación verificada. No iniciar 2.10 ni posteriores. Esta autorización prevalece sobre las restricciones históricas de 2.9.
 
 - 2.8 autorizada tras publicar y verificar 2.7 (main/tag 3fb512d, 113 unitarias, 181 de navegador y Android 10/15). Añadir tapa dura, bolsillo y cuaderno, tapas articuladas completas separadas del giro de hoja; conservar contenidos, datos, posiciones, narración, luz y diez idiomas. Publicar/verificar en main. No iniciar 2.9 ni posteriores. La autorización actual prevalece sobre las restricciones históricas de 2.8.

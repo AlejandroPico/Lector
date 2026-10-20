@@ -1,0 +1,18 @@
+.book-corner {position:absolute;width:32px;height:44px;padding:0;border:0;background:transparent;z-index:7;touch-action:none;cursor:grab;user-select:none;}
+.book-corner-left {left:-14px;}
+.book-corner-right {right:-14px;}
+.book-corner-top {top:0;}
+.book-corner-bottom {bottom:0;}
+.book-corner:active {cursor:grabbing;}
+.book-corner:focus-visible {outline:1px solid var(--book-ink);outline-offset:1px;}
+.book-corner::after {content:'';position:absolute;inset:9px 8px;background:linear-gradient(135deg,transparent 48%,var(--book-paper-edge,#c8b18b) 50%,var(--book-paper) 65%);opacity:0;transition:opacity .15s;pointer-events:none;}
+.book-corner:hover::after,.book-corner:focus-visible::after {opacity:.65;}
+.cover-open .book-corner,.back-closed .book-corner,.cover-moving .book-corner {display:none;}
+.book-turn-under {position:absolute;inset:0;overflow:hidden;background:var(--book-paper);}
+.book-dragging {cursor:grabbing;}
+.book-dragging .book-turn-leaf {will-change:transform;}
+.book-dragging .book-leaf-front::after,.book-dragging .book-leaf-back::after {opacity:var(--drag-shade,.4);}
+#book-drag-field {margin-block:1px;}
+@media(min-width:901px){.physical-book .scene-options {row-gap:8px;}}
+@media(pointer:coarse){.book-corner {width:40px;height:48px;}#book-drag-field {margin-block:12px;}}
+@media(prefers-reduced-motion:reduce){.book-corner::after {transition:none;}}

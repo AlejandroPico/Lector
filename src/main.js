@@ -2,6 +2,7 @@ import {mixPaperColor} from './paper-light.js'
 import {addPaperLightControls,updatePaperLightControls} from './paper-light-ui.js'
 import {addBindingControls} from './book-binding.js'
 import {addCameraControls,createBookCamera} from './book-camera.js'
+import {addPageDragControls} from './book-page-drag.js'
 import {createPersonalScenes} from './personal-scenes.js'
 import {createVoiceDiagnostics} from './voice-diagnostics-ui.js'
 import {addSyncMenus,createSyncTools,restoreSyncedBook} from './sync-tools.js'
@@ -272,7 +273,7 @@ $('#app').innerHTML = `
           <div><dt>Autor</dt><dd>Alejandro Pico</dd></div>
           <div><dt>Carácter</dt><dd>Proyecto personal</dd></div>
           <div><dt>Propósito</dt><dd>Lectura y escucha</dd></div>
-          <div><dt>Edición</dt><dd>Versión 2.9.0</dd></div>
+          <div><dt>Edición</dt><dd>Versión 2.10.0</dd></div>
         </dl>
       </aside>
       <div class="about-body">
@@ -301,7 +302,7 @@ $('#app').innerHTML = `
   <div id="toast" class="toast" role="status" hidden></div>
 `
 const menuLayout = organizeMenus()
-addLibraryPolish(settings);addScenePicker();addPaperLightControls();addBindingControls();addCameraControls()
+addLibraryPolish(settings);addScenePicker();addPaperLightControls();addBindingControls();addCameraControls();addPageDragControls()
 addLanguageMenus()
 addPDFMenus()
 addAudioMenus(settings)
@@ -315,7 +316,7 @@ initializeI18n($('#app'), settings.uiLanguage)
 $('#speech-language').value = settings.speechLanguage
 
 const view = $('#reader')
-const bookScene=createBookScene({view,area:$('#reading-area'),settings,getRecord:()=>record})
+const bookScene=createBookScene({view,area:$('#reading-area'),settings,getRecord:()=>record,navigate:direction=>changePage(direction),onError:error=>handleError(error)})
 const bookCamera=createBookCamera({view,area:$('#reading-area'),settings,save:()=>writeJSON('lector-settings',settings),onEdit:()=>closePanels()})
 const imageViewer = attachImageGestures($('.image-stage'), $('#zoom-image'))
 const dictionaryPeek=createDictionaryPeek({t,onExpand:word=>openWordDictionary(word),onDismiss:()=>dismissSelection()})

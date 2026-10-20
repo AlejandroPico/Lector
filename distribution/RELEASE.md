@@ -1,9 +1,9 @@
-Lector 2.9.0 añade una cámara regulable para el libro sobre la mesa en móviles y tabletas de hasta 900 píxeles de anchura, en vertical y horizontal.
+Lector 2.10.0 permite pasar las hojas del libro sobre la mesa arrastrando sus esquinas superiores o inferiores con el ratón o el dedo.
 
-En Tema → Libro sobre la mesa → Cámara móvil se puede ampliar del 100 al 200 %, ajustar el encuadre horizontal y vertical o restablecerlo. En la vista de libro abierto, dos accesos encuadran la página izquierda o derecha sin cambiar la posición de lectura. El desplazamiento se limita al contenido para poder recuperar todos sus extremos.
+La hoja acompaña el movimiento y, al soltar, completa el giro si se ha arrastrado lo suficiente o vuelve a su sitio. Volver hacia la esquina cancela; Escape también cancela un arrastre en curso. Hasta confirmar no cambia la posición, el historial ni el seguimiento de voz. El giro confirmado utiliza la navegación habitual y mantiene la narración.
 
-Los gestos son opcionales: al activarlos se puede arrastrar y ampliar con dos dedos. «Terminar encuadre» devuelve la selección de texto y la consulta de imágenes; ese modo se desactiva al reiniciar. Zoom y posición se conservan localmente, con sincronización solo si se eligen preferencias. En ordenador y modo minimalista la cámara queda inactiva.
+Las caras de la hoja conservan texto e ilustraciones reales. Las páginas adyacentes del capítulo cargado se preparan sin mover el visor; al cruzar capítulos se muestra papel hasta confirmar y cargar el contenido de destino. No se precargan otros capítulos para un gesto cancelable.
 
-La cámara transforma el visor original y sus tapas sin modificar letra, columnas o paginación. La adaptación del paginador conserva sus medidas lógicas bajo el zoom. Menús, controles, notas y narración conservan su funcionamiento; los diez idiomas incluyen los nuevos ajustes.
+Se puede desactivar en Tema → Libro sobre la mesa → Pasar página arrastrando una esquina. El texto sigue seleccionándose y las imágenes ampliándose fuera de esas esquinas. La edición de cámara tiene prioridad sobre el giro; no hay giro de esquina en lectura continua o minimalista. Sin transición suave o con movimiento reducido, el arrastre cambia de página al soltar sin animación. Los botones, teclado y cantos siguen disponibles.
 
-Incluye los paquetes habituales de escritorio, APK Android/TV y AAB. iOS ofrece archivo sin firma y simulador, que requieren la identidad Apple del titular para distribución real.
+Incluye diez idiomas y los paquetes habituales de escritorio, APK Android/TV y AAB. iOS ofrece archivo sin firma y simulador, que requieren la identidad Apple del titular para distribución real.

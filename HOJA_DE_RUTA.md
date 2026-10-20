@@ -16,7 +16,7 @@ Autorizada el 19 de octubre de 2026: servicio autónomo para las voces del siste
 
 La verificación distingue las pruebas del servicio Android con motor controlado y pantalla apagada de la validación auditiva en el móvil del autor. Véase LECTURA_SEGUNDO_PLANO.md.
 
-Autorizadas posteriormente: 2.2 imágenes y cubierta móvil y 2.3 diccionario y burbuja de consulta, en ese orden. Autorizadas ahora, en orden: 2.4 contexto mediante IA; 2.5 diagnóstico de voces. Autorizadas ahora, en orden: 2.6 escenarios personales; 2.7 iluminación del papel. Autorizada posteriormente: 2.8 encuadernaciones. Autorizada posteriormente: 2.9 cámara móvil. Pendientes de autorización: 2.10 página arrastrable; 2.11 previsualización de capítulos; 2.12 organización por lotes; 2.13 emisión real, al final.
+Autorizadas posteriormente: 2.2 imágenes y cubierta móvil y 2.3 diccionario y burbuja de consulta, en ese orden. Autorizadas ahora, en orden: 2.4 contexto mediante IA; 2.5 diagnóstico de voces. Autorizadas ahora, en orden: 2.6 escenarios personales; 2.7 iluminación del papel. Autorizada posteriormente: 2.8 encuadernaciones. Autorizada posteriormente: 2.9 cámara móvil. Autorizada posteriormente: 2.10 página arrastrable. Pendientes de autorización: 2.11 previsualización de capítulos; 2.12 organización por lotes; 2.13 emisión real, al final.
 
 # Ampliaciones acordadas y versiones propuestas
 
@@ -172,3 +172,8 @@ Autorizada el 20 de octubre de 2026, tras completar 2.7. Tapa dura, bolsillo y c
 ## 2.9 — Cámara móvil
 
 Autorizada tras verificar 2.8: zoom de 100 a 200 %, encuadre horizontal y vertical limitado al libro, páginas izquierda/derecha en libro abierto, gestos opcionales con salida explícita y restablecimiento. Separar medidas visuales y lógicas para conservar paginación, ubicación y voz. Preferencias locales y sincronización solo voluntaria; edición por gestos desactivada en cada arranque. Diez idiomas, vista de una página/libro abierto, temas y encuadernaciones conservados. Las versiones 2.10–2.13 siguen pendientes.
+
+
+## 2.10 — Arrastre de esquinas
+
+Autorizada tras verificar 2.9. Las esquinas superiores e inferiores permiten pasar hojas con ratón o dedo, avanzando o retrocediendo. El movimiento sigue el arrastre; al soltar confirma si supera el umbral o vuelve al origen. Cancelar no navega, guarda otra posición ni suspende el seguimiento de voz. Escape, pérdida de captura, cambio de libro, navegación externa o cambio de tamaño cancelan el gesto pendiente. Opción en Tema → Libro sobre la mesa; la lectura continua y el modo minimalista conservan sus gestos. Se respeta movimiento reducido y transición desactivada. Las versiones 2.11–2.13 siguen pendientes.
