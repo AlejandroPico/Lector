@@ -4,12 +4,14 @@ import {t} from './i18n.js'
 import {focusedBookPage} from './scene-picker.js'
 import './book-scene.css'
 import {moveBookCover,updateBindingControls} from './book-binding.js'
+import {bookCameraRect} from './book-camera-core.js'
 // The live reader remains the only navigable book. Temporary sandboxed DOM
 // copies preserve its real text and images on both faces of the turning leaf.
 export function createBookScene({view,area,settings,getRecord}){
   const background=document.createElement('div');background.id='book-environment';background.setAttribute('aria-hidden','true');document.querySelector('#app').prepend(background)
   const folio=document.createElement('div');folio.className='book-folio';folio.setAttribute('aria-hidden','true');folio.innerHTML='<i class="book-stack book-stack-left"></i><i class="book-stack book-stack-right"></i><i class="book-binding"></i>';area.prepend(folio)
   area.insertAdjacentHTML('beforeend','<button id="book-edge-left" class="book-edge" hidden></button><button id="book-edge-right" class="book-edge" hidden></button><div id="book-page-focus" class="book-page-focus" role="group" hidden><button data-book-side="left">‹</button><button data-book-side="right">›</button></div>')
+  const focusControls=area.querySelector('#book-page-focus');document.querySelector('#app').append(focusControls)
   const closing=document.createElement('section');closing.id='closing-cover';closing.className='closing-cover';closing.hidden=true;const reopen=document.createElement('button');reopen.className='book-back-cover';reopen.setAttribute('aria-label',t('Volver a las últimas páginas'));closing.append(reopen);area.append(closing)
   let turning=false,activeLayer,boundRenderer,focusSide='left',coverTransition
   const enabled=()=>settings.appearance==='book'
@@ -20,17 +22,17 @@ export function createBookScene({view,area,settings,getRecord}){
     const focused=focusedBookPage(settings),side=focusSide
     area.dataset.bookSide=side
     area.classList.toggle('book-focused',focused)
-    const controls=area.querySelector('#book-page-focus');controls.hidden=!focused||!getRecord();controls.setAttribute('aria-label',t('Página visible'))
+    const controls=focusControls;controls.hidden=!focused||!getRecord();controls.setAttribute('aria-label',t('Página visible'))
     for(const button of controls.querySelectorAll('button')){button.setAttribute('aria-pressed',String(button.dataset.bookSide===side));button.setAttribute('aria-label',t(button.dataset.bookSide==='left'?'Página izquierda':'Página derecha'))}
   }
   function snapshot(){
-    const bounds=view.getBoundingClientRect(),frames=[]
+    const scale=Number(area.dataset.cameraScale)||1,raw=view.getBoundingClientRect(),bounds=bookCameraRect(raw,scale),frames=[]
     for(const {doc} of view.renderer?.getContents()??[]){
       const frame=doc?.defaultView?.frameElement;if(!frame||!doc.body)continue
       const rect=frame.getBoundingClientRect(),html=doc.documentElement.cloneNode(true)
       for(const node of html.querySelectorAll('script,iframe,object,embed'))node.remove()
       const base=document.createElement('base');base.href=doc.baseURI;html.querySelector('head')?.prepend(base)
-      frames.push({html:'<!doctype html>'+html.outerHTML,x:rect.left-bounds.left,y:rect.top-bounds.top,width:frame.clientWidth,height:frame.clientHeight})
+      frames.push({html:'<!doctype html>'+html.outerHTML,x:(rect.left-bounds.left)/scale,y:(rect.top-bounds.top)/scale,width:frame.clientWidth,height:frame.clientHeight})
     }
     const cover=area.querySelector('#opening-cover:not([hidden]) img')
     return {bounds,frames,cover:cover?.src,back:closing.hidden?null:reopen.outerHTML}
@@ -65,7 +67,7 @@ export function createBookScene({view,area,settings,getRecord}){
       finally{if(coverTransition===transition)coverTransition=undefined;activeLayer=undefined;turning=false}
     }
     turning=true;const before=snapshot(),layer=activeLayer=document.createElement('div');layer.className=`book-turn ${direction<0?'book-turn-back':''}`;layer.setAttribute('aria-hidden','true');layer.inert=true
-    const areaRect=area.getBoundingClientRect();layer.style.cssText=`left:${before.bounds.left-areaRect.left}px;top:${before.bounds.top-areaRect.top}px;width:${before.bounds.width}px;height:${before.bounds.height}px`
+    const areaRect=area.getBoundingClientRect(),scale=Number(area.dataset.cameraScale)||1;layer.style.cssText=`left:${(before.bounds.left-areaRect.left)/scale}px;top:${(before.bounds.top-areaRect.top)/scale}px;width:${before.bounds.width}px;height:${before.bounds.height}px`
     const still=document.createElement('div');still.className='book-turn-still'
     const leaf=document.createElement('div');leaf.className='book-turn-leaf';const front=document.createElement('div'),back=document.createElement('div');front.className='book-leaf-front';back.className='book-leaf-back';leaf.append(front,back);layer.append(still,leaf);area.append(layer)
     try{

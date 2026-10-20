@@ -124,7 +124,7 @@ export const defaults = Object.freeze({
   paragraphGap: 0.8, columns: 2, width: 1320, gutter: 7,
   justify: false, animated: true, highlight: true, provider: 'browser', uiLanguage: 'auto',
   paperLightEnabled:false,paperBrightness:100,paperWarmth:0,paperInverted:false,paperCustomColors:false,paperBackground:'#f7efdc',paperInk:'#30291f',
-  appearance: 'minimal', bookScene:'auto', bookMobileView:'page', bookBinding:'hardcover', coverSize:165, libraryView: 'list', fullWidth: false,
+  appearance: 'minimal', bookScene:'auto', bookMobileView:'page', bookBinding:'hardcover', bookCameraZoom:100,bookCameraX:0,bookCameraY:0, coverSize:165, libraryView: 'list', fullWidth: false,
   followSpeech: true, clickToRead: true, highlightMode: 'word',
   marginOuter: 10, marginInner: 28, hyphenate: false, customThemes: [],
   showOpeningCover: true,
@@ -170,6 +170,7 @@ export function safeSettings(input = {}) {
   for(const key of ['paperLightEnabled','paperInverted','paperCustomColors'])if(typeof value[key]!=='boolean')value[key]=defaults[key]
   for(const key of ['paperBackground','paperInk'])if(typeof value[key]!=='string'||!/^#[a-f\d]{6}$/i.test(value[key]))value[key]=defaults[key]
   clamp('coverSize',100,280)
+  clamp('bookCameraZoom',100,200);clamp('bookCameraX',-100,100);clamp('bookCameraY',-100,100)
   if(!['page','spread'].includes(value.bookMobileView))value.bookMobileView='page'
   if(!['hardcover','paperback','notebook'].includes(value.bookBinding))value.bookBinding='hardcover'
   if(!['minimal','book'].includes(value.appearance))value.appearance='minimal'

@@ -1,5 +1,16 @@
 // es, ca, en, fr, de, pt, it, zh, ja, hi
 export const libraryPolishRows=`
+Cámara móvil|Càmera mòbil|Mobile camera|Caméra mobile|Mobile Kamera|Câmara móvel|Camera mobile|移动视角|モバイルカメラ|मोबाइल कैमरा
+Zoom del libro|Zoom del llibre|Book zoom|Zoom du livre|Buchzoom|Zoom do livro|Zoom del libro|书本缩放|本のズーム|पुस्तक ज़ूम
+Encuadre horizontal|Enquadrament horitzontal|Horizontal framing|Cadrage horizontal|Horizontaler Bildausschnitt|Enquadramento horizontal|Inquadratura orizzontale|水平取景|横の表示位置|क्षैतिज दृश्य
+Encuadre vertical|Enquadrament vertical|Vertical framing|Cadrage vertical|Vertikaler Bildausschnitt|Enquadramento vertical|Inquadratura verticale|垂直取景|縦の表示位置|लंबवत दृश्य
+Encuadrar página izquierda|Enquadrar pàgina esquerra|Frame left page|Cadrer la page gauche|Linke Seite einrahmen|Enquadrar página esquerda|Inquadra pagina sinistra|查看左页|左ページを表示|बायाँ पृष्ठ दिखाएँ
+Encuadrar página derecha|Enquadrar pàgina dreta|Frame right page|Cadrer la page droite|Rechte Seite einrahmen|Enquadrar página direita|Inquadra pagina destra|查看右页|右ページを表示|दायाँ पृष्ठ दिखाएँ
+Mover el encuadre con gestos|Moure l'enquadrament amb gestos|Move the camera with gestures|Déplacer le cadrage par gestes|Bildausschnitt mit Gesten bewegen|Mover o enquadramento com gestos|Muovi l’inquadratura con gesti|使用手势调整视角|ジェスチャーで表示位置を動かす|इशारों से दृश्य बदलें
+Arrastra para mover y junta o separa dos dedos para ampliar. Termina el encuadre para seleccionar texto.|Arrossega per moure i ajunta o separa dos dits per ampliar. Acaba l'enquadrament per seleccionar text.|Drag to move and pinch with two fingers to zoom. Finish framing to select text.|Faites glisser pour déplacer et pincez avec deux doigts pour zoomer. Terminez le cadrage pour sélectionner le texte.|Zum Verschieben ziehen und zum Zoomen zwei Finger zusammen- oder auseinanderbewegen. Beende das Einrahmen, um Text auszuwählen.|Arraste para mover e junte ou afaste dois dedos para ampliar. Termine o enquadramento para selecionar texto.|Trascina per spostare e avvicina o allontana due dita per lo zoom. Termina l’inquadratura per selezionare il testo.|拖动以移动，双指捏合以缩放。完成取景后即可选择文字。|ドラッグで移動し、2本指でピンチして拡大・縮小します。表示調整を終了すると文字を選択できます。|खींचकर दृश्य बदलें और दो उँगलियों से ज़ूम करें। पाठ चुनने के लिए दृश्य समायोजन समाप्त करें।
+Restablecer cámara|Restablir càmera|Reset camera|Réinitialiser la caméra|Kamera zurücksetzen|Repor câmara|Ripristina camera|重置视角|カメラをリセット|कैमरा रीसेट करें
+Encuadrar libro|Enquadrar llibre|Frame book|Cadrer le livre|Buch einrahmen|Enquadrar livro|Inquadra libro|调整书本视角|本の表示を調整|पुस्तक का दृश्य समायोजित करें
+Terminar encuadre|Acabar enquadrament|Finish framing|Terminer le cadrage|Einrahmen beenden|Terminar enquadramento|Termina inquadratura|完成取景|表示調整を終了|दृश्य समायोजन समाप्त करें
 Encuadernación|Enquadernació|Binding|Reliure|Einband|Encadernação|Rilegatura|装帧|製本|जिल्द
 Tapa dura|Tapa dura|Hardcover|Couverture rigide|Gebundene Ausgabe|Capa dura|Copertina rigida|精装|ハードカバー|सख्त जिल्द
 Bolsillo|Butxaca|Paperback|Livre de poche|Taschenbuch|Livro de bolso|Tascabile|平装|ペーパーバック|पेपरबैक

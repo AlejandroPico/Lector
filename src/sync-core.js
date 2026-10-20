@@ -1,7 +1,7 @@
 import {isPersonalScene} from './personal-scene-core.js'
 import {annotationColors} from './notes.js'
 // Only portable reading data crosses the device boundary. No files or credentials.
-export const preferenceKeys=['paperLightEnabled','paperBrightness','paperWarmth','paperInverted','paperCustomColors','paperBackground','paperInk','appearance','bookScene','bookMobileView','bookBinding','coverSize','uiLanguage','theme','customThemes','font','fontSize','lineHeight','paragraphGap','columns','width','gutter','fullWidth','marginOuter','marginInner','justify','animated','hyphenate','readingFlow','showOpeningCover','highlight','highlightMode','followSpeech','clickToRead','showAnnotations','showReference','showChapterTime','showBookTime']
+export const preferenceKeys=['paperLightEnabled','paperBrightness','paperWarmth','paperInverted','paperCustomColors','paperBackground','paperInk','appearance','bookScene','bookMobileView','bookBinding','bookCameraZoom','bookCameraX','bookCameraY','coverSize','uiLanguage','theme','customThemes','font','fontSize','lineHeight','paragraphGap','columns','width','gutter','fullWidth','marginOuter','marginInner','justify','animated','hyphenate','readingFlow','showOpeningCover','highlight','highlightMode','followSpeech','clickToRead','showAnnotations','showReference','showChapterTime','showBookTime']
 const string=(value,max=200)=>typeof value==='string'?value.slice(0,max):''
 const stamp=value=>Number.isSafeInteger(value)&&value>=0&&value<=Date.now()+86400000?value:0
 const idPattern=/^[a-f\d]{64}$/i

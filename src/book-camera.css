@@ -1,0 +1,14 @@
+/* A camera transforms the existing reader, keeping its layout size intact. */
+.physical-book #app {position:relative;overflow:clip;}
+.physical-book #reading-area {transform-origin:center;}
+.physical-book #book-page-focus {position:fixed;top:var(--book-focus-top);bottom:auto;left:50%;}
+.book-camera-gesture {position:absolute;inset:0;z-index:12;touch-action:none;cursor:grab;background:transparent;}
+.book-camera-gesture:focus-visible {outline:1px solid var(--book-ink);outline-offset:-2px;}
+.book-camera-gesture:active {cursor:grabbing;}
+.book-camera-exit {position:fixed;z-index:15;left:50%;transform:translateX(-50%);bottom:calc(150px + var(--safe-bottom));padding:7px 12px;font-size:12px;background:var(--surface);color:var(--ink);border:1px solid var(--line);}
+.zen .book-camera-exit {bottom:12px;}
+.camera-presets {display:flex;flex-wrap:wrap;gap:8px;}
+.camera-presets button {flex:1;font-size:12px;padding:7px 5px;}
+#book-camera-settings .range-field {margin-block:12px;gap:6px;}
+.book-camera-start {position:fixed;z-index:15;left:50%;transform:translateX(-50%);bottom:calc(var(--camera-footer-height) + 44px);padding:9px 18px;background:var(--surface);color:var(--accent);box-shadow:0 3px 10px #0002;}
+.camera-front-focus #book-page-focus {visibility:hidden;}

@@ -1,4 +1,5 @@
 import './book-binding.css'
+import {bookCameraRect} from './book-camera-core.js'
 
 export const bookBindings=['hardcover','paperback','notebook']
 export function addBindingControls(){
@@ -27,16 +28,16 @@ export async function moveBookCover({area,record,back,opening,navigate,cancelled
     else if(visible?.src)image.src=visible.src
     if(image.src)await image.decode().catch(()=>{})
     if(cancelled())return
-    const bounds=area.getBoundingClientRect(),focused=area.classList.contains('book-focused')
+    const scale=Number(area.dataset.cameraScale)||1,bounds=bookCameraRect(area.getBoundingClientRect(),scale),focused=area.classList.contains('book-focused')
     const ratio=image.naturalWidth&&image.naturalHeight?image.naturalWidth/image.naturalHeight:2/3
     const maxHeight=bounds.height-(back?bounds.height*.06:76)
     const height=Math.max(1,Math.min(maxHeight,bounds.width*(innerWidth<700?.9:.7)/ratio))
     // Read the actual contained image, rather than its object-fit letterbox.
     const element=opening?area.querySelector(back?'.book-back-cover':'#opening-cover-image'):null
     const box=element?.getBoundingClientRect()
-    const h=box?Math.min(box.height,box.width/ratio):height,w=h*ratio
-    const x=box?box.left-bounds.left+(box.width-w)/2:(bounds.width-w)/2
-    const y=box?box.top-bounds.top+(box.height-h)/2:back?(bounds.height-h)/2:16
+    const h=box?Math.min(box.height,box.width/ratio)/scale:height,w=h*ratio
+    const x=box?(box.left-bounds.left)/scale+(box.width/scale-w)/2:(bounds.width-w)/2
+    const y=box?(box.top-bounds.top+(box.height-h*scale)/2)/scale:back?(bounds.height-h)/2:16
     const board=document.createElement('div');board.className='book-cover-board';board.classList.toggle('cover-hinge-right',back)
     const outside=document.createElement('div');outside.className='book-cover-outside'
     if(image.src)outside.append(image)

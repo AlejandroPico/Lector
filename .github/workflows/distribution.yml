@@ -16,6 +16,7 @@ on:
       - 'diccionarios/**'
       - 'dictionary-assets.js'
       - 'vite.config.js'
+      - 'foliate-camera.js'
       - 'package*.json'
       - 'electron-builder.yml'
       - 'capacitor.config.json'

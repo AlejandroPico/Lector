@@ -1,6 +1,7 @@
 import {mixPaperColor} from './paper-light.js'
 import {addPaperLightControls,updatePaperLightControls} from './paper-light-ui.js'
 import {addBindingControls} from './book-binding.js'
+import {addCameraControls,createBookCamera} from './book-camera.js'
 import {createPersonalScenes} from './personal-scenes.js'
 import {createVoiceDiagnostics} from './voice-diagnostics-ui.js'
 import {addSyncMenus,createSyncTools,restoreSyncedBook} from './sync-tools.js'
@@ -271,7 +272,7 @@ $('#app').innerHTML = `
           <div><dt>Autor</dt><dd>Alejandro Pico</dd></div>
           <div><dt>Carácter</dt><dd>Proyecto personal</dd></div>
           <div><dt>Propósito</dt><dd>Lectura y escucha</dd></div>
-          <div><dt>Edición</dt><dd>Versión 2.8.0</dd></div>
+          <div><dt>Edición</dt><dd>Versión 2.9.0</dd></div>
         </dl>
       </aside>
       <div class="about-body">
@@ -300,7 +301,7 @@ $('#app').innerHTML = `
   <div id="toast" class="toast" role="status" hidden></div>
 `
 const menuLayout = organizeMenus()
-addLibraryPolish(settings);addScenePicker();addPaperLightControls();addBindingControls()
+addLibraryPolish(settings);addScenePicker();addPaperLightControls();addBindingControls();addCameraControls()
 addLanguageMenus()
 addPDFMenus()
 addAudioMenus(settings)
@@ -315,6 +316,7 @@ $('#speech-language').value = settings.speechLanguage
 
 const view = $('#reader')
 const bookScene=createBookScene({view,area:$('#reading-area'),settings,getRecord:()=>record})
+const bookCamera=createBookCamera({view,area:$('#reading-area'),settings,save:()=>writeJSON('lector-settings',settings),onEdit:()=>closePanels()})
 const imageViewer = attachImageGestures($('.image-stage'), $('#zoom-image'))
 const dictionaryPeek=createDictionaryPeek({t,onExpand:word=>openWordDictionary(word),onDismiss:()=>dismissSelection()})
 let toastTimer
@@ -479,6 +481,7 @@ function applySettings() {
   if(catalogItems.length)renderLibrary()
   if(record)for(const cfi of new Set(record.notes.filter(note=>note.kind!=='bookmark').map(note=>note.cfi)))(settings.showAnnotations?view.addAnnotation({value:cfi}):view.deleteAnnotation({value:cfi})).catch(()=>{})
   if(!settings.showOpeningCover && !$('#opening-cover').hidden) attempt(()=>finishOpeningCover())()
+  bookCamera.update()
   writeJSON('lector-settings', settings)
 }
 
@@ -1169,8 +1172,9 @@ function showSelectionMenu(range, doc) {
   const rect = range.getBoundingClientRect(), frame = doc.defaultView.frameElement.getBoundingClientRect()
   const menu = $('#selection-menu'); menu.hidden = false
   const width = menu.getBoundingClientRect().width
-  menu.style.left = `${Math.max(8, Math.min(innerWidth - width - 8, frame.left + rect.left + rect.width / 2 - width / 2))}px`
-  menu.style.top = `${Math.max(56, Math.min(innerHeight - menu.offsetHeight - 8, frame.top + rect.top - menu.offsetHeight - 8))}px`
+  const sx=frame.width/doc.defaultView.frameElement.clientWidth||1,sy=frame.height/doc.defaultView.frameElement.clientHeight||1
+  menu.style.left = `${Math.max(8, Math.min(innerWidth - width - 8, frame.left + (rect.left + rect.width / 2)*sx - width / 2))}px`
+  menu.style.top = `${Math.max(56, Math.min(innerHeight - menu.offsetHeight - 8, frame.top + rect.top*sy - menu.offsetHeight - 8))}px`
   $('#define-selection').disabled = selection.quote.split(/\s+/).length > 1
 }
 
