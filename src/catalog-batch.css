@@ -1,4 +1,4 @@
-.library-dialog .library-toolbar {grid-template-columns:minmax(100px,1fr) minmax(90px,140px) repeat(6,auto);}
+#library-dialog .library-toolbar {grid-template-columns:minmax(100px,1fr) minmax(90px,140px) repeat(6,auto);}
 #batch-selection {display:flex;align-items:center;flex-wrap:wrap;gap:4px 16px;padding-block:8px;border-bottom:1px solid var(--line);}
 #batch-selection .text-button {font-size:11px;padding-block:4px;}
 .batch-pick {display:flex;align-items:center;justify-content:center;flex:none;width:28px;min-height:28px;margin-right:6px;cursor:pointer;}
@@ -16,4 +16,4 @@
 .batch-review-entry del {text-decoration:none;color:var(--muted);}
 .batch-review-entry ins {text-decoration:none;color:var(--accent);}
 #batch-message {color:var(--accent);line-height:1.6;}
-@media(max-width:700px){.library-dialog .library-toolbar {grid-template-columns:repeat(6,minmax(0,1fr));}.catalog-batch-dialog {padding:18px;}#batch-selection {gap:3px 12px;}}
+@media(max-width:700px){#library-dialog .library-toolbar {grid-template-columns:minmax(48px,1fr) repeat(6,auto);}.catalog-batch-dialog {padding:18px;}#batch-selection {gap:3px 12px;}}
