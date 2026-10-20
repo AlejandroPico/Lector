@@ -182,3 +182,8 @@ Autorizada tras verificar 2.9. Las esquinas superiores e inferiores permiten pas
 ## 2.11 — Previsualización de capítulos y ubicaciones
 
 Autorizada junto con 2.12. Muestra textual local bajo petición desde el índice y la ventana de posición, con anclas de subcapítulo y muestra aproximada al indicar un porcentaje. Abrir/cerrar no mueve el visor, altera historial, guarda otra posición ni suspende la voz. Salto mediante confirmación explícita, muestra limitada y texto inerte sin imágenes remotas. Cancelar resultados tardíos al cerrar o cambiar de libro. Publicar y verificar antes de iniciar 2.12.
+
+
+## 2.12 — Organización por lotes
+
+Autorizada junto con 2.11 y comenzada después de verificar su web, instalables y catorce descargas (233fbec3, 125 unitarias y 208 de navegador). Selección explícita en biblioteca, incluso a través de filtros; corrección de autor, etiquetas, serie y colecciones con revisión por libro. Numeración opcional por orden alfabético de título. Transacción atómica y registro local del último lote para deshacer, conservado al reiniciar. Los conflictos o colecciones eliminadas cancelan el lote completo; deshacer solo restaura campos editados y conserva cambios ajenos. No editar archivos, mover carpetas, leer metadatos ni alterar notas/voz/posiciones para organizar. No iniciar 2.13.

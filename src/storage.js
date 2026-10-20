@@ -1,4 +1,5 @@
 import {isPersonalScene} from './personal-scene-core.js'
+import {batchPaths,batchValue,sameBatchValue,patchBatchRecord} from './catalog-batch-core.js'
 import {narrationProfiles} from './narration.js'
 import {reviveNativeHandles} from './native-directory.js'
 import { fonts, themes, validateTheme } from './presentation.js'
@@ -7,13 +8,14 @@ let connection
 
 async function db() {
   if (!connection) connection = new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 9)
+    const request = indexedDB.open(DB_NAME, 10)
     request.onupgradeneeded = () => {
       if (!request.result.objectStoreNames.contains('books')) request.result.createObjectStore('books', { keyPath: 'id' })
       if (!request.result.objectStoreNames.contains('folders')) request.result.createObjectStore('folders', { keyPath: 'id' })
       if (!request.result.objectStoreNames.contains('scenes')) request.result.createObjectStore('scenes', { keyPath: 'id' })
       if (!request.result.objectStoreNames.contains('fonts')) request.result.createObjectStore('fonts', { keyPath: 'id' })
       if (!request.result.objectStoreNames.contains('catalog')) request.result.createObjectStore('catalog', { keyPath:'id' })
+      if (!request.result.objectStoreNames.contains('catalogBatches')) request.result.createObjectStore('catalogBatches', {keyPath:'id'})
       if (!request.result.objectStoreNames.contains('collections')) request.result.createObjectStore('collections', { keyPath:'id' })
       if (!request.result.objectStoreNames.contains('dictionaryPacks')) request.result.createObjectStore('dictionaryPacks', {keyPath:'id'})
       if (!request.result.objectStoreNames.contains('dictionaryChunks')){const chunks=request.result.createObjectStore('dictionaryChunks',{keyPath:'id'});chunks.createIndex('packId','packId')}
@@ -76,6 +78,37 @@ export async function updateCatalog(id,change){
   })
 }
 export const removeCatalog = id => transact('readwrite',store=>store.delete(id),'catalog')
+export const getCatalogBatch=()=>transact('readonly',store=>store.get('last'),'catalogBatches')
+// All selected changes and their undo journal commit together. A conflict or a
+// storage error aborts the whole transaction, including replacement of the journal.
+export async function commitCatalogBatch(plan,{undo=false}={}){
+  const database=await db()
+  return new Promise((resolve,reject)=>{
+    const tx=database.transaction(['catalog','catalogBatches','collections'],'readwrite'),catalog=tx.objectStore('catalog'),history=tx.objectStore('catalogBatches')
+    let failure,count=0
+    const fail=error=>{failure=error;try{tx.abort()}catch{/* Already aborted. */}}
+    const run=(batch,collectionIDs)=>{
+      const entries=batch?.entries
+      if(!Array.isArray(entries)||!entries.length||entries.length>10000||new Set(entries.map(entry=>entry.id)).size!==entries.length){fail(Error('No hay cambios que aplicar.'));return}
+      if(entries.some(entry=>typeof entry.id!=='string'||!Array.isArray(entry.fields)||!entry.fields.length||entry.fields.some(field=>!batchPaths.includes(field.path)))){fail(Error('Los cambios del lote no son válidos.'));return}
+      const ids=[...new Set([...entries.map(entry=>entry.id),...(undo?[]:(batch.guards??[]).map(guard=>guard.id))])],records=new Map();let remaining=ids.length
+      for(const id of ids){const request=catalog.get(id);request.onsuccess=()=>{records.set(id,request.result);if(--remaining)return
+        try{
+          if(!undo&&(!Array.isArray(batch.guards)||batch.guards.some(guard=>!sameBatchValue(records.get(guard.id)??null,guard.before))))throw Error('El catálogo ha cambiado. Revisa de nuevo los cambios antes de continuar.')
+          for(const entry of entries)for(const field of entry.fields){
+            if(!sameBatchValue(batchValue(records.get(entry.id),field.path),field[undo?'after':'before']))throw Error(undo?'Estos datos han cambiado después del lote. No se ha deshecho ningún cambio.':'El catálogo ha cambiado. Revisa de nuevo los cambios antes de continuar.')
+            const value=field[undo?'before':'after'];if(field.path==='collections'&&value.exists&&value.value.some(id=>!collectionIDs.includes(id)))throw Error('Una colección ya no existe. Revisa la selección.')
+          }
+          for(const entry of entries){const next=patchBatchRecord(records.get(entry.id),entry.fields,undo?'before':'after');next.id=entry.id;next.updatedAt=Date.now();catalog.put(next)}
+          if(undo)history.delete('last');else history.put({id:'last',token:crypto.randomUUID(),version:1,createdAt:Date.now(),entries:entries.map(({id,title,fields})=>({id,title,fields}))})
+          count=entries.length
+        }catch(error){fail(error)}
+      }}
+    }
+    const collections=tx.objectStore('collections').getAllKeys();collections.onsuccess=()=>{if(undo){const request=history.get('last');request.onsuccess=()=>{if(!plan?.token||request.result?.token!==plan.token){fail(Error('El catálogo ha cambiado. Revisa de nuevo los cambios antes de continuar.'));return}run(request.result,collections.result)}}else run(plan,collections.result)}
+    tx.oncomplete=()=>resolve(count);tx.onerror=()=>reject(failure??tx.error);tx.onabort=()=>reject(failure??tx.error??Error('No se pudo guardar el lote.'))
+  })
+}
 export const allCollections = () => transact('readonly',store=>store.getAll(),'collections')
 export const allDictionaryPacks=()=>transact('readonly',store=>store.getAll(),'dictionaryPacks')
 export const saveDictionaryPack=pack=>transact('readwrite',store=>store.put(pack),'dictionaryPacks')

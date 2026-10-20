@@ -4,6 +4,7 @@ import {addBindingControls} from './book-binding.js'
 import {addCameraControls,createBookCamera} from './book-camera.js'
 import {addPageDragControls} from './book-page-drag.js'
 import {createChapterPreview} from './chapter-preview.js'
+import {createCatalogBatchTools} from './catalog-batch-ui.js'
 import {createPersonalScenes} from './personal-scenes.js'
 import {createVoiceDiagnostics} from './voice-diagnostics-ui.js'
 import {addSyncMenus,createSyncTools,restoreSyncedBook} from './sync-tools.js'
@@ -53,7 +54,7 @@ import {createBookScene,sceneTheme,scenePaperColors} from './book-scene.js'
 import {addScenePicker,updateScenePicker,focusedBookPage} from './scene-picker.js'
 
 const $ = selector => document.querySelector(selector)
-let personalScenes
+let personalScenes,catalogBatchTools
 await initializePlatform()
 let userFonts = await allFonts().catch(()=>[])
 for (const resource of [...projectFonts,...userFonts]) {
@@ -274,7 +275,7 @@ $('#app').innerHTML = `
           <div><dt>Autor</dt><dd>Alejandro Pico</dd></div>
           <div><dt>Carácter</dt><dd>Proyecto personal</dd></div>
           <div><dt>Propósito</dt><dd>Lectura y escucha</dd></div>
-          <div><dt>Edición</dt><dd>Versión 2.11.0</dd></div>
+          <div><dt>Edición</dt><dd>Versión 2.12.0</dd></div>
         </dl>
       </aside>
       <div class="about-body">
@@ -318,6 +319,7 @@ $('#speech-language').value = settings.speechLanguage
 
 const view = $('#reader')
 const chapterPreview=createChapterPreview({view,getBook:()=>book,getRecord:()=>record,navigate:async(target,fraction)=>{if($('#position-dialog').open)$('#position-dialog').close();await navigateTo(target,fraction);if(innerWidth<900)sidebar(false)},onError:error=>handleError(error)})
+catalogBatchTools=createCatalogBatchTools({getItems:()=>catalogItems,getRecords:()=>catalogRecords,getCollections:()=>collections,getSources:()=>({books:localBooks,folders:folderSources}),refresh:()=>updateLibrary(),toast:message=>toast(message)})
 const bookScene=createBookScene({view,area:$('#reading-area'),settings,getRecord:()=>record,navigate:direction=>changePage(direction),onError:error=>handleError(error)})
 const bookCamera=createBookCamera({view,area:$('#reading-area'),settings,save:()=>writeJSON('lector-settings',settings),onEdit:()=>closePanels()})
 const imageViewer = attachImageGestures($('.image-stage'), $('#zoom-image'))
@@ -676,7 +678,7 @@ async function updateLibrary() {
     button.append(label, percent); button.addEventListener('click', attempt(() => openStored(item.id)))
     $('#resume-list').append(button)
   })
-  renderFolders(); renderLibrary();libraryPolish.refresh()
+  renderFolders(); renderLibrary();libraryPolish.refresh();catalogBatchTools?.refresh()
 }
 
 function renderFolders() {
@@ -796,7 +798,7 @@ function renderLibrary() {
   $('#library-filter-toggle').dataset.activeCount=activeFilters||''
   if (!filtered.length) { const empty = document.createElement('p'); empty.className = 'small muted'; empty.textContent = t(query ? 'No hay resultados.' : 'Los libros que abras aparecerán aquí.'); list.append(empty) }
   for (const item of shownLibrary) {
-    const row = document.createElement('div'); row.className = 'library-row'
+    const row = document.createElement('div'); row.className = 'library-row';row.dataset.libraryItemId=item.id
     row.addEventListener('click',event=>{if(display==='covers'&&matchMedia('(hover:none)').matches&&event.target.closest('.catalog-cover')&&!row.classList.contains('details-open')){event.preventDefault();event.stopImmediatePropagation();for(const other of list.querySelectorAll('.details-open'))other.classList.remove('details-open');row.classList.add('details-open')}},true)
     if (display === 'covers') {
       const cover = document.createElement('button'); cover.className = 'catalog-cover'; cover.title = t(item.coverBlob?'Abrir libro':'Cargar portada'); cover.setAttribute('aria-label',`${cover.title}: ${item.title}`)
@@ -836,6 +838,7 @@ function renderLibrary() {
     list.append(row)
   }
   $('#library-more').hidden = filtered.length <= libraryLimit
+  catalogBatchTools?.decorate(filtered)
   renderSidebarLibrary(coverTargets)
   $('.library-results').scrollTop=scrollTop;$('#sidebar').scrollTop=sidebarTop
   coverQueue.observe(coverTargets,settings.preloadCovers&&!coverQueuePaused&&!folderScan&&!metadataBatch)
