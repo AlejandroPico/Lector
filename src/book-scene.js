@@ -3,6 +3,7 @@ export {effectiveScene,sceneTheme,scenePaperColors} from './scene-palettes.js'
 import {t} from './i18n.js'
 import {focusedBookPage} from './scene-picker.js'
 import './book-scene.css'
+import {moveBookCover,updateBindingControls} from './book-binding.js'
 // The live reader remains the only navigable book. Temporary sandboxed DOM
 // copies preserve its real text and images on both faces of the turning leaf.
 export function createBookScene({view,area,settings,getRecord}){
@@ -46,12 +47,20 @@ export function createBookScene({view,area,settings,getRecord}){
     return Promise.all(loads)
   }
   async function turn(direction,navigate,force=false){
+    if(turning&&force)return
     const navigatePage=async()=>{
       const before=view.lastLocation?.cfi,result=await navigate()
       if(!force&&focusedBookPage(settings)&&before&&before!==view.lastLocation?.cfi){focusSide=focusSide==='left'?'right':'left';progress(getRecord()?.fraction)}
       return result
     }
     if(!motion()||turning||!getRecord())return navigatePage()
+    if(force){
+      turning=true
+      const back=!closing.hidden||direction>0&&area.querySelector('#opening-cover').hidden
+      const opening=!closing.hidden||!area.querySelector('#opening-cover').hidden
+      try{return await moveBookCover({area,record:getRecord(),back,opening,navigate:navigatePage,settings,onLayer:layer=>activeLayer=layer})}
+      finally{activeLayer=undefined;turning=false}
+    }
     turning=true;const before=snapshot(),layer=activeLayer=document.createElement('div');layer.className=`book-turn ${direction<0?'book-turn-back':''}`;layer.setAttribute('aria-hidden','true');layer.inert=true
     const areaRect=area.getBoundingClientRect();layer.style.cssText=`left:${before.bounds.left-areaRect.left}px;top:${before.bounds.top-areaRect.top}px;width:${before.bounds.width}px;height:${before.bounds.height}px`
     const still=document.createElement('div');still.className='book-turn-still'
@@ -68,10 +77,11 @@ export function createBookScene({view,area,settings,getRecord}){
     }finally{layer.remove();if(activeLayer===layer)activeLayer=undefined;turning=false}
   }
   function update(){
+    updateBindingControls(settings)
     reopen.setAttribute('aria-label',t('Volver a las últimas páginas'))
     document.body.classList.toggle('physical-book',enabled());document.body.dataset.bookScene=effectiveScene(settings.bookScene);background.hidden=!enabled();folio.hidden=!enabled()
     for(const [id,label] of [['book-edge-left','Página anterior'],['book-edge-right','Página siguiente']]){const button=area.querySelector('#'+id);button.hidden=!enabled()||!getRecord();button.setAttribute('aria-label',t(label));button.title=t(label)}
-    if(!enabled()){activeLayer?.remove();closing.hidden=true;area.classList.remove('back-closed');if(area.querySelector('#opening-cover').hidden)view.inert=false}
+    if(!enabled()){for(const animation of activeLayer?.getAnimations({subtree:true})??[])animation.cancel();activeLayer?.remove();closing.hidden=true;area.classList.remove('back-closed');if(area.querySelector('#opening-cover').hidden)view.inert=false}
     progress(getRecord()?.fraction)
     const renderer=view.renderer
     if(renderer&&renderer!==boundRenderer){boundRenderer=renderer;for(const [method,direction] of [['next',1],['prev',-1]]){const original=renderer[method].bind(renderer);renderer[method]=(...args)=>turn(direction,()=>original(...args))}}

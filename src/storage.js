@@ -124,7 +124,7 @@ export const defaults = Object.freeze({
   paragraphGap: 0.8, columns: 2, width: 1320, gutter: 7,
   justify: false, animated: true, highlight: true, provider: 'browser', uiLanguage: 'auto',
   paperLightEnabled:false,paperBrightness:100,paperWarmth:0,paperInverted:false,paperCustomColors:false,paperBackground:'#f7efdc',paperInk:'#30291f',
-  appearance: 'minimal', bookScene:'auto', bookMobileView:'page', coverSize:165, libraryView: 'list', fullWidth: false,
+  appearance: 'minimal', bookScene:'auto', bookMobileView:'page', bookBinding:'hardcover', coverSize:165, libraryView: 'list', fullWidth: false,
   followSpeech: true, clickToRead: true, highlightMode: 'word',
   marginOuter: 10, marginInner: 28, hyphenate: false, customThemes: [],
   showOpeningCover: true,
@@ -171,6 +171,7 @@ export function safeSettings(input = {}) {
   for(const key of ['paperBackground','paperInk'])if(typeof value[key]!=='string'||!/^#[a-f\d]{6}$/i.test(value[key]))value[key]=defaults[key]
   clamp('coverSize',100,280)
   if(!['page','spread'].includes(value.bookMobileView))value.bookMobileView='page'
+  if(!['hardcover','paperback','notebook'].includes(value.bookBinding))value.bookBinding='hardcover'
   if(!['minimal','book'].includes(value.appearance))value.appearance='minimal'
   if(!isPersonalScene(value.bookScene)&&!['auto','home','afternoon','night','cabin','school','office','library','bamboo','garden','study','olive'].includes(value.bookScene))value.bookScene='auto'
   clamp('rate', 0.5, 2); clamp('pitch', 0.5, 1.5)

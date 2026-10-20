@@ -1,5 +1,7 @@
 # Convenciones del proyecto
 
+- 2.8 autorizada tras publicar y verificar 2.7 (main/tag 3fb512d, 113 unitarias, 181 de navegador y Android 10/15). Añadir tapa dura, bolsillo y cuaderno, tapas articuladas completas separadas del giro de hoja; conservar contenidos, datos, posiciones, narración, luz y diez idiomas. Publicar/verificar en main. No iniciar 2.9 ni posteriores. La autorización actual prevalece sobre las restricciones históricas de 2.8.
+
 - 2.6 publicada y verificada antes de implementar 2.7: main/tag 7759dce, 110 unitarias, 176 de navegador, emuladores Android 10/15, 14 archivos públicos y huellas comprobadas. APK SHA-256 41fe9006b30c79e6bf7bef388eaa0d218eb0c40d028b1caf29ed4b6f46a34a9d; firma conservada. La comprobación de voces debe esperar a que termine el arranque antes de inyectar preferencias de prueba.
 
 - 2.6 y 2.7 autorizadas, en orden y con publicación/verificación independientes en main. 2.6: fotografías personales como escenarios locales, gestión y eliminación; no subir/sincronizar imágenes. 2.7: luz, calidez y colores del papel solo en modo libro, para todos los escenarios, sin afectar menús, fotografías ni modo minimalista. No iniciar 2.8 ni posteriores.

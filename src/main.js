@@ -1,5 +1,6 @@
 import {mixPaperColor} from './paper-light.js'
 import {addPaperLightControls,updatePaperLightControls} from './paper-light-ui.js'
+import {addBindingControls} from './book-binding.js'
 import {createPersonalScenes} from './personal-scenes.js'
 import {createVoiceDiagnostics} from './voice-diagnostics-ui.js'
 import {addSyncMenus,createSyncTools,restoreSyncedBook} from './sync-tools.js'
@@ -270,7 +271,7 @@ $('#app').innerHTML = `
           <div><dt>Autor</dt><dd>Alejandro Pico</dd></div>
           <div><dt>Carácter</dt><dd>Proyecto personal</dd></div>
           <div><dt>Propósito</dt><dd>Lectura y escucha</dd></div>
-          <div><dt>Edición</dt><dd>Versión 2.7.0</dd></div>
+          <div><dt>Edición</dt><dd>Versión 2.8.0</dd></div>
         </dl>
       </aside>
       <div class="about-body">
@@ -299,7 +300,7 @@ $('#app').innerHTML = `
   <div id="toast" class="toast" role="status" hidden></div>
 `
 const menuLayout = organizeMenus()
-addLibraryPolish(settings);addScenePicker();addPaperLightControls()
+addLibraryPolish(settings);addScenePicker();addPaperLightControls();addBindingControls()
 addLanguageMenus()
 addPDFMenus()
 addAudioMenus(settings)

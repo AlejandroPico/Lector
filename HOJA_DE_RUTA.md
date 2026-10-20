@@ -16,7 +16,7 @@ Autorizada el 19 de octubre de 2026: servicio autónomo para las voces del siste
 
 La verificación distingue las pruebas del servicio Android con motor controlado y pantalla apagada de la validación auditiva en el móvil del autor. Véase LECTURA_SEGUNDO_PLANO.md.
 
-Autorizadas posteriormente: 2.2 imágenes y cubierta móvil y 2.3 diccionario y burbuja de consulta, en ese orden. Autorizadas ahora, en orden: 2.4 contexto mediante IA; 2.5 diagnóstico de voces. Autorizadas ahora, en orden: 2.6 escenarios personales; 2.7 iluminación del papel. Pendientes de autorización: 2.8 encuadernaciones; 2.9 cámara móvil; 2.10 página arrastrable; 2.11 previsualización de capítulos; 2.12 organización por lotes; 2.13 emisión real, al final.
+Autorizadas posteriormente: 2.2 imágenes y cubierta móvil y 2.3 diccionario y burbuja de consulta, en ese orden. Autorizadas ahora, en orden: 2.4 contexto mediante IA; 2.5 diagnóstico de voces. Autorizadas ahora, en orden: 2.6 escenarios personales; 2.7 iluminación del papel. Autorizada posteriormente: 2.8 encuadernaciones. Pendientes de autorización: 2.9 cámara móvil; 2.10 página arrastrable; 2.11 previsualización de capítulos; 2.12 organización por lotes; 2.13 emisión real, al final.
 
 # Ampliaciones acordadas y versiones propuestas
 
@@ -162,3 +162,8 @@ Fotografías propias guardadas en IndexedDB, con preparación local, miniaturas,
 ## 2.7 — Luz del papel
 
 Autorizada tras publicar y verificar 2.6. Intensidad, calidez, inversión y colores personales para las hojas y el texto, con desactivación/restablecimiento, contraste visible y conservación de menús, escenarios, ilustraciones, voz y posiciones. Aplicable a todos los escenarios físicos y ajena al modo minimalista. No iniciar 2.8 ni posteriores.
+
+
+## 2.8 — Encuadernaciones y tapas
+
+Autorizada el 20 de octubre de 2026, tras completar 2.7. Tapa dura, bolsillo y cuaderno en Tema → Libro sobre la mesa → Encuadernación. Movimiento completo de las tapas con exterior, guarda y lomo, independiente de las hojas. Conservar contenido, ubicación, narración, luz y datos; respetar movimiento reducido. Las versiones 2.9–2.13 siguen pendientes de autorización.

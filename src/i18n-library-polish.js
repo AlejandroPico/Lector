@@ -1,5 +1,9 @@
 // es, ca, en, fr, de, pt, it, zh, ja, hi
 export const libraryPolishRows=`
+Encuadernación|Enquadernació|Binding|Reliure|Einband|Encadernação|Rilegatura|装帧|製本|जिल्द
+Tapa dura|Tapa dura|Hardcover|Couverture rigide|Gebundene Ausgabe|Capa dura|Copertina rigida|精装|ハードカバー|सख्त जिल्द
+Bolsillo|Butxaca|Paperback|Livre de poche|Taschenbuch|Livro de bolso|Tascabile|平装|ペーパーバック|पेपरबैक
+Cuaderno|Quadern|Notebook|Carnet|Notizbuch|Caderno|Quaderno|笔记本|ノート|नोटबुक
 Luz del papel|Llum del paper|Paper lighting|Éclairage du papier|Papierbeleuchtung|Luz do papel|Luce della carta|纸张照明|紙の照明|कागज़ की रोशनी
 Personalizar la luz del papel|Personalitzar la llum del paper|Customize paper lighting|Personnaliser l’éclairage du papier|Papierbeleuchtung anpassen|Personalizar a luz do papel|Personalizza la luce della carta|自定义纸张照明|紙の照明をカスタマイズ|कागज़ की रोशनी बदलें
 Intensidad de luz|Intensitat de llum|Light intensity|Intensité lumineuse|Lichtintensität|Intensidade da luz|Intensità della luce|光照强度|光の強さ|रोशनी की तीव्रता
