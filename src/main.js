@@ -3,6 +3,7 @@ import {addPaperLightControls,updatePaperLightControls} from './paper-light-ui.j
 import {addBindingControls} from './book-binding.js'
 import {addCameraControls,createBookCamera} from './book-camera.js'
 import {addPageDragControls} from './book-page-drag.js'
+import {createChapterPreview} from './chapter-preview.js'
 import {createPersonalScenes} from './personal-scenes.js'
 import {createVoiceDiagnostics} from './voice-diagnostics-ui.js'
 import {addSyncMenus,createSyncTools,restoreSyncedBook} from './sync-tools.js'
@@ -273,7 +274,7 @@ $('#app').innerHTML = `
           <div><dt>Autor</dt><dd>Alejandro Pico</dd></div>
           <div><dt>Carácter</dt><dd>Proyecto personal</dd></div>
           <div><dt>Propósito</dt><dd>Lectura y escucha</dd></div>
-          <div><dt>Edición</dt><dd>Versión 2.10.0</dd></div>
+          <div><dt>Edición</dt><dd>Versión 2.11.0</dd></div>
         </dl>
       </aside>
       <div class="about-body">
@@ -316,6 +317,7 @@ initializeI18n($('#app'), settings.uiLanguage)
 $('#speech-language').value = settings.speechLanguage
 
 const view = $('#reader')
+const chapterPreview=createChapterPreview({view,getBook:()=>book,getRecord:()=>record,navigate:async(target,fraction)=>{if($('#position-dialog').open)$('#position-dialog').close();await navigateTo(target,fraction);if(innerWidth<900)sidebar(false)},onError:error=>handleError(error)})
 const bookScene=createBookScene({view,area:$('#reading-area'),settings,getRecord:()=>record,navigate:direction=>changePage(direction),onError:error=>handleError(error)})
 const bookCamera=createBookCamera({view,area:$('#reading-area'),settings,save:()=>writeJSON('lector-settings',settings),onEdit:()=>closePanels()})
 const imageViewer = attachImageGestures($('.image-stage'), $('#zoom-image'))
@@ -425,6 +427,7 @@ function bookStyles() {
 }
 
 function applySettings() {
+  chapterPreview.refresh()
   speech.updateNativeSettings()
   document.body.classList.toggle('tv-mode',settings.tvMode)
   document.body.classList.toggle('reading-info-visible',settings.showReference||settings.showChapterTime||settings.showBookTime)
@@ -651,7 +654,7 @@ function renderTOC(items, target) {
       await navigateTo(item.href); $('#search-results').hidden = true
       if (innerWidth < 900) sidebar(false)
     }))
-    li.append(button)
+    const row=document.createElement('div');row.className='toc-row';row.append(button,chapterPreview.button(item));li.append(row)
     if (item.subitems?.length) renderTOC(item.subitems, li)
     list.append(li)
   }
@@ -987,6 +990,7 @@ async function openStored(id) {
 
 async function openFile(file, saved) {
   if (busy) return
+  chapterPreview.close()
   if($('#pdf-dialog').open)$('#pdf-dialog').close()
   if($('#audio-export-dialog').open)$('#audio-export-dialog').close()
   selection=undefined

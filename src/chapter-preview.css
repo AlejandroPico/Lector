@@ -1,0 +1,16 @@
+.toc-row {display:flex;align-items:center;min-width:0;}
+.toc-row .toc-link {flex:1;min-width:0;}
+.toc-preview {flex:none;width:30px;height:30px;opacity:.48;}
+.toc-preview:is(:hover,:focus-visible) {opacity:1;}
+.toc-preview svg {width:16px;height:16px;}
+.chapter-preview-dialog {width:560px;max-height:85dvh;}
+#chapter-preview-label {font-size:15px;font-weight:400;margin:0 0 8px;}
+#chapter-preview-hint {font-size:11px;line-height:1.5;margin:0 0 14px;}
+#chapter-preview-status {margin-block:12px;}
+#chapter-preview-content {max-height:48dvh;overflow:auto;overscroll-behavior:contain;scrollbar-width:none;font:17px/1.7 Georgia,serif;}
+#chapter-preview-content::-webkit-scrollbar {display:none;}
+#chapter-preview-content p {margin:0 0 1em;}
+#chapter-preview-content h4 {font-size:1.12em;font-weight:400;margin:0 0 1em;}
+#chapter-preview-go {margin-top:18px;}
+#position-preview {margin-left:12px;}
+@media(max-width:600px){.toc-preview {width:38px;height:38px;}#chapter-preview-content {font-size:16px;}#position-preview {margin-top:8px;}}
