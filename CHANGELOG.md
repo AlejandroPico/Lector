@@ -1,5 +1,18 @@
 # Historial de versiones
 
+## 2.13.0
+
+Lector 2.13.0 incorpora una primera integración Google Cast mediante receptor propio y selectores oficiales de Chrome de escritorio y APK Android.
+
+Receptor registrado por el titular: ID 92B106F9, estado Unpublished. Solo pueden iniciarlo sus dispositivos autorizados hasta completar la prueba física y decidir su publicación en Google. El ID está incorporado a web y Android; el botón utiliza el selector oficial en plataformas compatibles. Ajustes → Emisión de audio informa del estado. Guía paso a paso: ACTIVAR_GOOGLE_CAST.md. El receptor público queda en https://alejandropico.github.io/Lector/receptor.html.
+
+Audio real por fragmentos de Piper o API, confirmaciones por parte e integridad SHA-256 antes de reproducir. Se transfieren únicamente audio y metadatos permitidos a la sesión elegida, sin servidor local, direcciones IP, URL pública del audio, subida de libros o credenciales. Pantalla receptora discreta con título, autor, capítulo, cubierta y fragmento; pausa/reanudación y posición mediante el reproductor del receptor. Cancelar el selector conserva la reproducción local; desconectar detiene la remota sin cambiar de altavoz por sorpresa.
+
+Las voces del navegador no son transmisibles. El emisor debe seguir abierto para generar los siguientes fragmentos; esta entrega no garantiza narración Cast con la pantalla bloqueada. No se implementan Matter, Alexa, AirPlay, iOS Cast o Cast desde Electron. La reproducción física, latencia, continuidad y memoria en modelos antiguos siguen pendientes de activar y probar el receptor registrado. Las pruebas con SDK controlado no acreditan funcionamiento en un dispositivo físico.
+
+Interfaz en diez idiomas y paquetes habituales de escritorio, APK Android/TV firmado y AAB. iOS mantiene simulador y archivo sin firma, pendientes de la identidad Apple del titular. No se ha creado una cuenta ni pagado o publicado nada en consolas de proveedores.
+
+
 ## 2.12.0
 
 Lector 2.12.0 añade organización por lotes en la biblioteca.

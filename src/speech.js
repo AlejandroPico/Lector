@@ -145,7 +145,7 @@ export function validateEndpoint(value) {
 }
 
 export class SpeechController {
-  constructor({ view, settings, getKey, onState, onError, onHighlight,onAudio=()=>{},onCursor=()=>{},getBookId=()=>'',onBrowseChange=()=>{},onActivity=()=>{},waitForView=()=>Promise.resolve(),getCast=()=>({}) }) {
+  constructor({ view, settings, getKey, onState, onError, onHighlight,onAudio=()=>{},onCursor=()=>{},getBookId=()=>'',onBrowseChange=()=>{},onActivity=()=>{},waitForView=()=>Promise.resolve(),getCast=()=>({}),output=null }) {
     Object.assign(this, { view, settings, getKey, onState, onError, onHighlight })
     this.cache = new Map(); this.run = 0; this.state = 'stopped'; this.pending = new Set()
     this.browsing=false;this.onBrowseChange=onBrowseChange
@@ -154,6 +154,7 @@ export class SpeechController {
     this.waitForView=waitForView;this.documents=new WeakMap()
     this.getCast=getCast
     this.onAudio=onAudio
+    this.output=output
     this.onCursor=onCursor;this.getBookId=getBookId
     view.addEventListener('load',({detail:{doc,index}})=>this.documents.set(doc,index))
     this.budget=new AudioBudget(settings,()=>this.onActivity())
@@ -183,7 +184,7 @@ export class SpeechController {
     this.browsing=false;this.cursorCFI=null;this.onBrowseChange()
     if(!keepTimer)this.timer.clear()
     globalThis.speechSynthesis?.cancel()
-    this.audio?.pause(); this.audio = null
+    this.audio?.pause();this.audio?.dispose?.(); this.audio = null
     for (const finish of this.pending) finish()
     this.pending.clear()
     this.nativeActive=false;this.nativeMap=null;this.nativeCache=null;this.nativeFingerprint=null
@@ -205,6 +206,7 @@ export class SpeechController {
     }
     if (this.state === 'loading') {this.setState('paused');return}
     const settings = this.settings()
+    try{this.output?.validate()}catch(error){this.onError(error.message);return}
     if (settings.provider === 'browser' && !globalThis.speechSynthesis) {
       this.onError('Este navegador no dispone de lectura en voz alta.'); return
     }
@@ -367,6 +369,7 @@ export class SpeechController {
         if (this.canFollow() && !this.view.renderer.scrolled && segment.range) await this.view.renderer.scrollToAnchor(segment.range,true)
         if (run !== this.run) return
         this.onHighlight(segment.range)
+        this.output?.validate()
         if (this.settings().provider !== 'browser') await this.speakAPI(segment, run)
         else await this.speakBrowser(segment, run)
       }
@@ -463,10 +466,12 @@ export class SpeechController {
     if (run !== this.run) return
     if(this.state==='paused')await new Promise(resolve=>{const finish=()=>{this.pending.delete(finish);this.readyResume=null;resolve()};this.pending.add(finish);this.readyResume=finish})
     if(run!==this.run)return
-    const url = URL.createObjectURL(blob)
-    const audio = this.audio = new Audio(url)
+    const remote=preview?null:await this.output?.audio(blob,segment)
+    if(run!==this.run){remote?.dispose();return}
+    const url = remote?null:URL.createObjectURL(blob)
+    const audio = this.audio = remote??new Audio(url)
     audio.playbackRate = settings.rate
-    audio.onplaying=()=>{if(run!==this.run)return;this.onAudio(audio,segment);if(segment.range && this.view.renderer?.scrolled && this.canFollow()){if(this.follower.segment!==segment)this.follower.begin(segment,settings.rate,true);this.follower.setState(this.state)}}
+    audio.onplaying=()=>{if(run!==this.run)return;if(audio.remote&&this.state==='paused')this.setState('playing');this.onAudio(audio,segment);if(segment.range && this.view.renderer?.scrolled && this.canFollow()){if(this.follower.segment!==segment)this.follower.begin(segment,settings.rate,true);this.follower.setState(this.state)}}
     audio.ontimeupdate=()=>{if(Number.isFinite(audio.duration)&&audio.duration>0)this.follower.progress(audio.currentTime/audio.duration)}
     this.setState('playing')
     try {
@@ -476,9 +481,9 @@ export class SpeechController {
         this.pending.add(finish)
         audio.onended = finish
         audio.onerror = () => fail(new Error('No se pudo reproducir el audio recibido.'))
-        audio.onpause = () => { if (run !== this.run) finish() }
+        audio.onpause = () => { if (run !== this.run) finish();else if(audio.remote&&this.state==='playing')this.setState('paused') }
         audio.play().catch(fail)
       })
-    } finally { URL.revokeObjectURL(url); if (this.audio === audio) this.audio = null }
+    } finally {if(url)URL.revokeObjectURL(url);audio.dispose?.(); if (this.audio === audio) this.audio = null }
   }
 }

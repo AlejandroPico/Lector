@@ -50,3 +50,7 @@ Android se firma mediante los secretos cifrados del repositorio `LECTOR_ANDROID_
 ## Audio Android en segundo plano
 
 La novedad 2.1 requiere el **APK Android**, actualizado sobre la instalación anterior para conservar sus datos. Seleccionar «Voces del sistema (sin coste)» y comenzar a narrar antes de bloquear la pantalla. La instalación PWA desde Chrome no incorpora este servicio nativo. [Guía de comprobación](LECTURA_SEGUNDO_PLANO.md).
+
+## Google Cast (2.13)
+
+Configuración compartida en `config/cast.json`; `native:sync` genera el recurso Android correspondiente. El ID se entrega vacío hasta que el titular registre su receptor. El SDK Android Google Cast 22.1.0 se distribuye como dependencia de Google Play Services y utiliza sus condiciones y avisos; los SDK web se cargan desde Google. Guía de activación y límites: [ACTIVAR_GOOGLE_CAST.md](ACTIVAR_GOOGLE_CAST.md). Mantener separados los paquetes descargables y la activación del receptor en la consola de Google.

@@ -1,4 +1,5 @@
 const paths = {
+  cast:'<path d="M3 8V4h18v16h-7M3 12a8 8 0 0 1 8 8M3 16a4 4 0 0 1 4 4"/><circle cx="3" cy="20" r=".6"/>',
   briefcase:'<rect x="3" y="7" width="18" height="14" rx="1"/><path d="M8 7V4h8v3M3 12h18M10 11v3h4v-3"/>',
   check:'<path d="m5 12 4 4L19 6"/>',
   filter:'<path d="M3 4h18l-7 8v7l-4 2v-9z"/>',

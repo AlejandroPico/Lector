@@ -11,6 +11,8 @@ on:
       - 'ios/**'
       - 'distribution/**'
       - 'src/**'
+      - 'config/**'
+      - 'receptor.html'
       - 'public/**'
       - 'scripts/**'
       - 'diccionarios/**'

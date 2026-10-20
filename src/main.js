@@ -5,6 +5,7 @@ import {addCameraControls,createBookCamera} from './book-camera.js'
 import {addPageDragControls} from './book-page-drag.js'
 import {createChapterPreview} from './chapter-preview.js'
 import {createCatalogBatchTools} from './catalog-batch-ui.js'
+import {addCastMenu,createCastTools} from './cast-ui.js'
 import {createPersonalScenes} from './personal-scenes.js'
 import {createVoiceDiagnostics} from './voice-diagnostics-ui.js'
 import {addSyncMenus,createSyncTools,restoreSyncedBook} from './sync-tools.js'
@@ -275,7 +276,7 @@ $('#app').innerHTML = `
           <div><dt>Autor</dt><dd>Alejandro Pico</dd></div>
           <div><dt>Carácter</dt><dd>Proyecto personal</dd></div>
           <div><dt>Propósito</dt><dd>Lectura y escucha</dd></div>
-          <div><dt>Edición</dt><dd>Versión 2.12.0</dd></div>
+          <div><dt>Edición</dt><dd>Versión 2.13.0</dd></div>
         </dl>
       </aside>
       <div class="about-body">
@@ -311,6 +312,7 @@ addAudioMenus(settings)
 addLocalVoiceMenus()
 addNarrationMenus()
 addSyncMenus()
+addCastMenu()
 for(const detail of document.querySelectorAll('.panel details'))detail.open=false
 if(platform.native||platform.desktop){$('#sync-provider option[value="onedrive"]').disabled=true;$('#sync-provider').insertAdjacentHTML('afterend','<p class="small muted">OneDrive se conecta desde la versión web.</p>')}
 if(!platform.printing)$('#notes-export-pdf').hidden=true
@@ -347,7 +349,9 @@ const coverQueue=new VisibleCoverQueue({load:loadLibraryCover,done:refreshLibrar
 }})
 try{localStorage.removeItem('lector-casting')}catch{}
 const mediaControls=createMediaControls()
+const castTools=createCastTools({platform,getSettings:()=>settings,getRecord:()=>record,getSpeech:()=>speech,toast,onError:handleError})
 const speech = new SpeechController({
+  output:castTools,
   view, settings: () => settings, getKey: () => apiKey,
   waitForView:()=>Promise.all([layoutNavigation,pageNavigation]),getCast:()=>record?.narration,
   getBookId:()=>record?.id??'',
@@ -429,6 +433,7 @@ function bookStyles() {
 }
 
 function applySettings() {
+  castTools.refresh()
   chapterPreview.refresh()
   speech.updateNativeSettings()
   document.body.classList.toggle('tv-mode',settings.tvMode)

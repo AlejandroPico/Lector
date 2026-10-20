@@ -16,7 +16,7 @@ Autorizada el 19 de octubre de 2026: servicio autónomo para las voces del siste
 
 La verificación distingue las pruebas del servicio Android con motor controlado y pantalla apagada de la validación auditiva en el móvil del autor. Véase LECTURA_SEGUNDO_PLANO.md.
 
-Autorizadas posteriormente: 2.2 imágenes y cubierta móvil y 2.3 diccionario y burbuja de consulta, en ese orden. Autorizadas ahora, en orden: 2.4 contexto mediante IA; 2.5 diagnóstico de voces. Autorizadas ahora, en orden: 2.6 escenarios personales; 2.7 iluminación del papel. Autorizada posteriormente: 2.8 encuadernaciones. Autorizada posteriormente: 2.9 cámara móvil. Autorizada posteriormente: 2.10 página arrastrable. Autorizadas en orden: 2.11 previsualización de capítulos; 2.12 organización por lotes. Pendiente de autorización: 2.13 emisión real, al final.
+Autorizadas posteriormente: 2.2 imágenes y cubierta móvil y 2.3 diccionario y burbuja de consulta, en ese orden. Autorizadas ahora, en orden: 2.4 contexto mediante IA; 2.5 diagnóstico de voces. Autorizadas ahora, en orden: 2.6 escenarios personales; 2.7 iluminación del papel. Autorizada posteriormente: 2.8 encuadernaciones. Autorizada posteriormente: 2.9 cámara móvil. Autorizada posteriormente: 2.10 página arrastrable. Autorizadas en orden: 2.11 previsualización de capítulos; 2.12 organización por lotes. 2.13 autorizada el 21 de octubre de 2026: integración preparada; activación del receptor y prueba física pendientes del titular.
 
 # Ampliaciones acordadas y versiones propuestas
 
@@ -187,3 +187,10 @@ Autorizada junto con 2.12. Muestra textual local bajo petición desde el índice
 ## 2.12 — Organización por lotes
 
 Autorizada junto con 2.11 y comenzada después de verificar su web, instalables y catorce descargas (233fbec3, 125 unitarias y 208 de navegador). Selección explícita en biblioteca, incluso a través de filtros; corrección de autor, etiquetas, serie y colecciones con revisión por libro. Numeración opcional por orden alfabético de título. Transacción atómica y registro local del último lote para deshacer, conservado al reiniciar. Los conflictos o colecciones eliminadas cancelan el lote completo; deshacer solo restaura campos editados y conserva cambios ajenos. No editar archivos, mover carpetas, leer metadatos ni alterar notas/voz/posiciones para organizar. No iniciar 2.13.
+
+
+## 2.13 — Emisión Google Cast preparada
+
+Autorizada tras publicar y verificar 2.12. El titular no dispone de identificador y solicita instrucciones paso a paso. Se prepara receptor propio HTTPS y emisor con SDK oficial para Chrome de escritorio/APK Android; la configuración permanece vacía y el botón oculto hasta registrar el receptor. Audio Piper/API por fragmentos acotados y confirmados, sin puente local ni IP ni libros alojados. Conserva controles, navegación, datos y voces locales. La guía ACTIVAR_GOOGLE_CAST.md separa activación, dispositivos de prueba y publicación. No afirmar compatibilidad física, continuidad con pantalla apagada, transmisión de speechSynthesis o soporte universal; estos puntos están pendientes o fuera de alcance.
+
+Actualización de activación: el titular registra el receptor 92B106F9 como Custom Receiver, sin publicar. Se incorpora a la compilación de web y Android. Falta que autorice sus dispositivos de prueba, verificar la reproducción física y decidir por separado la publicación del receptor en Google.
