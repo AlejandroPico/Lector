@@ -11,7 +11,7 @@ export function createBookScene({view,area,settings,getRecord}){
   const folio=document.createElement('div');folio.className='book-folio';folio.setAttribute('aria-hidden','true');folio.innerHTML='<i class="book-stack book-stack-left"></i><i class="book-stack book-stack-right"></i><i class="book-binding"></i>';area.prepend(folio)
   area.insertAdjacentHTML('beforeend','<button id="book-edge-left" class="book-edge" hidden></button><button id="book-edge-right" class="book-edge" hidden></button><div id="book-page-focus" class="book-page-focus" role="group" hidden><button data-book-side="left">‹</button><button data-book-side="right">›</button></div>')
   const closing=document.createElement('section');closing.id='closing-cover';closing.className='closing-cover';closing.hidden=true;const reopen=document.createElement('button');reopen.className='book-back-cover';reopen.setAttribute('aria-label',t('Volver a las últimas páginas'));closing.append(reopen);area.append(closing)
-  let turning=false,activeLayer,boundRenderer,focusSide='left'
+  let turning=false,activeLayer,boundRenderer,focusSide='left',coverTransition
   const enabled=()=>settings.appearance==='book'
   const motion=()=>enabled()&&settings.animated&&!matchMedia('(prefers-reduced-motion: reduce)').matches
   function progress(fraction=0){
@@ -56,10 +56,13 @@ export function createBookScene({view,area,settings,getRecord}){
     if(!motion()||turning||!getRecord())return navigatePage()
     if(force){
       turning=true
+      const transition=coverTransition={recordId:getRecord().id,cancelled:false,committing:false}
       const back=!closing.hidden||direction>0&&area.querySelector('#opening-cover').hidden
       const opening=!closing.hidden||!area.querySelector('#opening-cover').hidden
-      try{return await moveBookCover({area,record:getRecord(),back,opening,navigate:navigatePage,settings,onLayer:layer=>activeLayer=layer})}
-      finally{activeLayer=undefined;turning=false}
+      const cancelled=()=>transition.cancelled||getRecord()?.id!==transition.recordId
+      const commit=async()=>{if(cancelled())return;transition.committing=true;try{return await navigatePage()}finally{transition.committing=false}}
+      try{return await moveBookCover({area,record:getRecord(),back,opening,navigate:commit,cancelled,settings,onLayer:layer=>{activeLayer=layer;transition.layer=layer}})}
+      finally{if(coverTransition===transition)coverTransition=undefined;activeLayer=undefined;turning=false}
     }
     turning=true;const before=snapshot(),layer=activeLayer=document.createElement('div');layer.className=`book-turn ${direction<0?'book-turn-back':''}`;layer.setAttribute('aria-hidden','true');layer.inert=true
     const areaRect=area.getBoundingClientRect();layer.style.cssText=`left:${before.bounds.left-areaRect.left}px;top:${before.bounds.top-areaRect.top}px;width:${before.bounds.width}px;height:${before.bounds.height}px`
@@ -81,12 +84,20 @@ export function createBookScene({view,area,settings,getRecord}){
     reopen.setAttribute('aria-label',t('Volver a las últimas páginas'))
     document.body.classList.toggle('physical-book',enabled());document.body.dataset.bookScene=effectiveScene(settings.bookScene);background.hidden=!enabled();folio.hidden=!enabled()
     for(const [id,label] of [['book-edge-left','Página anterior'],['book-edge-right','Página siguiente']]){const button=area.querySelector('#'+id);button.hidden=!enabled()||!getRecord();button.setAttribute('aria-label',t(label));button.title=t(label)}
-    if(!enabled()){for(const animation of activeLayer?.getAnimations({subtree:true})??[])animation.cancel();activeLayer?.remove();closing.hidden=true;area.classList.remove('back-closed');if(area.querySelector('#opening-cover').hidden)view.inert=false}
+    if(!enabled()){if(coverTransition)coverTransition.cancelled=true;for(const animation of activeLayer?.getAnimations({subtree:true})??[])animation.cancel();activeLayer?.remove();closing.hidden=true;area.classList.remove('back-closed');if(area.querySelector('#opening-cover').hidden)view.inert=false}
     progress(getRecord()?.fraction)
     const renderer=view.renderer
     if(renderer&&renderer!==boundRenderer){boundRenderer=renderer;for(const [method,direction] of [['next',1],['prev',-1]]){const original=renderer[method].bind(renderer);renderer[method]=(...args)=>turn(direction,()=>original(...args))}}
   }
   function hideBack(){closing.hidden=true;area.classList.remove('back-closed');view.inert=false}
+  function reset(){
+    if(coverTransition&&!coverTransition.committing){
+      coverTransition.cancelled=true
+      for(const animation of coverTransition.layer?.getAnimations({subtree:true})??[])animation.cancel()
+      coverTransition.layer?.remove()
+    }
+    hideBack()
+  }
   async function openBack(){await turn(-1,hideBack,true)}
   async function closeBack(){
     reopen.replaceChildren();const current=view.renderer?.getContents().at(-1),image=current?.doc.body.classList.contains('reader-cover')?current.doc.querySelector('img'):null
@@ -94,5 +105,5 @@ export function createBookScene({view,area,settings,getRecord}){
     await turn(1,()=>{closing.hidden=false;area.classList.add('back-closed');view.inert=true},true)
   }
   reopen.onclick=openBack
-  return {update,progress,turn,closeBack,openBack,reset:hideBack,get side(){return area.dataset.bookSide},get closed(){return !closing.hidden}}
+  return {update,progress,turn,closeBack,openBack,reset,get side(){return area.dataset.bookSide},get closed(){return !closing.hidden}}
 }

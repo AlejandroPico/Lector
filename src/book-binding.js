@@ -15,7 +15,7 @@ export function updateBindingControls(settings){
 
 // A cover is one complete board with an outside, lining and spine. It does not
 // reuse the two cropped iframe faces used by an ordinary turning sheet.
-export async function moveBookCover({area,record,back,opening,navigate,settings,onLayer}){
+export async function moveBookCover({area,record,back,opening,navigate,cancelled,settings,onLayer}){
   const layer=document.createElement('div');layer.className='book-turn book-cover-motion';layer.setAttribute('aria-hidden','true');layer.inert=true
   let objectURL,animation,navigated=false
   const navigateOnce=async()=>{if(!navigated){navigated=true;await navigate()}}
@@ -26,6 +26,7 @@ export async function moveBookCover({area,record,back,opening,navigate,settings,
     if(!back&&record.coverBlob){objectURL=URL.createObjectURL(record.coverBlob);image.src=objectURL}
     else if(visible?.src)image.src=visible.src
     if(image.src)await image.decode().catch(()=>{})
+    if(cancelled())return
     const bounds=area.getBoundingClientRect(),focused=area.classList.contains('book-focused')
     const ratio=image.naturalWidth&&image.naturalHeight?image.naturalWidth/image.naturalHeight:2/3
     const maxHeight=bounds.height-(back?bounds.height*.06:76)
@@ -48,6 +49,7 @@ export async function moveBookCover({area,record,back,opening,navigate,settings,
     board.style.cssText=`left:${closedHinge}px;top:${y}px;width:${w}px;height:${h}px;transform-origin:${back?'right':'left'} center;margin-left:${back?-w:0}px`
     area.classList.add('cover-moving')
     if(opening)await navigateOnce()
+    if(cancelled())return
     if(settings.appearance!=='book'||!layer.isConnected){await navigateOnce();return}
     const closed='translate3d(0,0,0) rotateY(0deg) scale(1,1)'
     const open=`translate3d(${openHinge-closedHinge}px,${-y}px,0) rotateY(${back?180:-180}deg) scale(${openWidth/w},${bounds.height/h})`
@@ -55,7 +57,7 @@ export async function moveBookCover({area,record,back,opening,navigate,settings,
     // Resizing or switching appearance ends the decoration, never the reading.
     const cancel=()=>animation.cancel();window.addEventListener('resize',cancel,{once:true})
     try{await animation.finished.catch(()=>{})}finally{window.removeEventListener('resize',cancel)}
-    await navigateOnce()
+    if(!cancelled())await navigateOnce()
   }finally{
     animation?.cancel();layer.remove();area.classList.remove('cover-moving');if(objectURL)URL.revokeObjectURL(objectURL)
   }

@@ -2,6 +2,8 @@
 
 ## 2.8.0
 
+La tapa pendiente se cancela al volver al punto narrado, abrir otro libro o abandonar la apariencia física. Se precisa el selector de «Mañana» en una comprobación de luz para que no dependa de la hora del día.
+
 Lector 2.8.0 incorpora encuadernaciones de tapa dura, bolsillo y cuaderno para el libro sobre la mesa. Se eligen en Tema → Libro sobre la mesa → Encuadernación y se conservan entre sesiones. El modo minimalista mantiene su presentación.
 
 Las cubiertas se abren y cierran como una pieza completa, con exterior, guarda interior y lomo articulado, en lugar de usar la animación de una hoja recortada. Los tres acabados ofrecen distintos cantos, lomos, radios y espesores; el cuaderno añade anillas. El texto y las ilustraciones siguen perteneciendo al visor original.
