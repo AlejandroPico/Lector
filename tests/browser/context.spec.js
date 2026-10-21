@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test'
+import {watchPrivateRequests} from './privacy-fixture.js'
 const original='El sosiego de la tarde acompañaba a Elena. Otra frase privada.\n\nLlegaron al umbral.\n\nLa mañana volvió.'
 const translated='An extra preface.\n\nThe peace of the evening accompanied Elena. Another private sentence.\n\nThey reached the threshold.\n\nMorning returned.'
 async function open(page){await page.goto('/');await page.locator('#file-input').setInputFiles({name:'original.txt',mimeType:'text/plain',buffer:Buffer.from(original)});await expect(page.locator('#audio-toggle')).toBeEnabled()}
@@ -10,7 +11,7 @@ async function selectWord(page,word='sosiego'){
 }
 
 test('context previews are local by default and preserve a distinct dictionary definition',async({page})=>{
-  const external=[];page.on('request',request=>{if(/^https:\/\//.test(request.url()))external.push(request.url())})
+  const external=watchPrivateRequests(page)
   await open(page);await selectWord(page);await page.locator('#context-selection').click()
   await expect(page.locator('#context-fragment')).toHaveValue('El sosiego de la tarde acompañaba a Elena.')
   await expect(page.locator('#context-word')).toHaveValue('sosiego')
@@ -34,7 +35,7 @@ test('a configured API receives only the confirmed passage, uses safe text and n
 })
 
 test('bilingual paragraphs and manual offset persist without sending or replacing the original',async({page})=>{
-  const external=[];page.on('request',request=>{if(/^https:\/\//.test(request.url()))external.push(request.url())})
+  const external=watchPrivateRequests(page)
   await open(page);await bilingual(page);await page.locator('#bilingual-file').setInputFiles({name:'translation.txt',mimeType:'text/plain',buffer:Buffer.from(translated)})
   await expect(page.locator('.bilingual-translation').first()).toHaveText('An extra preface.')
   await page.locator('#bilingual-adjust').click();await page.locator('#bilingual-language').selectOption('en');await page.locator('#bilingual-offset').fill('1');await page.locator('#bilingual-offset').press('Tab')

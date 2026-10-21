@@ -1,5 +1,6 @@
 import {test,expect} from '@playwright/test'
 import sharp from 'sharp'
+import {watchPrivateRequests} from './privacy-fixture.js'
 test.setTimeout(90000)
 const picture=async()=>({name:'Mi mesa.png',mimeType:'image/png',buffer:await sharp({create:{width:3200,height:1800,channels:3,background:'#416345'}}).png().toBuffer()})
 async function open(page){
@@ -11,7 +12,7 @@ async function manager(page){await page.locator('#theme-toggle').click();await p
 async function add(page){await manager(page);await page.locator('#personal-scene-file').setInputFiles(await picture());await expect(page.locator('#personal-scene-save')).toBeEnabled();await page.locator('#personal-scene-name').fill('Mi rincón');await page.locator('#personal-scene-save').click();await expect(page.locator('#personal-scenes-dialog')).toBeHidden()}
 
 test('photos are prepared locally, persist and can be renamed or removed while narration continues',async({page})=>{
- const external=[];page.on('request',r=>{if(r.url().startsWith('https://'))external.push(r.url())})
+ const external=watchPrivateRequests(page)
  await open(page);await page.locator('#audio-toggle').click();await expect.poll(()=>page.evaluate(()=>Boolean(window.__utterance))).toBe(true)
  const before=await page.evaluate(()=>({text:window.__utterance.text,cancels:window.__cancels}));await add(page)
  const id=await page.locator('body').getAttribute('data-book-scene');expect(id).toMatch(/^photo-/)
