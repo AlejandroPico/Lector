@@ -1,5 +1,12 @@
 # Historial de versiones
 
+## 2.13.1
+
+Lector 2.13.1 corrige los accesos recortados en móvil y pantallas estrechas. Los seis controles de la derecha se reúnen en un panel «Herramientas» con iconos y nombres, apertura y cierre animados, navegación por teclado y desplazamiento sin barra visible. Funciona en vertical y horizontal; mantiene los controles centrales de lectura y devuelve los accesos a la barra al ampliar la pantalla, sin duplicarlos ni detener la narración. Respeta movimiento reducido y los diez idiomas.
+
+La integración Cast de 2.13 se mantiene: el titular ha confirmado audio con Piper desde el PC en su Google Home de prueba y ha comunicado errores intermitentes de conexión pendientes de diagnóstico. Las voces del navegador siguen siendo de escucha local; Piper requiere el motor iniciado y usa voces distintas. El receptor continúa Unpublished en Google.
+
+
 ## 2.13.0
 
 Lector 2.13.0 incorpora una primera integración Google Cast mediante receptor propio y selectores oficiales de Chrome de escritorio y APK Android.

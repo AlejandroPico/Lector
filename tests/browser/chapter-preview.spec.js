@@ -1,3 +1,4 @@
+import {toolbarAction} from './toolbar-fixture.js'
 import {test,expect} from '@playwright/test'
 import {coverEPUB} from './fixtures.js'
 test.setTimeout(90000)
@@ -34,7 +35,7 @@ test('late samples are discarded after closing or replacing the book',async({pag
 })
 
 test('mobile book view, keyboard activation and translated labels keep sample content in its original language',async({page})=>{
- await open(page,true);await page.locator('#theme-toggle').click();await page.locator('[data-appearance=book]').click();await page.keyboard.press('Escape');await page.locator('#preferences-toggle').click();await page.getByText('General',{exact:true}).click();await page.locator('[data-setting=uiLanguage]').selectOption('en');await page.keyboard.press('Escape');await index(page);const before=await location(page)
+ await open(page,true);await toolbarAction(page,'theme-toggle');await page.locator('[data-appearance=book]').click();await page.keyboard.press('Escape');await toolbarAction(page,'preferences-toggle');await page.getByText('General',{exact:true}).click();await page.locator('[data-setting=uiLanguage]').selectOption('en');await page.keyboard.press('Escape');await index(page);const before=await location(page)
  const button=preview(page,'El regreso');await expect(button).toHaveAttribute('title','Preview chapter');await button.focus();await page.keyboard.press('Enter');await expect(page.locator('#chapter-preview-content')).toContainText('La mañana había llegado.');await expect(page.locator('#chapter-preview-go')).toHaveText('Go to this location');expect(await location(page)).toBe(before);const box=await page.locator('#chapter-preview-dialog').boundingBox();expect(box.x).toBeGreaterThanOrEqual(0);expect(box.x+box.width).toBeLessThanOrEqual(390);await page.screenshot({path:'test-results/211-preview-mobile.png'});await page.keyboard.press('Escape');await expect(button).toBeFocused()
 })
 

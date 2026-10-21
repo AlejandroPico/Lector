@@ -1,3 +1,4 @@
+import {toolbarAction} from './toolbar-fixture.js'
 import {test,expect} from '@playwright/test'
 import {coverEPUB,epub} from './fixtures.js'
 import sharp from 'sharp'
@@ -23,8 +24,8 @@ test('mobile pinch stays continuous when one finger lifts, resize fits again and
 })
 
 for(const view of ['page','spread'])test(`mobile closed cover masks iframe paint and page sheets in ${view} view`,async({page})=>{
- await page.setViewportSize({width:390,height:844});await page.emulateMedia({reducedMotion:'reduce'});await open(page,true);await page.locator('#theme-toggle').click();await page.locator('[data-appearance="book"]').click();await page.keyboard.press('Escape')
- if(view==='spread'){await page.locator('#theme-toggle').click();await page.locator('[data-setting="bookMobileView"]').selectOption('spread');await page.keyboard.press('Escape')}
+ await page.setViewportSize({width:390,height:844});await page.emulateMedia({reducedMotion:'reduce'});await open(page,true);await toolbarAction(page,'theme-toggle');await page.locator('[data-appearance="book"]').click();await page.keyboard.press('Escape')
+ if(view==='spread'){await toolbarAction(page,'theme-toggle');await page.locator('[data-setting="bookMobileView"]').selectOption('spread');await page.keyboard.press('Escape')}
  await page.locator('#start-reading').click();await expect(page.locator('#reader')).toHaveCSS('opacity','1')
  await expect.poll(()=>page.evaluate(()=>Boolean(document.querySelector('#reader').renderer.getContents()[0]?.doc.body))).toBe(true)
  await page.evaluate(()=>{const doc=document.querySelector('#reader').renderer.getContents()[0].doc;doc.documentElement.style.setProperty('visibility','visible','important');doc.body.style.setProperty('background','#00ff00','important')})

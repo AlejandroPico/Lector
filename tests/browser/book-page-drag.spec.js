@@ -1,3 +1,4 @@
+import {toolbarAction} from './toolbar-fixture.js'
 import {test,expect} from '@playwright/test'
 import {coverEPUB} from './fixtures.js'
 
@@ -7,7 +8,7 @@ const location=page=>page.evaluate(()=>document.querySelector('#reader').lastLoc
 async function open(page,mobile=false){
  if(mobile)await page.setViewportSize({width:390,height:844})
  await page.addInitScript(()=>Object.defineProperty(window,'speechSynthesis',{value:{getVoices:()=>[],addEventListener(){},cancel(){window.__cancels=(window.__cancels??0)+1},pause(){},resume(){},speak(u){window.__utterance=u;u.onstart?.()}}}))
- await page.goto('/');await expect(page.locator('#file-dialog')).toBeVisible();await page.locator('#file-input').setInputFiles({name:'Esquinas.epub',mimeType:'application/epub+zip',buffer:await coverEPUB()});await expect(page.locator('#audio-toggle')).toBeEnabled();await page.locator('#theme-toggle').click();await page.locator('[data-appearance=book]').click();await page.locator('[data-scene=home]').click();await page.keyboard.press('Escape');await page.locator('#start-reading').click();await idle(page)
+ await page.goto('/');await expect(page.locator('#file-dialog')).toBeVisible();await page.locator('#file-input').setInputFiles({name:'Esquinas.epub',mimeType:'application/epub+zip',buffer:await coverEPUB()});await expect(page.locator('#audio-toggle')).toBeEnabled();await toolbarAction(page,'theme-toggle');await page.locator('[data-appearance=book]').click();await page.locator('[data-scene=home]').click();await page.keyboard.press('Escape');await page.locator('#start-reading').click();await idle(page)
  // Leave the native cover section and ensure both directions have a leaf.
  await page.locator('#next-page').click();await idle(page);await page.locator('#next-page').click();await idle(page)
 }
@@ -46,11 +47,11 @@ test('touch in portrait commits and cancels without taking text or image gesture
 })
 
 test('option, continuous reading and minimalist appearance remove corner interception; keyboard still works',async({page})=>{
- await open(page);await page.locator('#theme-toggle').click();await page.locator('[data-setting=bookCornerDrag]').uncheck();await page.keyboard.press('Escape');await expect(page.locator('.book-corner:visible')).toHaveCount(0);const before=await location(page);await page.locator('#reader').focus();await page.keyboard.press('ArrowRight');await idle(page);expect(await location(page)).not.toBe(before)
+ await open(page);await toolbarAction(page,'theme-toggle');await page.locator('[data-setting=bookCornerDrag]').uncheck();await page.keyboard.press('Escape');await expect(page.locator('.book-corner:visible')).toHaveCount(0);const before=await location(page);await page.locator('#reader').focus();await page.keyboard.press('ArrowRight');await idle(page);expect(await location(page)).not.toBe(before)
  await page.reload();await page.locator('.resume-button').first().click();await expect(page.locator('#audio-toggle')).toBeEnabled();await expect(page.locator('.book-corner:visible')).toHaveCount(0)
- await page.locator('#theme-toggle').click();await page.locator('[data-setting=bookCornerDrag]').check();await page.keyboard.press('Escape');await expect(page.locator('.book-corner:visible')).toHaveCount(4)
+ await toolbarAction(page,'theme-toggle');await page.locator('[data-setting=bookCornerDrag]').check();await page.keyboard.press('Escape');await expect(page.locator('.book-corner:visible')).toHaveCount(4)
  await page.evaluate(()=>{const input=document.querySelector('[data-setting=readingFlow]');input.value='scrolled';input.dispatchEvent(new Event('input',{bubbles:true}))});await expect(page.locator('.book-corner:visible')).toHaveCount(0)
- await page.locator('#theme-toggle').click();await page.locator('[data-appearance=minimal]').click();await expect(page.locator('#book-drag-field')).toBeHidden();await expect(page.locator('.book-corner:visible')).toHaveCount(0)
+ await toolbarAction(page,'theme-toggle');await page.locator('[data-appearance=minimal]').click();await expect(page.locator('#book-drag-field')).toBeHidden();await expect(page.locator('.book-corner:visible')).toHaveCount(0)
 })
 
 test('reduced motion and disabled animation still allow release navigation without a temporary sheet',async({page})=>{
@@ -66,13 +67,13 @@ test('resize, external position navigation and book replacement dispose a held l
 
 test('camera editing takes priority and scaled corners turn the same logical page',async({page})=>{
  await open(page,true);const before=await location(page);await page.locator('#next-page').click();await idle(page);const next=await location(page);await page.locator('#previous-page').click();await idle(page)
- await page.locator('#theme-toggle').click();await page.locator('#book-camera-settings > summary').click();await page.locator('[data-setting=bookCameraZoom]').fill('140');await page.locator('[data-setting=bookCameraY]').fill('100');await page.locator('#book-camera-gestures').check();await expect(page.locator('.book-camera-gesture')).toBeVisible();await page.mouse.move(150,350);await page.mouse.down();await page.mouse.move(210,350,{steps:6});await page.mouse.up();expect(await location(page)).toBe(before);await expect(page.locator('.book-turn')).toHaveCount(0);await page.locator('.book-camera-exit').click()
+ await toolbarAction(page,'theme-toggle');await page.locator('#book-camera-settings > summary').click();await page.locator('[data-setting=bookCameraZoom]').fill('140');await page.locator('[data-setting=bookCameraY]').fill('100');await page.locator('#book-camera-gestures').check();await expect(page.locator('.book-camera-gesture')).toBeVisible();await page.mouse.move(150,350);await page.mouse.down();await page.mouse.move(210,350,{steps:6});await page.mouse.up();expect(await location(page)).toBe(before);await expect(page.locator('.book-turn')).toHaveCount(0);await page.locator('.book-camera-exit').click()
  // Frame the lower right corner into the visible viewport.
- await page.locator('#theme-toggle').click();await page.locator('[data-setting=bookCameraX]').fill('-100');await page.locator('[data-setting=bookCameraY]').fill('-100');await page.keyboard.press('Escape');await drag(page,1,.5);expect(await location(page)).toBe(next)
+ await toolbarAction(page,'theme-toggle');await page.locator('[data-setting=bookCameraX]').fill('-100');await page.locator('[data-setting=bookCameraY]').fill('-100');await page.keyboard.press('Escape');await drag(page,1,.5);expect(await location(page)).toBe(next)
 })
 
 test('new setting and hint translate without opening settings sections or expanding the desktop theme panel',async({page})=>{
- await open(page);await page.locator('#preferences-toggle').click();await page.getByText('General',{exact:true}).click();await page.locator('[data-setting=uiLanguage]').selectOption('en');await page.keyboard.press('Escape');await page.locator('#theme-toggle').click();await expect(page.locator('#book-drag-field')).toContainText('Turn pages by dragging a corner');await page.keyboard.press('Escape');await expect(page.locator('.book-corner-right').first()).toHaveAttribute('title',/Drag a corner/)
+ await open(page);await toolbarAction(page,'preferences-toggle');await page.getByText('General',{exact:true}).click();await page.locator('[data-setting=uiLanguage]').selectOption('en');await page.keyboard.press('Escape');await toolbarAction(page,'theme-toggle');await expect(page.locator('#book-drag-field')).toContainText('Turn pages by dragging a corner');await page.keyboard.press('Escape');await expect(page.locator('.book-corner-right').first()).toHaveAttribute('title',/Drag a corner/)
 })
 
 test('a chapter boundary is not loaded by a cancelled drag and commits to the real next chapter',async({page})=>{

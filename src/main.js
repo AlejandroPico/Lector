@@ -6,6 +6,7 @@ import {addPageDragControls} from './book-page-drag.js'
 import {createChapterPreview} from './chapter-preview.js'
 import {createCatalogBatchTools} from './catalog-batch-ui.js'
 import {addCastMenu,createCastTools} from './cast-ui.js'
+import {createToolbarTools} from './toolbar-tools.js'
 import {createPersonalScenes} from './personal-scenes.js'
 import {createVoiceDiagnostics} from './voice-diagnostics-ui.js'
 import {addSyncMenus,createSyncTools,restoreSyncedBook} from './sync-tools.js'
@@ -55,7 +56,7 @@ import {createBookScene,sceneTheme,scenePaperColors} from './book-scene.js'
 import {addScenePicker,updateScenePicker,focusedBookPage} from './scene-picker.js'
 
 const $ = selector => document.querySelector(selector)
-let personalScenes,catalogBatchTools
+let personalScenes,catalogBatchTools,toolbarTools
 await initializePlatform()
 let userFonts = await allFonts().catch(()=>[])
 for (const resource of [...projectFonts,...userFonts]) {
@@ -276,7 +277,7 @@ $('#app').innerHTML = `
           <div><dt>Autor</dt><dd>Alejandro Pico</dd></div>
           <div><dt>Carácter</dt><dd>Proyecto personal</dd></div>
           <div><dt>Propósito</dt><dd>Lectura y escucha</dd></div>
-          <div><dt>Edición</dt><dd>Versión 2.13.0</dd></div>
+          <div><dt>Edición</dt><dd>Versión 2.13.1</dd></div>
         </dl>
       </aside>
       <div class="about-body">
@@ -497,12 +498,15 @@ function applySettings() {
 }
 
 function closePanels() {
+  const fallback=document.querySelector('.toolbar-right [aria-expanded="true"]')
+  toolbarTools?.close()
   menuLayout.moveSettings(false)
   menuLayout.clearSearch()
   if (themeDraft) { themeDraft=undefined; applySettings() }
   document.querySelectorAll('.panel').forEach(panel => panel.hidden = true)
   document.querySelectorAll('[aria-controls$="-panel"]').forEach(button => button.setAttribute('aria-expanded', 'false'))
-  if (focusBeforePanel?.isConnected) focusBeforePanel.focus({ preventScroll: true })
+  const restore=focusBeforePanel?.getClientRects().length?focusBeforePanel:fallback
+  if (restore?.getClientRects().length) restore.focus({ preventScroll: true })
   focusBeforePanel = null
 }
 function togglePanel(name) {
@@ -510,8 +514,9 @@ function togglePanel(name) {
   closePanels()
   if (!wasOpen) {
     menuLayout.moveSettings(name==='preferences')
-    focusBeforePanel = $(`#${name}-toggle`); panel.hidden = false
-    focusBeforePanel.setAttribute('aria-expanded', 'true')
+    const trigger=$(`#${name}-toggle`)
+    focusBeforePanel = toolbarTools?.compact&&trigger.closest('#tools-drawer')?$('#tools-toggle'):trigger; panel.hidden = false
+    $(`#${name}-toggle`).setAttribute('aria-expanded', 'true')
     panel.querySelector('button').focus()
   }
   $('#selection-menu').hidden = true
@@ -1424,7 +1429,7 @@ function onKey(event) {
     return
   }
   if (target.closest?.('input,textarea,select,[contenteditable="true"]')) return
-  if(!settings.tvMode&&target.closest?.('#sidebar,.panel')&&['ArrowUp','ArrowDown','PageUp','PageDown','Home','End'].includes(event.key))return
+  if(!settings.tvMode&&target.closest?.('#sidebar,.panel,.tools-drawer')&&['ArrowUp','ArrowDown','PageUp','PageDown','Home','End'].includes(event.key))return
   if(settings.tvMode&&event.key.startsWith('Arrow')&&target.closest?.('button,a,summary')){event.preventDefault();moveFocus(event.key,target.closest?.('dialog[open],#dictionary-peek')??document.querySelector('dialog:modal')??document);return}
   if (document.querySelector('dialog[open]')) return
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'o') { event.preventDefault(); $('#file-input').click(); return }
@@ -1442,7 +1447,7 @@ async function toggleFullscreen() {
   else toast('Este navegador no permite activar la pantalla completa desde la aplicación.')
 }
 
-$('#index-toggle').onclick = () => sidebar()
+$('#index-toggle').onclick = () => {closePanels();sidebar()}
 $('#sidebar-close').onclick = () => sidebar(false)
 $('#sidebar-brand-close').onclick = () => sidebar(false)
 $('#open-file').onclick = () => { updateLibrary().catch(() => {}); $('#file-dialog').showModal() }
@@ -1458,6 +1463,7 @@ $('#about-toggle').onclick = () => { closePanels(); $('#about-dialog').showModal
 $('#previous-page').onclick = attempt(() => changePage(-1))
 $('#next-page').onclick = attempt(() => changePage(1))
 for (const name of ['appearance', 'theme', 'voice', 'preferences']) $(`#${name}-toggle`).onclick = () => togglePanel(name)
+toolbarTools=createToolbarTools({closePanels,closeSidebar:()=>sidebar(false)})
 document.querySelectorAll('.panel-close').forEach(button => button.onclick = closePanels)
 document.querySelectorAll('.dialog-close').forEach(button => button.onclick = () => button.closest('dialog').close())
 document.querySelectorAll('dialog').forEach(dialog => {
@@ -1696,7 +1702,7 @@ $('#search-form').onsubmit = attempt(async event => {
 document.addEventListener('keydown', onKey)
 document.addEventListener('pointerdown', event => {
   if(dictionaryPeek.visible&&!event.target.closest('#dictionary-peek')){dictionaryPeek.close({restore:false});event.preventDefault();event.stopImmediatePropagation();return}
-  if (!event.target.closest('.panel,.toolbar,dialog')) closePanels()
+  if (!event.target.closest('.panel,.toolbar,.tools-drawer,dialog')) closePanels()
   if (!event.target.closest('#selection-menu,dialog')) $('#selection-menu').hidden = true
 },true)
 document.addEventListener('dragover', event => { if (event.dataTransfer.types.includes('Files')) event.preventDefault() })

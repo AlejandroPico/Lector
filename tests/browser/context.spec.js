@@ -1,9 +1,10 @@
+import {toolbarAction} from './toolbar-fixture.js'
 import {test,expect} from '@playwright/test'
 import {watchPrivateRequests} from './privacy-fixture.js'
 const original='El sosiego de la tarde acompañaba a Elena. Otra frase privada.\n\nLlegaron al umbral.\n\nLa mañana volvió.'
 const translated='An extra preface.\n\nThe peace of the evening accompanied Elena. Another private sentence.\n\nThey reached the threshold.\n\nMorning returned.'
 async function open(page){await page.goto('/');await page.locator('#file-input').setInputFiles({name:'original.txt',mimeType:'text/plain',buffer:Buffer.from(original)});await expect(page.locator('#audio-toggle')).toBeEnabled()}
-async function languageSettings(page){await page.locator('#preferences-toggle').click();await page.locator('#settings-search').fill('contexto');await expect(page.locator('#language-settings')).toBeVisible()}
+async function languageSettings(page){await toolbarAction(page,'preferences-toggle');await page.locator('#settings-search').fill('contexto');await expect(page.locator('#language-settings')).toBeVisible()}
 async function bilingual(page){await languageSettings(page);await page.locator('#settings-bilingual').click();await expect(page.locator('#bilingual-dialog')).toBeVisible();await expect(page.locator('#bilingual-progress')).toBeHidden()}
 async function selectWord(page,word='sosiego'){
   await page.evaluate(word=>{const doc=document.querySelector('#reader').renderer.getContents()[0].doc,node=doc.querySelector('p').firstChild,index=node.textContent.indexOf(word),range=doc.createRange();range.setStart(node,index);range.setEnd(node,index+word.length);const selection=doc.defaultView.getSelection();selection.removeAllRanges();selection.addRange(range);doc.dispatchEvent(new doc.defaultView.PointerEvent('pointerup',{bubbles:true}))},word)
@@ -75,7 +76,7 @@ test('translation storage is optional, survives within a session and can be remo
 
 test('mobile bilingual reading fits and translates its controls without translating either book',async({browser})=>{
   const context=await browser.newContext({locale:'en-US',viewport:{width:390,height:844},baseURL:'http://127.0.0.1:5177'}),page=await context.newPage()
-  await open(page);await page.locator('#preferences-toggle').click();await page.locator('#settings-search').fill('bilingual');await page.locator('#settings-bilingual').click()
+  await open(page);await toolbarAction(page,'preferences-toggle');await page.locator('#settings-search').fill('bilingual');await page.locator('#settings-bilingual').click()
   await expect(page.locator('#bilingual-title')).toHaveText('Bilingual reading');await page.locator('#bilingual-file').setInputFiles({name:'translation.txt',mimeType:'text/plain',buffer:Buffer.from(translated)})
   await expect(page.locator('.bilingual-original').first()).toContainText('El sosiego');await expect(page.locator('.bilingual-translation').first()).toHaveText('An extra preface.')
   expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(390)

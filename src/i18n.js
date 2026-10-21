@@ -31,6 +31,7 @@ export function detectLanguage(preference = 'auto', browserLanguages = navigator
 // Each line contains the same message in es, ca, en, fr, de, pt, it, zh, ja, hi.
 const rows = `
 Controles del lector|Controls del lector|Reader controls|Commandes de lecture|Lesesteuerung|Controlos de leitura|Controlli di lettura|阅读控制|読書コントロール|पठन नियंत्रण
+Herramientas|Eines|Tools|Outils|Werkzeuge|Ferramentas|Strumenti|工具|ツール|उपकरण
 Índice y biblioteca|Índex i biblioteca|Contents and library|Sommaire et bibliothèque|Inhalt und Bibliothek|Índice e biblioteca|Indice e biblioteca|目录和书库|目次とライブラリ|विषय सूची और पुस्तकालय
 Abrir documento (Ctrl+O)|Obrir document (Ctrl+O)|Open document (Ctrl+O)|Ouvrir un document (Ctrl+O)|Dokument öffnen (Strg+O)|Abrir documento (Ctrl+O)|Apri documento (Ctrl+O)|打开文档 (Ctrl+O)|文書を開く (Ctrl+O)|दस्तावेज़ खोलें (Ctrl+O)
 Leer en voz alta|Llegir en veu alta|Read aloud|Lire à voix haute|Vorlesen|Ler em voz alta|Leggi ad alta voce|朗读|読み上げ|ज़ोर से पढ़ें

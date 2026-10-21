@@ -1,9 +1,10 @@
+import {toolbarAction} from './toolbar-fixture.js'
 import {test,expect} from '@playwright/test'
 import JSZip from 'jszip'
 import {epub,coverEPUB} from './fixtures.js'
 async function open(page,buffer){await page.goto('/');await page.locator('#file-input').setInputFiles({name:'libro.epub',mimeType:'application/epub+zip',buffer:buffer??await epub()});await expect(page.locator('#audio-toggle')).toBeEnabled()}
 async function library(page){if(await page.locator('#sidebar').isHidden())await page.locator('#index-toggle').click();await page.getByRole('tab',{name:'Libros',exact:true}).click();await page.locator('#library-expand').click()}
-async function physical(page){await page.locator('#theme-toggle').click();await page.locator('[data-appearance="book"]').click();await expect(page.locator('#scene-options')).toBeVisible();await page.keyboard.press('Escape')}
+async function physical(page){await toolbarAction(page,'theme-toggle');await page.locator('[data-appearance="book"]').click();await expect(page.locator('#scene-options')).toBeVisible();await page.keyboard.press('Escape')}
 
 test('one folder book and its cached reading share a compact library entry without a delete button',async({page})=>{
  const buffer=await coverEPUB();await open(page,buffer);await page.locator('#start-reading').click()
@@ -23,7 +24,7 @@ test('the collections field filters existing names and creates on Enter or plus'
 })
 
 test('themes switch appearance in place, show all desk thumbnails and hide the schedule and scrollbar',async({page})=>{
- await open(page);await page.locator('#theme-toggle').click();await expect(page.locator('#theme-panel')).toHaveCSS('scrollbar-width','none');await expect(page.locator('[data-theme="auto"]')).toHaveAttribute('title',/mañana de 7/)
+ await open(page);await toolbarAction(page,'theme-toggle');await expect(page.locator('#theme-panel')).toHaveCSS('scrollbar-width','none');await expect(page.locator('[data-theme="auto"]')).toHaveAttribute('title',/mañana de 7/)
  await expect(page.locator('#theme-panel p').filter({hasText:'Automático: mañana'})).toHaveCount(0)
  await page.locator('[data-appearance="book"]').click();await expect(page.locator('.theme-options')).toBeHidden();await expect(page.locator('[data-scene]')).toHaveCount(12)
  for(const scene of ['library','bamboo','garden','study']){await page.locator(`[data-scene="${scene}"]`).click();await expect(page.locator('body')).toHaveAttribute('data-book-scene',scene);await expect(page.locator(`[data-scene="${scene}"]`)).toHaveAttribute('aria-pressed','true');expect(await page.locator(`[data-scene="${scene}"] .scene-thumbnail`).evaluate(el=>getComputedStyle(el).backgroundImage)).toContain(scene+'.webp')}
@@ -34,7 +35,7 @@ test('physical width follows reading width, transparent chrome shows the desk, a
  await page.addInitScript(()=>Object.defineProperty(window,'speechSynthesis',{value:{getVoices:()=>[],addEventListener(){},cancel(){window.__cancel=(window.__cancel??0)+1},pause(){},resume(){},speak(u){window.__utterance=u;u.onstart?.()}}}))
  await open(page);await physical(page);await page.locator('#audio-toggle').click();await expect.poll(()=>page.evaluate(()=>window.__utterance?.text)).toBeTruthy();const cancelled=await page.evaluate(()=>window.__cancel)
  const before=(await page.locator('#reading-area').boundingBox()).width
- await page.locator('#appearance-toggle').click();await page.locator('#appearance-panel summary').filter({hasText:'Espaciado, márgenes y fuentes'}).click();await page.locator('#width').fill('760');await page.locator('#width').dispatchEvent('input');await page.keyboard.press('Escape');await expect.poll(async()=>(await page.locator('#reading-area').boundingBox()).width).toBeLessThan(before-100)
+ await toolbarAction(page,'appearance-toggle');await page.locator('#appearance-panel summary').filter({hasText:'Espaciado, márgenes y fuentes'}).click();await page.locator('#width').fill('760');await page.locator('#width').dispatchEvent('input');await page.keyboard.press('Escape');await expect.poll(async()=>(await page.locator('#reading-area').boundingBox()).width).toBeLessThan(before-100)
  await expect(page.locator('.toolbar')).toHaveCSS('background-color','rgba(0, 0, 0, 0)');await expect(page.locator('.reading-footer')).toHaveCSS('background-color','rgba(0, 0, 0, 0)')
  const cfi=await page.evaluate(()=>document.querySelector('#reader').lastLocation.cfi);await page.locator('#book-edge-right').click();await expect(page.locator('.book-turn')).toHaveCount(0);expect(await page.evaluate(()=>document.querySelector('#reader').lastLocation.cfi)).not.toBe(cfi)
  await page.locator('#book-edge-left').click();await expect(page.locator('.book-turn')).toHaveCount(0);expect(await page.evaluate(()=>window.__cancel)).toBe(cancelled);await page.screenshot({path:'release/qa/111-book-width.png'})
@@ -45,7 +46,7 @@ test('portrait mobile focuses real left and right pages and can also show the fu
  const side=await page.locator('#reading-area').getAttribute('data-book-side'),other=side==='left'?'right':'left',before=await page.evaluate(()=>document.querySelector('#reader').lastLocation.cfi)
  await page.locator(`[data-book-side="${other}"]`).click();await expect(page.locator('.book-turn')).toHaveCount(0);expect(await page.evaluate(()=>document.querySelector('#reader').lastLocation.cfi)).not.toBe(before);await expect(page.locator('#reading-area')).toHaveAttribute('data-book-side',other)
  await page.screenshot({path:'release/qa/111-phone-page.png'});expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(390)
- await page.locator('#theme-toggle').click();await page.locator('[data-setting="bookMobileView"]').selectOption('spread');await page.keyboard.press('Escape');await expect(page.locator('#book-page-focus')).toBeHidden();await expect.poll(()=>page.evaluate(()=>document.querySelector('#reader').renderer.columnCount)).toBe(2)
+ await toolbarAction(page,'theme-toggle');await page.locator('[data-setting="bookMobileView"]').selectOption('spread');await page.keyboard.press('Escape');await expect(page.locator('#book-page-focus')).toBeHidden();await expect.poll(()=>page.evaluate(()=>document.querySelector('#reader').renderer.columnCount)).toBe(2)
  await page.setViewportSize({width:844,height:390});await expect(page.locator('#reading-area')).not.toHaveClass(/book-focused/)
 })
 

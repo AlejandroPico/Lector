@@ -1,6 +1,6 @@
 # Activar Google Cast en Lector 2.13
 
-La integración incorpora el receptor **92B106F9** registrado por el titular, para **Chrome de escritorio y el APK Android**. Su estado actual es **Unpublished**: solo puede abrirse en los dispositivos de prueba que autorice el titular. No se ha probado todavía en tus dispositivos físicos. No utiliza puente local, direcciones IP, subida pública de libros ni un receptor ajeno. Requiere audio generado por **Piper o una API**; las voces de `speechSynthesis`, incluidas las de Edge, no entregan un archivo de audio transmisible.
+La integración incorpora el receptor **92B106F9** registrado por el titular, para **Chrome de escritorio y el APK Android**. Su estado actual es **Unpublished**: solo puede abrirse en los dispositivos de prueba que autorice el titular. El 21 de octubre de 2026 el titular confirmó reproducción desde el PC con Piper en su altavoz Google Home registrado, e informó de errores intermitentes al conectar. Quedan pendientes su diagnóstico, la escucha prolongada y las pruebas en otros dispositivos. No utiliza puente Cast local, direcciones IP, subida pública de libros ni un receptor ajeno. Requiere audio generado por **Piper o una API**; las voces de `speechSynthesis`, incluidas las de Edge, no entregan un archivo de audio transmisible.
 
 El registro de Cast no compra voces ni incluye uso de APIs de inteligencia artificial. Las tarifas del proveedor de voz son independientes; Piper es una alternativa local cuando se dispone de un equipo que lo ejecute.
 
@@ -26,6 +26,10 @@ En el formulario mostrado por el titular, dejar **Android TV Application Details
 ## Cómo se utilizará
 
 En Chrome de escritorio o en el APK Android, elige Piper o una API en Voz. Pulsa el icono Cast, selecciona el dispositivo oficial y comienza a leer. Si ya estaba leyendo, se cambia de salida desde el siguiente fragmento completo. Cancelar el selector conserva la salida local. Pausa y reanuda desde el botón habitual. Pulsa Cast otra vez para desconectar; la narración remota se detiene y no pasa por sorpresa al altavoz local.
+
+Para comprobar esta integración usa el icono Cast **dentro de Lector**. El panel multimedia general de Chrome tiene sus propias opciones y no sustituye esta prueba.
+
+Seleccionar Piper no instala ni inicia su motor. Antes de emitir, sigue la [preparación de voz local](voz-local/README.md), mantén el motor iniciado, pulsa **Buscar voces locales** y comprueba que lee por el PC sin emitir. Chrome puede pedir permiso de acceso a la red local. Un error «Failed to fetch» al buscar voces o generar audio puede indicar que el motor no está iniciado o que el navegador bloquea el acceso; por sí solo no identifica un fallo de Cast. La voz Piper instalada es distinta de las voces del navegador y su calidad debe valorarse escuchándola.
 
 El emisor debe seguir abierto para generar y enviar los fragmentos siguientes. Esta primera integración **no garantiza continuidad con el teléfono bloqueado**, ni reproducción remota autónoma del libro completo. No es duplicación de pantalla. El receptor de TV muestra título, autor, capítulo, cubierta pequeña y el fragmento actual. Los altavoces reproducen audio. Un televisor sin Google Cast necesita un Chromecast compatible; Matter, Alexa, AirPlay, iOS Cast y emisión desde Electron no se implementan en esta entrega.
 

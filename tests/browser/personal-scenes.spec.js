@@ -1,3 +1,4 @@
+import {toolbarAction} from './toolbar-fixture.js'
 import {test,expect} from '@playwright/test'
 import sharp from 'sharp'
 import {watchPrivateRequests} from './privacy-fixture.js'
@@ -6,9 +7,9 @@ const picture=async()=>({name:'Mi mesa.png',mimeType:'image/png',buffer:await sh
 async function open(page){
  await page.addInitScript(()=>{Object.defineProperty(window,'speechSynthesis',{value:{getVoices:()=>[],addEventListener(){},cancel(){window.__cancels=(window.__cancels??0)+1},pause(){},resume(){},speak(u){window.__utterance=u;u.onstart?.()}}})})
  await page.goto('/');await page.locator('#file-input').setInputFiles({name:'libro.txt',mimeType:'text/plain',buffer:Buffer.from('Un libro para leer con tranquilidad. Otra frase después. '.repeat(50))});await expect(page.locator('#audio-toggle')).toBeEnabled()
- await page.locator('#theme-toggle').click();await page.locator('[data-appearance="book"]').click();await page.keyboard.press('Escape')
+ await toolbarAction(page,'theme-toggle');await page.locator('[data-appearance="book"]').click();await page.keyboard.press('Escape')
 }
-async function manager(page){await page.locator('#theme-toggle').click();await page.locator('#personal-scenes-open').click()}
+async function manager(page){await toolbarAction(page,'theme-toggle');await page.locator('#personal-scenes-open').click()}
 async function add(page){await manager(page);await page.locator('#personal-scene-file').setInputFiles(await picture());await expect(page.locator('#personal-scene-save')).toBeEnabled();await page.locator('#personal-scene-name').fill('Mi rincón');await page.locator('#personal-scene-save').click();await expect(page.locator('#personal-scenes-dialog')).toBeHidden()}
 
 test('photos are prepared locally, persist and can be renamed or removed while narration continues',async({page})=>{
@@ -32,7 +33,7 @@ test('invalid image input cannot fetch external resources or replace the active 
  await open(page);await add(page);const id=await page.locator('body').getAttribute('data-book-scene');await manager(page)
  await page.locator('#personal-scene-file').setInputFiles({name:'unsafe.png',mimeType:'image/png',buffer:Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><image href="https://tracker.invalid/x"/></svg>')})
  await expect(page.locator('#personal-scene-status')).toContainText('PNG, JPEG o WebP');await expect(page.locator('body')).toHaveAttribute('data-book-scene',id)
- await page.locator('#personal-scenes-close').click();await page.locator('#theme-toggle').click();await page.locator('[data-appearance="minimal"]').click();await expect(page.locator('#personal-scene-actions')).toBeHidden();await expect(page.locator('#book-environment')).toBeHidden()
+ await page.locator('#personal-scenes-close').click();await toolbarAction(page,'theme-toggle');await page.locator('[data-appearance="minimal"]').click();await expect(page.locator('#personal-scene-actions')).toBeHidden();await expect(page.locator('#book-environment')).toBeHidden()
 })
 
 test('personal scene manager is translated and fits a mobile display',async({browser})=>{

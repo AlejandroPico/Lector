@@ -1,17 +1,18 @@
+import {toolbarAction} from './toolbar-fixture.js'
 import {test,expect} from '@playwright/test'
 
 test('central settings and shortcuts share controls; credits are found without advanced menus',async({page})=>{
   await page.goto('/');await page.locator('#dismiss-file').click()
-  await page.locator('#preferences-toggle').click()
+  await toolbarAction(page,'preferences-toggle')
   await expect(page.locator('#preferences-panel details[open]')).toHaveCount(0)
   await page.locator('#settings-search').fill('créditos')
   await expect(page.locator('#preferences-panel [data-setting="readingFlow"]')).toBeVisible()
   await page.locator('[data-setting="readingFlow"]').selectOption('scrolled')
-  await page.locator('#appearance-toggle').click()
+  await toolbarAction(page,'appearance-toggle')
   await expect(page.locator('#appearance-panel [data-setting="readingFlow"]')).toHaveValue('scrolled')
   await expect(page.locator('[data-setting="readingFlow"]')).toHaveCount(1)
   await page.locator('[data-setting="readingFlow"]').selectOption('paginated')
-  await page.locator('#preferences-toggle').click()
+  await toolbarAction(page,'preferences-toggle')
   await expect(page.locator('#preferences-panel [data-setting="readingFlow"]')).toHaveValue('paginated')
   await expect(page.locator('#settings-search')).toHaveValue('')
 })

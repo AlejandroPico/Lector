@@ -1,3 +1,4 @@
+import {toolbarAction} from './toolbar-fixture.js'
 import { test, expect } from '@playwright/test'
 import { epub, docx, mobi, pdf, longHTML } from './fixtures.js'
 
@@ -50,7 +51,7 @@ test('EPUB paginates, has a nested index, stores position and resumes', async ({
 test('typography, three columns, themes and zen are real controls', async ({ page }) => {
   await open(page)
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('lector-settings')).theme)).toBe('auto')
-  await page.locator('#appearance-toggle').click()
+  await toolbarAction(page,'appearance-toggle')
   await page.locator('[data-setting="columns"]').selectOption('3')
   await expect.poll(() => page.evaluate(() => document.querySelector('#reader').renderer.columnCount)).toBe(3)
   await page.locator('[data-setting="font"]').selectOption('Verdana')
@@ -59,9 +60,9 @@ test('typography, three columns, themes and zen are real controls', async ({ pag
     const doc = document.querySelector('#reader').renderer.getContents()[0].doc
     return doc.defaultView.getComputedStyle(doc.body).fontSize
   })).toBe('24px')
-  await page.locator('#theme-toggle').click(); await page.locator('button[data-theme="night"]').click()
+  await toolbarAction(page,'theme-toggle'); await page.locator('button[data-theme="night"]').click()
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'night')
-  await page.keyboard.press('Escape'); await page.locator('#zen-toggle').click()
+  await page.keyboard.press('Escape'); await toolbarAction(page,'zen-toggle')
   await expect(page.locator('.toolbar')).toBeHidden()
   await page.screenshot({ path: 'test-results/noche-zen.png', fullPage: true })
   await page.keyboard.press('Escape'); await expect(page.locator('.toolbar')).toBeVisible()
@@ -185,7 +186,7 @@ test('small screens use one readable column and retain accessible controls', asy
   await expect.poll(() => page.evaluate(() => document.querySelector('#reader').renderer.columnCount)).toBe(1)
   await page.screenshot({ path: 'test-results/movil.png', fullPage: true })
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390)
-  await page.locator('#preferences-toggle').click()
+  await toolbarAction(page,'preferences-toggle')
   await page.locator('#preferences-panel summary').filter({hasText:/^Lectura$/}).click()
   await expect(page.locator('#preferences-panel [data-setting="font"]')).toBeVisible()
   await page.locator('#preferences-panel [data-setting="readingFlow"]').selectOption('scrolled')

@@ -1,8 +1,9 @@
+import {toolbarAction} from './toolbar-fixture.js'
 import {test,expect} from '@playwright/test'
 import {epub} from './fixtures.js'
-async function manager(page){await page.goto('/');await page.locator('#dismiss-file').click();await page.locator('#preferences-toggle').click();await page.locator('#preferences-panel summary').filter({hasText:'Notas y vocabulario'}).click();await page.locator('#settings-dictionaries').click();await expect(page.locator('#dictionary-manager')).toBeVisible()}
+async function manager(page){await page.goto('/');await page.locator('#dismiss-file').click();await toolbarAction(page,'preferences-toggle');await page.locator('#preferences-panel summary').filter({hasText:'Notas y vocabulario'}).click();await page.locator('#settings-dictionaries').click();await expect(page.locator('#dictionary-manager')).toBeVisible()}
 async function wordSearch(page,word,language='es'){
-  await page.locator('#dictionary-manager .dialog-close').click();await page.locator('#preferences-toggle').click();await page.locator('#settings-word').click()
+  await page.locator('#dictionary-manager .dialog-close').click();await toolbarAction(page,'preferences-toggle');await page.locator('#settings-word').click()
   await page.locator('#dictionary-language').selectOption(language);await page.locator('#dictionary-query').fill(word);await page.locator('#dictionary-search-form button').click()
 }
 test('Spanish package installation persists and all lookups remain offline after reload',async({page,context})=>{
@@ -12,7 +13,7 @@ test('Spanish package installation persists and all lookups remain offline after
   await page.locator('#dictionary-pack-language').selectOption('es');await page.getByRole('button',{name:'Instalar',exact:true}).click()
   await expect(page.locator('#dictionary-install-progress')).toBeHidden({timeout:60000});await expect(page.getByRole('button',{name:'Eliminar paquete',exact:true})).toBeVisible();expect(requests).toHaveLength(128)
   await wordSearch(page,'sosiego');await expect(page.locator('#dictionary-source')).toContainText('Wiktionary');await expect(page.locator('#dictionary-definition')).toContainText('tranquilidad')
-  await page.reload();await page.locator('#dismiss-file').click();await page.locator('#preferences-toggle').click();await page.locator('#preferences-panel summary').filter({hasText:'Notas y vocabulario'}).click();await page.locator('#settings-word').click()
+  await page.reload();await page.locator('#dismiss-file').click();await toolbarAction(page,'preferences-toggle');await page.locator('#preferences-panel summary').filter({hasText:'Notas y vocabulario'}).click();await page.locator('#settings-word').click()
   await context.setOffline(true);await page.locator('#dictionary-query').fill('umbral');await page.locator('#dictionary-search-form button').click();await expect(page.locator('#dictionary-source')).toContainText('Wiktionary');await expect(page.locator('#dictionary-definition')).not.toContainText('No se encontró')
   expect(requests).toHaveLength(128);await context.setOffline(false)
 })
@@ -29,25 +30,25 @@ test('personal Hindi dictionary and learned vocabulary survive reload and packag
   await page.locator('#dictionary-manager-file').setInputFiles({name:'hindi.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(data))})
   await expect(page.locator('#dictionary-install-progress')).toBeHidden();await expect(page.locator('.dictionary-pack-row').filter({hasText:'Diccionario propio'})).toBeVisible()
   await wordSearch(page,'किताब','hi');await expect(page.locator('#dictionary-definition')).toContainText('पढ़ने');await page.locator('#dictionary-save-word').click()
-  await page.locator('#dictionary-dialog .dialog-close').click();await page.locator('#preferences-toggle').click();await page.locator('#settings-vocabulary').click();await page.locator('.vocabulary-row summary').click()
+  await page.locator('#dictionary-dialog .dialog-close').click();await toolbarAction(page,'preferences-toggle');await page.locator('#settings-vocabulary').click();await page.locator('.vocabulary-row summary').click()
   await page.locator('.vocabulary-row textarea').fill('Palabra aprendida');await page.locator('.vocabulary-row input[type="checkbox"]').check();await page.getByRole('button',{name:'Guardar',exact:true}).click()
   // The summary is refreshed only after the storage transaction completes.
   await expect(page.locator('.vocabulary-row summary')).toContainText('Aprendida')
-  await page.reload();await page.locator('#dismiss-file').click();await page.locator('#preferences-toggle').click();await page.locator('#preferences-panel summary').filter({hasText:'Notas y vocabulario'}).click();await page.locator('#settings-vocabulary').click()
+  await page.reload();await page.locator('#dismiss-file').click();await toolbarAction(page,'preferences-toggle');await page.locator('#preferences-panel summary').filter({hasText:'Notas y vocabulario'}).click();await page.locator('#settings-vocabulary').click()
   await page.locator('#vocabulary-state').selectOption('learned');await expect(page.locator('.vocabulary-row')).toHaveCount(1);await page.locator('.vocabulary-row summary').click();await expect(page.locator('.vocabulary-row textarea')).toHaveValue('Palabra aprendida')
-  await page.locator('#vocabulary-dialog .dialog-close').click();await page.locator('#preferences-toggle').click();await page.locator('#settings-dictionaries').click();await page.locator('.dictionary-pack-row').filter({hasText:'Diccionario propio'}).getByRole('button',{name:'Eliminar paquete',exact:true}).click()
+  await page.locator('#vocabulary-dialog .dialog-close').click();await toolbarAction(page,'preferences-toggle');await page.locator('#settings-dictionaries').click();await page.locator('.dictionary-pack-row').filter({hasText:'Diccionario propio'}).getByRole('button',{name:'Eliminar paquete',exact:true}).click()
   expect(await page.evaluate(async()=>{const {allVocabulary}=await import('/src/storage.js');return (await allVocabulary()).length})).toBe(1)
 })
 test('corrupt data is rejected and legacy glossary stays usable without installation',async({page})=>{
   await page.goto('/');await page.locator('#file-input').setInputFiles({name:'test.epub',mimeType:'application/epub+zip',buffer:await epub()});await expect(page.locator('#audio-toggle')).toBeEnabled()
-  await page.locator('#preferences-toggle').click();await page.locator('#preferences-panel summary').filter({hasText:'Notas y vocabulario'}).click();await page.locator('#settings-word').click();await page.route('**/*.json.gz',route=>route.abort());await page.locator('#dictionary-query').fill('sosiego');await page.locator('#dictionary-search-form button').click()
+  await toolbarAction(page,'preferences-toggle');await page.locator('#preferences-panel summary').filter({hasText:'Notas y vocabulario'}).click();await page.locator('#settings-word').click();await page.route('**/*.json.gz',route=>route.abort());await page.locator('#dictionary-query').fill('sosiego');await page.locator('#dictionary-search-form button').click()
   await expect(page.locator('#dictionary-definition')).toContainText('tranquilidad');await expect(page.locator('#dictionary-source')).toHaveText('Glosario básico')
   await page.locator('#dictionary-manage').click();await page.locator('#dictionary-pack-language').selectOption('es');await page.route('**/*.json.gz',route=>route.fulfill({body:'bad gzip'}));await page.getByRole('button',{name:'Instalar',exact:true}).click();await expect(page.locator('#dictionary-install-progress')).toBeHidden()
   expect(await page.evaluate(async()=>{const {allDictionaryPacks}=await import('/src/storage.js');return await allDictionaryPacks()})).toEqual([])
 })
 test('mobile dictionary manager fits and shows translated controls and package definition languages',async({browser})=>{
   const context=await browser.newContext({locale:'fr-FR',viewport:{width:390,height:844},baseURL:'http://127.0.0.1:5177'}),page=await context.newPage()
-  await page.goto('/');await page.locator('#dismiss-file').click();await page.locator('#preferences-toggle').click();await page.locator('#preferences-panel summary').filter({hasText:'Notes et vocabulaire'}).click();await page.locator('#settings-dictionaries').click()
+  await page.goto('/');await page.locator('#dismiss-file').click();await toolbarAction(page,'preferences-toggle');await page.locator('#preferences-panel summary').filter({hasText:'Notes et vocabulaire'}).click();await page.locator('#settings-dictionaries').click()
   await expect(page.locator('#dictionary-manager-title')).toHaveText('Dictionnaires hors ligne');await page.locator('#dictionary-pack-language').selectOption('ca')
   await expect(page.locator('.dictionary-pack-row')).toContainText('Définitions: English');await expect(page.getByRole('button',{name:'Installer',exact:true})).toBeVisible()
   expect(await page.locator('#dictionary-manager').evaluate(el=>el.scrollWidth>el.clientWidth)).toBe(false)

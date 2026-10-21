@@ -1,8 +1,9 @@
+import {toolbarAction} from './toolbar-fixture.js'
 import {test,expect} from '@playwright/test'
 import sharp from 'sharp'
 test.setTimeout(90000)
 async function open(page){await page.addInitScript(()=>Object.defineProperty(window,'speechSynthesis',{value:{getVoices:()=>[],addEventListener(){},cancel(){window.__cancels=(window.__cancels??0)+1},pause(){},resume(){},speak(u){window.__utterance=u;u.onstart?.()}}}));await page.goto('/');await expect(page.locator('#file-dialog')).toBeVisible();await page.locator('#file-input').setInputFiles({name:'papel.txt',mimeType:'text/plain',buffer:Buffer.from('La luz acompañaba la lectura del libro. Una página nueva se abría despacio. '.repeat(80))});await expect(page.locator('#audio-toggle')).toBeEnabled()}
-async function physical(page){await page.locator('#theme-toggle').click();await page.locator('[data-appearance="book"]').click();await page.locator('[data-scene="home"]').click();await page.locator('#paper-light-settings > summary').click();await page.evaluate(async()=>{const area=document.querySelector('#reading-area');await Promise.all(area.getAnimations().map(a=>a.finished.catch(()=>{})));await document.querySelector('#reader').renderer.whenNavigationIdle?.()})}
+async function physical(page){await toolbarAction(page,'theme-toggle');await page.locator('[data-appearance="book"]').click();await page.locator('[data-scene="home"]').click();await page.locator('#paper-light-settings > summary').click();await page.evaluate(async()=>{const area=document.querySelector('#reading-area');await Promise.all(area.getAnimations().map(a=>a.finished.catch(()=>{})));await document.querySelector('#reader').renderer.whenNavigationIdle?.()})}
 const color=async(page,key,value)=>page.locator(`[data-setting="${key}"]`).evaluate((el,value)=>{el.value=value;el.dispatchEvent(new Event('input',{bubbles:true}))},value)
 const paper=page=>page.evaluate(()=>({bg:document.documentElement.style.getPropertyValue('--book-paper'),ink:document.documentElement.style.getPropertyValue('--book-ink')}))
 
@@ -19,16 +20,16 @@ test('paper lighting covers every environment and preserves menus, desk, positio
 })
 
 test('lighting survives reload, resets to its environment and leaves minimalist reading untouched',async({page})=>{
- await open(page);await page.locator('#theme-toggle').click();await page.locator('button[data-theme=morning]').click();await page.keyboard.press('Escape');const minimal=await page.evaluate(()=>({ink:document.documentElement.style.getPropertyValue('--ink'),paper:document.documentElement.style.getPropertyValue('--paper')}));await physical(page);const original=await paper(page)
+ await open(page);await toolbarAction(page,'theme-toggle');await page.locator('button[data-theme=morning]').click();await page.keyboard.press('Escape');const minimal=await page.evaluate(()=>({ink:document.documentElement.style.getPropertyValue('--ink'),paper:document.documentElement.style.getPropertyValue('--paper')}));await physical(page);const original=await paper(page)
  await page.locator('[data-setting="paperLightEnabled"]').check();await page.locator('[data-setting="paperBrightness"]').fill('75');await page.locator('[data-setting="paperBrightness"]').dispatchEvent('input');const changed=await paper(page);expect(changed.bg).not.toBe(original.bg)
- await page.reload();await page.locator('#dismiss-file').click();expect(await paper(page)).toEqual(changed);await page.locator('#theme-toggle').click();await page.locator('#paper-light-settings > summary').click();await expect(page.locator('[data-setting="paperBrightness"]')).toHaveValue('75')
+ await page.reload();await page.locator('#dismiss-file').click();expect(await paper(page)).toEqual(changed);await toolbarAction(page,'theme-toggle');await page.locator('#paper-light-settings > summary').click();await expect(page.locator('[data-setting="paperBrightness"]')).toHaveValue('75')
  await page.locator('#paper-light-reset').click();expect(await paper(page)).toEqual(original);await expect(page.locator('[data-setting="paperLightEnabled"]')).not.toBeChecked();await page.locator('[data-appearance="minimal"]').click();await expect(page.locator('#paper-light-settings')).toBeHidden()
  expect(await page.evaluate(()=>({ink:document.documentElement.style.getPropertyValue('--ink'),paper:document.documentElement.style.getPropertyValue('--paper')}))).toEqual(minimal)
 })
 
 test('personal photographs and their controls retain their colors when the paper changes',async({page})=>{
  await open(page);await physical(page);await page.locator('#personal-scenes-open').click();await page.locator('#personal-scene-file').setInputFiles({name:'Mesa.png',mimeType:'image/png',buffer:await sharp({create:{width:900,height:500,channels:3,background:'#ffffff'}}).png().toBuffer()});await expect(page.locator('#personal-scene-save')).toBeEnabled();await page.locator('#personal-scene-contrast').selectOption('dark');await page.locator('#personal-scene-save').click();await expect(page.locator('#personal-scenes-dialog')).toBeHidden()
- const before=await page.locator('#book-environment').evaluate(el=>el.style.backgroundImage);await page.locator('#theme-toggle').click();await page.locator('[data-setting="paperLightEnabled"]').check();await page.locator('[data-setting="paperInverted"]').check();expect(await page.locator('#book-environment').evaluate(el=>el.style.backgroundImage)).toBe(before)
+ const before=await page.locator('#book-environment').evaluate(el=>el.style.backgroundImage);await toolbarAction(page,'theme-toggle');await page.locator('[data-setting="paperLightEnabled"]').check();await page.locator('[data-setting="paperInverted"]').check();expect(await page.locator('#book-environment').evaluate(el=>el.style.backgroundImage)).toBe(before)
  await page.keyboard.press('Escape');await page.locator('#theme-toggle').hover();await expect(page.locator('#theme-toggle')).toHaveCSS('color','rgb(39, 35, 30)');await page.screenshot({path:'test-results/27-personal-paper.png'})
 })
 

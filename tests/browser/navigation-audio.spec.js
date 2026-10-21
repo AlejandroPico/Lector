@@ -1,3 +1,4 @@
+import {toolbarAction} from './toolbar-fixture.js'
 import {test,expect} from '@playwright/test'
 import {epub} from './fixtures.js'
 async function mock(page){await page.addInitScript(()=>Object.defineProperty(window,'speechSynthesis',{value:{getVoices:()=>[],addEventListener(){},cancel(){window.__cancels=(window.__cancels??0)+1},pause(){},resume(){},speak(utterance){window.__utterance=utterance;window.__count=(window.__count??0)+1;utterance.onstart?.()}}}))}
@@ -18,7 +19,7 @@ test('paused narration returns without resuming, including mobile English and ze
  await page.keyboard.press('z');await expect(page.locator('#return-reading')).toBeVisible();await page.locator('#return-reading').click();await expect.poll(()=>page.evaluate(()=>document.querySelector('#reader').renderer.getContents()[0].index)).toBe(0);await expect(page.locator('#audio-toggle')).toHaveAttribute('aria-label','Resume reading');expect(await page.evaluate(()=>window.__count)).toBe(1);await context.close()
 })
 test('continuous mode holds the manually selected position while words and sentence callbacks advance',async({page})=>{
- await mock(page);await open(page);await page.locator('#appearance-toggle').click();await page.locator('[data-setting="readingFlow"]').selectOption('scrolled');await page.keyboard.press('Escape');await page.locator('#audio-toggle').click();await expect.poll(()=>page.evaluate(()=>window.__count)).toBe(1)
+ await mock(page);await open(page);await toolbarAction(page,'appearance-toggle');await page.locator('[data-setting="readingFlow"]').selectOption('scrolled');await page.keyboard.press('Escape');await page.locator('#audio-toggle').click();await expect.poll(()=>page.evaluate(()=>window.__count)).toBe(1)
  await position(page,100);const current=await page.evaluate(()=>({index:document.querySelector('#reader').renderer.getContents()[0].index,offset:document.querySelector('#reader').renderer.containerPosition}));await page.evaluate(()=>window.__utterance.onend());await expect.poll(()=>page.evaluate(()=>window.__count)).toBe(2);await page.evaluate(()=>window.__utterance.onboundary({name:'word',charIndex:3,charLength:3}));await page.waitForTimeout(300)
  expect(await page.evaluate(()=>document.querySelector('#reader').renderer.getContents()[0].index)).toBe(current.index);expect(await page.evaluate(()=>document.querySelector('#reader').renderer.containerPosition)).toBeCloseTo(current.offset,0);await page.locator('#return-reading').click();await expect.poll(()=>page.evaluate(()=>document.querySelector('#reader').renderer.getContents()[0].index)).toBe(0)
 })

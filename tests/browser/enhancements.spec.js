@@ -1,3 +1,4 @@
+import {toolbarAction} from './toolbar-fixture.js'
 import { test, expect } from '@playwright/test'
 import { epub, mobi } from './fixtures.js'
 
@@ -10,11 +11,11 @@ async function openBook(page) {
 
 test('theme background stays uniform through resizing, animation and columns', async ({page}) => {
   await openBook(page)
-  await page.locator('#theme-toggle').click()
+  await toolbarAction(page,'theme-toggle')
   await expect(page.locator('button[data-theme]')).toHaveCount(24)
   await page.locator('button[data-theme="contrast"]').click()
   await expect(page.locator('html')).toHaveCSS('background-color','rgb(0, 0, 0)')
-  await page.locator('#appearance-toggle').click();await page.getByText('Espaciado, márgenes y fuentes',{exact:true}).click()
+  await toolbarAction(page,'appearance-toggle');await page.getByText('Espaciado, márgenes y fuentes',{exact:true}).click()
   for (const count of ['1','2','3']) {
     await page.locator('[data-setting="columns"]').selectOption(count)
     await page.locator('[data-setting="animated"]').uncheck()
@@ -33,7 +34,7 @@ test('theme background stays uniform through resizing, animation and columns', a
 
 test('twenty fonts include real local reading fonts and wide screen control', async ({page}) => {
   await page.setViewportSize({width:2560,height:1080})
-  await openBook(page); await page.locator('#appearance-toggle').click();await page.getByText('Espaciado, márgenes y fuentes',{exact:true}).click()
+  await openBook(page); await toolbarAction(page,'appearance-toggle');await page.getByText('Espaciado, márgenes y fuentes',{exact:true}).click()
   await expect(page.locator('[data-setting="font"] option')).toHaveCount(20)
   await page.locator('[data-setting="columns"]').selectOption('3')
   await page.locator('[data-setting="fullWidth"]').check()
@@ -51,10 +52,10 @@ test('twenty fonts include real local reading fonts and wide screen control', as
 
 test('zen explains its exit only on the first activation', async ({page}) => {
   await openBook(page)
-  await page.locator('#zen-toggle').click(); await expect(page.locator('#zen-hint')).toBeVisible()
+  await toolbarAction(page,'zen-toggle'); await expect(page.locator('#zen-hint')).toBeVisible()
   await expect(page.locator('#zen-hint')).toContainText('Esc')
   await page.locator('#dismiss-zen-hint').click(); await expect(page.locator('#zen-hint')).toBeHidden()
-  await page.keyboard.press('Escape'); await page.locator('#zen-toggle').click()
+  await page.keyboard.press('Escape'); await toolbarAction(page,'zen-toggle')
   await expect(page.locator('#zen-hint')).toBeHidden()
 })
 
@@ -88,7 +89,7 @@ for (const [locale,expected] of [['ca-ES','Obrir un llibre'],['en-US','Open a bo
 
 test('language switch persists and does not translate book titles or text',async ({page})=>{
   await openBook(page)
-  await page.locator('#preferences-toggle').click()
+  await toolbarAction(page,'preferences-toggle')
   await page.getByText('General',{exact:true}).click()
   await page.locator('[data-setting="uiLanguage"]').selectOption('en')
   await expect(page.locator('#preferences-title')).toHaveText('Settings')

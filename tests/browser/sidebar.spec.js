@@ -1,3 +1,4 @@
+import {toolbarAction} from './toolbar-fixture.js'
 import {test,expect} from '@playwright/test'
 import {epub} from './fixtures.js'
 async function open(page){await page.goto('/');await page.locator('#file-input').setInputFiles({name:'libro.epub',mimeType:'application/epub+zip',buffer:await epub()});await expect(page.locator('#audio-toggle')).toBeEnabled()}
@@ -15,7 +16,7 @@ test('sidebar and Settings scroll without showing scrollbars',async({page})=>{
  await open(page);await page.locator('#index-toggle').click();await expect(page.locator('#sidebar-brand-close')).toBeFocused()
  await page.locator('#contents-tab').evaluate(el=>{const space=document.createElement('div');space.style.height='2000px';el.append(space)})
  await expect(page.locator('#sidebar')).toHaveCSS('scrollbar-width','none');await page.mouse.move(140,400);await page.mouse.wheel(0,500);await expect.poll(()=>page.locator('#sidebar').evaluate(el=>el.scrollTop)).toBeGreaterThan(100)
- await page.locator('#sidebar-close').click();await expect(page.locator('#sidebar')).toBeHidden();await page.locator('#preferences-toggle').click()
+ await page.locator('#sidebar-close').click();await expect(page.locator('#sidebar')).toBeHidden();await toolbarAction(page,'preferences-toggle')
  const settings=page.locator('#preferences-panel');await settings.evaluate(el=>el.querySelectorAll('details').forEach(d=>d.open=true));await expect(settings).toHaveCSS('scrollbar-width','none');await settings.hover();await page.mouse.wheel(0,500);await expect.poll(()=>settings.evaluate(el=>el.scrollTop)).toBeGreaterThan(100)
 })
 

@@ -1,5 +1,13 @@
 # Lector
 
+## Corrección 2.13.1 · herramientas en móvil
+
+En pantallas de hasta 900 píxeles, los accesos de la derecha se agrupan en **Herramientas**, un panel lateral con iconos y nombres. Todos quedan disponibles en vertical y horizontal, con desplazamiento sin barra visible y animación que respeta movimiento reducido. Al ampliar la pantalla regresan los mismos botones a la barra. Abrir menús o girar el dispositivo no detiene la narración.
+
+## Versión 2.13 · primera integración Google Cast
+
+Emisión de audio generado por Piper o API con el selector oficial de Chrome de escritorio y del APK Android. Receptor propio registrado, aún sin publicar en Google: solo dispositivos autorizados. El titular ha confirmado audio desde el PC en su Google Home; comunicó también errores intermitentes de conexión, pendientes de diagnóstico. Las voces del navegador siguen disponibles para la escucha local, pero no entregan audio a esta integración. Piper necesita su motor iniciado y utiliza voces diferentes. [Activación, prueba y límites de Google Cast](ACTIVAR_GOOGLE_CAST.md). [Descargas](https://github.com/AlejandroPico/Lector/releases/latest).
+
 ## Versión 2.0 · consolidación visual
 
 Cubierta cerrada sin superposición de hojas o texto. Interfaz nocturna de texto claro con superficies coherentes y colores del papel independientes. Doce opciones de entorno con Terraza de olivo, icono de oficina diferenciado y selector más compacto. Fondos expandidos completos, sin recorte, también en pantallas panorámicas. Mantiene datos, voz, diez idiomas y distribución multiplataforma. Las [propuestas futuras](IDEAS_2_0.md) quedan pendientes de selección.

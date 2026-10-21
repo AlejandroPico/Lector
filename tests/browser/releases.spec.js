@@ -1,3 +1,4 @@
+import {toolbarAction} from './toolbar-fixture.js'
 import { test, expect } from '@playwright/test'
 import { epub, coverEPUB } from './fixtures.js'
 import { readFile } from 'node:fs/promises'
@@ -61,7 +62,7 @@ test('clicking a word restarts there and tracking controls persist independently
 })
 
 test('personal themes preview, save, reload, import safely and remain user text',async ({page})=>{
-  await open(page);await page.locator('#theme-toggle').click()
+  await open(page);await toolbarAction(page,'theme-toggle')
   await page.locator('#theme-editor > summary').click()
   await page.locator('#theme-name').fill('Mi noche personal')
   await page.locator('[data-theme-color="0"]').evaluate(input=>{input.value='#06080a';input.dispatchEvent(new Event('input',{bubbles:true}))})
@@ -71,7 +72,7 @@ test('personal themes preview, save, reload, import safely and remain user text'
   await expect(page.locator('.theme-option')).toHaveCount(25)
   await page.screenshot({path:'test-results/04-themes.png'})
   await page.reload();await expect(page.locator('html')).toHaveCSS('background-color','rgb(6, 8, 10)')
-  await page.locator('#dismiss-file').click();await page.locator('#theme-toggle').click()
+  await page.locator('#dismiss-file').click();await toolbarAction(page,'theme-toggle')
   await expect(page.locator('button[data-theme^="personal-"]')).toContainText('Mi noche personal')
   await page.locator('#theme-editor > summary').click()
   await page.getByText('Importar o copiar tema',{exact:true}).click()
@@ -84,7 +85,7 @@ test('personal themes preview, save, reload, import safely and remain user text'
   await page.locator('#theme-delete').click();await expect(page.locator('.theme-option')).toHaveCount(25)
 })
 test('margins and optional language hyphenation reach the ebook and persist',async ({page})=>{
-  await open(page);await page.locator('#appearance-toggle').click();await page.getByText('Espaciado, márgenes y fuentes',{exact:true}).click()
+  await open(page);await toolbarAction(page,'appearance-toggle');await page.getByText('Espaciado, márgenes y fuentes',{exact:true}).click()
   await expect(page.locator('[data-setting="hyphenate"]')).not.toBeChecked()
   for(const [key,value] of [['marginOuter','60'],['marginInner','42']]) {
     await page.locator(`[data-setting="${key}"]`).evaluate((input,value)=>{input.value=value;input.dispatchEvent(new Event('input',{bubbles:true}))},value)
@@ -95,12 +96,12 @@ test('margins and optional language hyphenation reach the ebook and persist',asy
     const view=document.querySelector('#reader'),doc=view.renderer.getContents()[0].doc
     return [view.renderer.getAttribute('margin'),doc.defaultView.getComputedStyle(doc.querySelector('p')).hyphens,doc.documentElement.lang]
   })).toEqual(['42px','auto','es'])
-  await page.reload();await page.locator('#dismiss-file').click();await page.locator('#appearance-toggle').click();await page.getByText('Espaciado, márgenes y fuentes',{exact:true}).click()
+  await page.reload();await page.locator('#dismiss-file').click();await toolbarAction(page,'appearance-toggle');await page.getByText('Espaciado, márgenes y fuentes',{exact:true}).click()
   await expect(page.locator('[data-setting="hyphenate"]')).toBeChecked()
   await expect(page.locator('[data-setting="marginOuter"]')).toHaveValue('60')
 })
 test('personal font loads into ebook, survives restart and can be removed',async ({page})=>{
-  await open(page);await page.locator('#appearance-toggle').click();await page.getByText('Espaciado, márgenes y fuentes',{exact:true}).click()
+  await open(page);await toolbarAction(page,'appearance-toggle');await page.getByText('Espaciado, márgenes y fuentes',{exact:true}).click()
   await page.getByText('Fuentes personales',{exact:true}).click()
   const buffer=await readFile(new URL('../../node_modules/@fontsource/atkinson-hyperlegible/files/atkinson-hyperlegible-latin-400-normal.woff2',import.meta.url))
   await page.locator('#font-file').setInputFiles({name:'Mi-fuente.woff2',mimeType:'font/woff2',buffer})
@@ -113,7 +114,7 @@ test('personal font loads into ebook, survives restart and can be removed',async
     return [...doc.fonts].some(face=>face.family.replace(/["']/g,'')===font && face.status==='loaded')
   },font)).toBe(true)
   await page.reload();await page.locator('.resume-button').first().click()
-  await expect(page.locator('#audio-toggle')).toBeEnabled();await page.locator('#appearance-toggle').click();await page.getByText('Espaciado, márgenes y fuentes',{exact:true}).click()
+  await expect(page.locator('#audio-toggle')).toBeEnabled();await toolbarAction(page,'appearance-toggle');await page.getByText('Espaciado, márgenes y fuentes',{exact:true}).click()
   await expect(page.locator('[data-setting="font"]')).toHaveValue(font)
   await page.getByText('Fuentes personales',{exact:true}).click();await page.getByRole('button',{name:'Eliminar fuente',exact:true}).click()
   await expect(page.locator('[data-setting="font"]')).toHaveValue('Georgia')
@@ -167,7 +168,7 @@ test('opening cover is optional and can be skipped when starting audio',async ({
   await expect(page.locator('#opening-cover')).toBeHidden()
   await expect.poll(()=>page.evaluate(()=>window.__spoken.length)).toBe(1)
   expect(await page.evaluate(()=>window.__spoken[0])).not.toContain('Cubierta')
-  await page.locator('#audio-toggle').click();await page.locator('#preferences-toggle').click()
+  await page.locator('#audio-toggle').click();await toolbarAction(page,'preferences-toggle')
   await page.locator('#preferences-panel summary').filter({hasText:'Apariencia'}).click()
   await page.locator('[data-setting="showOpeningCover"]').uncheck()
   await page.locator('#file-input').setInputFiles({name:'otro.epub',mimeType:'application/epub+zip',buffer:await coverEPUB('Otra novela')})
@@ -182,7 +183,7 @@ test('mobile cover and expanded library fit the screen and use the chosen langua
   await page.locator('#file-input').setInputFiles({name:'mobile.epub',mimeType:'application/epub+zip',buffer:await coverEPUB()})
   await expect(page.locator('#opening-cover')).toBeVisible()
   await expect(page.locator('#start-reading')).toContainText('Commencer à lire')
-  await page.locator('#preferences-toggle').click();await page.locator('#preferences-panel summary').filter({hasText:'Bibliothèque'}).click()
+  await toolbarAction(page,'preferences-toggle');await page.locator('#preferences-panel summary').filter({hasText:'Bibliothèque'}).click()
   await page.locator('[data-settings-tab="library"]').click();await expect(page.locator('#library-dialog')).toBeVisible()
   await expect(page.locator('#library-dialog .catalog-cover img')).toHaveCount(1)
   const box=await page.locator('#library-dialog').boundingBox()

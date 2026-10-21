@@ -1,7 +1,8 @@
+import {toolbarAction} from './toolbar-fixture.js'
 import {test,expect} from '@playwright/test'
 import {epub} from './fixtures.js'
 async function open(page,text){await page.goto('/');await page.locator('#file-input').setInputFiles(text?{name:'lectura.txt',mimeType:'text/plain',buffer:Buffer.from(text)}:{name:'libro.epub',mimeType:'application/epub+zip',buffer:await epub()});await expect(page.locator('#loading')).toBeHidden();await expect(page.locator('#audio-toggle')).toBeEnabled()}
-async function readingSettings(page){await page.locator('#preferences-toggle').click();const summary=page.locator('#preferences-panel summary').filter({hasText:/^Lectura$/});if(!(await summary.evaluate(element=>element.parentElement.open)))await summary.click();const progress=page.getByText('Ubicación y tiempo de lectura',{exact:true});if(!(await progress.evaluate(element=>element.parentElement.open)))await progress.click()}
+async function readingSettings(page){await toolbarAction(page,'preferences-toggle');const summary=page.locator('#preferences-panel summary').filter({hasText:/^Lectura$/});if(!(await summary.evaluate(element=>element.parentElement.open)))await summary.click();const progress=page.getByText('Ubicación y tiempo de lectura',{exact:true});if(!(await progress.evaluate(element=>element.parentElement.open)))await progress.click()}
 test('vertical narration follows word events, freezes on pause and resumes',async({page})=>{
   await page.addInitScript(()=>Object.defineProperty(window,'speechSynthesis',{value:{getVoices:()=>[],addEventListener(){},cancel(){},pause(){},resume(){},speak(utterance){window.__utterance=utterance;utterance.onstart?.()}}}))
   await page.setViewportSize({width:900,height:450});await open(page,Array.from({length:900},(_,i)=>`palabra${i}`).join(' ')+'.')
@@ -33,7 +34,7 @@ test('a stable reference survives font and reading flow changes',async({page})=>
   await open(page);await readingSettings(page);await page.locator('[data-setting="showReference"]').check();await page.keyboard.press('Escape')
   await page.locator('#position-button').click();await page.locator('#position-input').fill('50');await page.locator('#go-position').click()
   await expect(page.locator('#position-dialog')).toBeHidden();const reference=await page.locator('#stable-reference').textContent()
-  await page.locator('#appearance-toggle').click();await page.locator('[data-setting="fontSize"]').evaluate(input=>{input.value=32;input.dispatchEvent(new Event('input',{bubbles:true}))})
+  await toolbarAction(page,'appearance-toggle');await page.locator('[data-setting="fontSize"]').evaluate(input=>{input.value=32;input.dispatchEvent(new Event('input',{bubbles:true}))})
   await expect(page.locator('#stable-reference')).toHaveText(reference)
   await page.keyboard.press('Escape');await readingSettings(page);await page.locator('[data-setting="readingFlow"]').selectOption('scrolled')
   await expect.poll(()=>page.evaluate(()=>document.querySelector('#reader').renderer.scrolled)).toBe(true)
@@ -42,7 +43,7 @@ test('a stable reference survives font and reading flow changes',async({page})=>
   await expect(page.locator('#stable-reference')).toHaveText(reference)
 })
 test('TV mode offers large controls and remote-style focus navigation',async({page})=>{
-  await open(page);await page.locator('#preferences-toggle').click();await page.locator('#preferences-panel summary').filter({hasText:'Dispositivos'}).click();await page.locator('[data-setting="tvMode"]').check()
+  await open(page);await toolbarAction(page,'preferences-toggle');await page.locator('#preferences-panel summary').filter({hasText:'Dispositivos'}).click();await page.locator('[data-setting="tvMode"]').check()
   await page.keyboard.press('Escape');await expect(page.locator('body')).toHaveClass(/tv-mode/)
   expect((await page.locator('#audio-toggle').boundingBox()).width).toBeGreaterThanOrEqual(48)
   await page.locator('#preferences-toggle').focus();await page.keyboard.press('ArrowLeft')
